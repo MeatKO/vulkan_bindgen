@@ -5,8 +5,10 @@
 #![allow(non_camel_case_types)]
 #![allow(dead_code)]
 
-use std::mem;
 use std::fmt;
+use std::str;
+use std::result::Result;
+use std::ffi::{CStr};
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
@@ -61961,8 +61963,7 @@ fn bindgen_test_layout_VkPhysicalDeviceRayQueryFeaturesKHR() {
     );
 }
 
-// additional non-bindgen logic : 
-
+// additional non-generated binds : 
 pub fn VK_MAKE_API_VERSION(variant: u32, major: u32, minor: u32, patch: u32) -> u32
 {
 	return (variant << 29) | (major << 22) | (minor << 12) | (patch);
@@ -61981,13 +61982,54 @@ pub fn VK_API_VERSION_1_0() -> u32
 
 
 // additional non-bindgen impl
-
-impl fmt::Display for VkExtensionProperties {
-
+impl VkExtensionProperties
+{
+	pub fn get_extension_name(&self) -> Result<&str, str::Utf8Error>
+	{
+		unsafe { CStr::from_ptr(self.extensionName.as_ptr()).to_str() }
+	}
+}
+impl fmt::Display for VkExtensionProperties 
+{
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result 
 	{
         write!(f, "{}", String::from_utf8(self.extensionName.iter().map(|&c| c as u8).collect()).unwrap())
-        // write!(f, "{}", String::from_utf8(mem::transmute(self.extensionName)).unwrap())
     }
-
 }	
+
+impl VkLayerProperties
+{
+	pub fn get_layer_name(&self) -> Result<&str, str::Utf8Error>
+	{
+		unsafe { CStr::from_ptr(self.layerName.as_ptr()).to_str() }
+	}
+}
+impl fmt::Display for VkLayerProperties 
+{
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result 
+	{
+        write!(f, "{}", String::from_utf8(self.layerName.iter().map(|&c| c as u8).collect()).unwrap())
+    }
+}	
+
+// additional helper functions
+pub fn check_layer_availability(needed_layers: &Vec<&str>, available_layers: &Vec<VkLayerProperties>)
+{
+	for needed_layer in needed_layers
+	{
+		let mut found = false;
+		for available_layer in available_layers
+		{
+			if (*needed_layer).to_owned() == available_layer.get_layer_name().unwrap()
+			{
+				found = true;
+				break;
+			}
+		}
+
+		if found == false
+		{
+			panic!("Layer {} is not available", needed_layer);
+		}
+	}
+}
