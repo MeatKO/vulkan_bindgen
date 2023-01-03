@@ -10,6 +10,7 @@ use std::fmt;
 use std::str;
 use std::result::Result;
 use std::ffi::{CStr, c_void};
+use std::ptr::null_mut as nullptr;
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
@@ -61981,11 +61982,6 @@ pub fn VK_API_VERSION_1_0() -> u32
 	return VK_MAKE_API_VERSION(0, 1, 0, 0);
 }
 
-pub fn VK_NULL_HANDLE() -> u32
-{
-	return 0;
-}
-
 // additional non-bindgen impl
 impl VkExtensionProperties
 {
@@ -62137,4 +62133,23 @@ pub unsafe fn destroy_debug_utils_messenger_ext(
 			return VkResult_VK_ERROR_EXTENSION_NOT_PRESENT;
 		}
 	}
+}
+
+pub unsafe fn is_device_suitable(physical_device: VkPhysicalDevice) -> bool
+{
+	if physical_device as u32 == 0
+	{
+		return false;
+	}
+
+	let mut device_properties = std::mem::zeroed();
+	vkGetPhysicalDeviceProperties(physical_device, &mut device_properties);
+
+	if c_string(&device_properties.deviceName).to_lowercase().contains("nvidia")
+	{
+		println!("using device {:?} - {}", physical_device, c_string(&device_properties.deviceName));
+		return true;
+	}
+
+	return false;
 }

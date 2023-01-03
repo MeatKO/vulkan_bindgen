@@ -60,6 +60,12 @@ fn main()
 			"VK_LAYER_KHRONOS_validation"
 		];
 
+		let disabled_layers = vec![
+			"VK_LAYER_LUNARG_gfxreconstruct",
+			"VK_LAYER_LUNARG_api_dump",
+			"VK_LAYER_LUNARG_device_simulation"
+		];
+
 		let mut layer_count = 0u32;
 		vulkan::vkEnumerateInstanceLayerProperties(&mut layer_count as _, nullptr());
 		let mut layer_vec = vec![ std::mem::zeroed(); layer_count as usize ];
@@ -70,14 +76,22 @@ fn main()
 		println!("\tSupported layers : ");
 		for property in &layer_vec 
 		{
-			println!("\t\t{} - {:?}", property.get_layer_name(), property.layerName.as_ptr());
+			if disabled_layers.contains(&property.get_layer_name())
+			{
+				println!("\t\t\x1B[31m{} - {:?}\x1B[0m", property.get_layer_name(), property.layerName.as_ptr());
+			}
+			else
+			{
+				println!("\t\t\x1B[36m{} - {:?}\x1B[0m", property.get_layer_name(), property.layerName.as_ptr());
+			}
 		}
 
 		let layer_names = layer_vec
 			.iter()
 			.filter(|layer|
-				// ignore this one because it creates a bunch of snapshots
-				layer.get_layer_name() != "VK_LAYER_LUNARG_gfxreconstruct" 
+				{
+					!disabled_layers.contains(&layer.get_layer_name())
+				}
 			)
 			.map(|layer|  layer.layerName.as_ptr())
 			.collect::<Vec<*const i8>>();
@@ -116,7 +130,6 @@ fn main()
 			ppEnabledLayerNames: layer_names.as_ptr(),
 			flags: 0,
 			pNext: (&mut debug_create_info as *mut vulkan::VkDebugUtilsMessengerCreateInfoEXT) as *mut c_void
-			// pNext: nullptr()
 		};
 
 		let mut vulkan_instance = 0 as vulkan::VkInstance;
@@ -146,7 +159,7 @@ fn main()
 		}
 
 		// Picking physical device
-		let physical_device = vulkan::VK_NULL_HANDLE();
+		let mut physical_device = nullptr();
 
 		let mut physical_device_count = 0u32;
 		vulkan::vkEnumeratePhysicalDevices(vulkan_instance, &mut physical_device_count, nullptr());
@@ -157,16 +170,21 @@ fn main()
 		let mut physical_device_vec = vec![ std::mem::zeroed(); layer_count as usize ];
 		vulkan::vkEnumeratePhysicalDevices(vulkan_instance, &mut physical_device_count, physical_device_vec.as_mut_ptr());
 
-		let mut device_properties = std::mem::zeroed();
 		for (index, device) in physical_device_vec.iter().cloned().enumerate()
 		{
-			if device as u32 == 0
+			if vulkan::is_device_suitable(device)
 			{
-				continue;
+				physical_device = device;
+				break;
 			}
-
-			vulkan::vkGetPhysicalDeviceProperties(device, &mut device_properties);
-			// println!("device [{}] with name {}", index, vulkan::c_string(&device_properties.deviceName));
+		}
+		if physical_device.is_null()
+		{
+			panic!("Failed to find a suitable GPU!");
+		}
+		else
+		{
+			println!("Picked device {:?}", physical_device);
 		}
 
 		// Cleanup
