@@ -4,11 +4,12 @@
 #![allow(non_upper_case_globals)]
 #![allow(non_camel_case_types)]
 #![allow(dead_code)]
+#![allow(unused_variables)]
 
 use std::fmt;
 use std::str;
 use std::result::Result;
-use std::ffi::{CStr};
+use std::ffi::{CStr, c_void};
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
@@ -61980,13 +61981,20 @@ pub fn VK_API_VERSION_1_0() -> u32
 	return VK_MAKE_API_VERSION(0, 1, 0, 0);
 }
 
+pub fn VK_NULL_HANDLE() -> u32
+{
+	return 0;
+}
 
 // additional non-bindgen impl
 impl VkExtensionProperties
 {
-	pub fn get_extension_name(&self) -> Result<&str, str::Utf8Error>
+	pub fn get_extension_name(&self) -> &str
 	{
-		unsafe { CStr::from_ptr(self.extensionName.as_ptr()).to_str() }
+		unsafe
+		{
+			c_string(&self.extensionName)
+		}
 	}
 }
 impl fmt::Display for VkExtensionProperties 
@@ -61999,9 +62007,12 @@ impl fmt::Display for VkExtensionProperties
 
 impl VkLayerProperties
 {
-	pub fn get_layer_name(&self) -> Result<&str, str::Utf8Error>
+	pub fn get_layer_name(&self) -> &str
 	{
-		unsafe { CStr::from_ptr(self.layerName.as_ptr()).to_str() }
+		unsafe
+		{
+			c_string(&self.layerName)
+		}
 	}
 }
 impl fmt::Display for VkLayerProperties 
@@ -62013,6 +62024,11 @@ impl fmt::Display for VkLayerProperties
 }	
 
 // additional helper functions
+pub unsafe fn c_string(char_array: &[i8]) -> &str
+{
+	CStr::from_ptr(char_array.as_ptr()).to_str().unwrap()
+}
+
 pub fn check_layer_availability(needed_layers: &Vec<&str>, available_layers: &Vec<VkLayerProperties>)
 {
 	for needed_layer in needed_layers
@@ -62020,7 +62036,7 @@ pub fn check_layer_availability(needed_layers: &Vec<&str>, available_layers: &Ve
 		let mut found = false;
 		for available_layer in available_layers
 		{
-			if (*needed_layer).to_owned() == available_layer.get_layer_name().unwrap()
+			if (*needed_layer).to_owned() == available_layer.get_layer_name()
 			{
 				found = true;
 				break;
@@ -62030,6 +62046,95 @@ pub fn check_layer_availability(needed_layers: &Vec<&str>, available_layers: &Ve
 		if found == false
 		{
 			panic!("Layer {} is not available", needed_layer);
+		}
+	}
+}
+
+pub fn check_extension_availability(needed_extensions: &Vec<&str>, available_extensions: &Vec<VkExtensionProperties>)
+{
+	for needed_extension in needed_extensions
+	{
+		let mut found = false;
+		for available_extension in available_extensions
+		{
+			if (*needed_extension).to_owned() == available_extension.get_extension_name()
+			{
+				found = true;
+				break;
+			}
+		}
+
+		if found == false
+		{
+			panic!("Extension {} is not available", needed_extension);
+		}
+	}
+}
+
+// left in an unfinished state
+pub unsafe extern "C" fn debug_callback(
+	message_severity: VkDebugUtilsMessageSeverityFlagBitsEXT,
+	message_type: VkDebugUtilsMessageTypeFlagsEXT,
+	p_callback_data: *const VkDebugUtilsMessengerCallbackDataEXT,
+	p_user_data: *mut c_void
+) -> VkBool32
+{
+	// these colors are for *NIX terminals
+	match message_severity 
+	{
+		VkDebugUtilsMessageSeverityFlagBitsEXT_VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT => { print!("\n\x1B[36m");} // cyan
+		VkDebugUtilsMessageSeverityFlagBitsEXT_VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT => { print!("\n\x1B[33m"); } // yellow
+		// VkDebugUtilsMessageSeverityFlagBitsEXT_VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT => { print!("\n\x1B[37m"); } // white
+		VkDebugUtilsMessageSeverityFlagBitsEXT_VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT => { return VK_FALSE }
+		VkDebugUtilsMessageSeverityFlagBitsEXT_VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT => { print!("\n\x1B[31m"); } // red
+		_ => {}
+	}
+	
+	println!("Vk Validation Layer : '{}' \x1B[0m", CStr::from_ptr((*p_callback_data).pMessage).to_str().unwrap());
+
+	VK_FALSE
+}
+
+pub unsafe fn create_debug_utils_messenger_ext(
+	instance: &VkInstance,
+	p_create_info: *const VkDebugUtilsMessengerCreateInfoEXT,
+	p_allocator: *const VkAllocationCallbacks,
+	p_debug_messenger: *mut VkDebugUtilsMessengerEXT
+) -> VkResult
+{
+	let function = std::mem::transmute::<_, PFN_vkCreateDebugUtilsMessengerEXT>(vkGetInstanceProcAddr(*instance, "vkCreateDebugUtilsMessengerEXT\0".as_ptr() as _));
+
+	match function
+	{
+		Some(func) => 
+		{
+			return func(*instance, p_create_info, p_allocator, p_debug_messenger);
+		}
+		None => 
+		{
+			return VkResult_VK_ERROR_EXTENSION_NOT_PRESENT;
+		}
+	}
+}
+
+pub unsafe fn destroy_debug_utils_messenger_ext(
+	instance: &VkInstance,
+	debug_messenger: &VkDebugUtilsMessengerEXT,
+	p_allocator: *const VkAllocationCallbacks
+) -> VkResult
+{
+	let function = std::mem::transmute::<_, PFN_vkDestroyDebugUtilsMessengerEXT>(vkGetInstanceProcAddr(*instance, "vkDestroyDebugUtilsMessengerEXT\0".as_ptr() as _));
+
+	match function
+	{
+		Some(func) => 
+		{
+			func(*instance, *debug_messenger, p_allocator);
+			return VkResult_VK_SUCCESS;
+		}
+		None => 
+		{
+			return VkResult_VK_ERROR_EXTENSION_NOT_PRESENT;
 		}
 	}
 }

@@ -6,7 +6,7 @@ fn main()
 
 	let library_location = 
 	{
-		match target_os .as_str()
+		match target_os.as_str()
 		{
 			"linux" => { None }
 			"windows" => { Some("/home/gate/Documents/Programming/VulkanSDKWindows/1.3.236.0/Lib/") }
@@ -16,7 +16,7 @@ fn main()
 
 	let library_name = 
 	{
-		match target_os .as_str()
+		match target_os.as_str()
 		{
 			"linux" => { "vulkan" }
 			"windows" => { "vulkan-1" }
