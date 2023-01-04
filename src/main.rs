@@ -43,7 +43,14 @@ fn main()
 		println!("\tSupported extensions : ");
 		for elem in &extension_vec 
 		{
-			println!("\t\t{} - {:?}", elem.get_extension_name(), elem.extensionName.as_ptr());
+			if needed_extensions.contains(&elem.get_extension_name())
+			{
+				println!("\t\t\x1B[92m{} - {:?}\x1B[0m", elem.get_extension_name(), elem.extensionName.as_ptr());
+			}
+			else
+			{
+				println!("\t\t{} - {:?}", elem.get_extension_name(), elem.extensionName.as_ptr());
+			}
 		}
 
 		let extension_names = extension_vec
@@ -88,10 +95,8 @@ fn main()
 
 		let layer_names = layer_vec
 			.iter()
-			.filter(|layer|
-				{
+			.filter(|layer| 
 					!disabled_layers.contains(&layer.get_layer_name())
-				}
 			)
 			.map(|layer|  layer.layerName.as_ptr())
 			.collect::<Vec<*const i8>>();
@@ -186,6 +191,9 @@ fn main()
 		{
 			println!("Picked device {:?}", physical_device);
 		}
+
+		// Logical device
+		
 
 		// Cleanup
 		println!("Destroying instances...");
