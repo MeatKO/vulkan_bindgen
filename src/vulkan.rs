@@ -8,7 +8,6 @@
 
 use std::fmt;
 use std::str;
-use std::result::Result;
 use std::ffi::{CStr, c_void};
 use std::ptr::null_mut as nullptr;
 
@@ -62167,26 +62166,15 @@ pub unsafe fn is_device_suitable(physical_device: VkPhysicalDevice) -> bool
 	{
 		println!("found nvidia device {}... checking for supported queues...", c_string(&device_properties.deviceName));
 
-		match get_physical_device_queue_flags(physical_device)
+		let queue_flags = get_physical_device_queue_flags(physical_device).expect("no supported queues found!");
+		println!("queue flags 0b{:08b}", queue_flags);
+		if queue_flags & VkQueueFlagBits_VK_QUEUE_GRAPHICS_BIT == 0
 		{
-			Some(queue_flags) => 
-			{ 
-				println!("queue flags 0b{:08b}", queue_flags);
-				if queue_flags & VkQueueFlagBits_VK_QUEUE_GRAPHICS_BIT > 0
-				{
-					println!("graphics queue found, continuing...");
-				}
-				else
-				{
-					panic!("graphics queue not found for device {}", c_string(&device_properties.deviceName));
-				}
-			}
-			None => 
-			{
-				panic!("no supported queues found!");
-			}
+			panic!("graphics queue not found for device {}", c_string(&device_properties.deviceName));
+			
 		}
-		
+		println!("graphics queue found, continuing...");
+
 		println!("using device {:?} - {}", physical_device, c_string(&device_properties.deviceName));
 		return true;
 	}
