@@ -62136,6 +62136,11 @@ pub unsafe fn destroy_debug_utils_messenger_ext(
 
 pub unsafe fn get_physical_device_queue_flags(physical_device: VkPhysicalDevice) -> Option<u32>
 {
+	if physical_device as u32 == 0
+	{
+		return None;
+	}
+
 	let mut queue_family_count = 0u32;
 	vkGetPhysicalDeviceQueueFamilyProperties(physical_device, &mut queue_family_count, nullptr());
 	let mut queue_family_vec = vec![ std::mem::zeroed(); queue_family_count as usize ];
@@ -62153,35 +62158,57 @@ pub unsafe fn get_physical_device_queue_flags(physical_device: VkPhysicalDevice)
 
 pub unsafe fn is_device_suitable(physical_device: VkPhysicalDevice) -> bool
 {
-	if physical_device as u32 == 0
+	match get_physical_device_queue_flags(physical_device)
 	{
-		return false;
+		None => { return false }
+		Some(flags) => { return flags & VkQueueFlagBits_VK_QUEUE_GRAPHICS_BIT != 0 }
 	}
+}
 
-	let mut device_properties = std::mem::zeroed();
-	vkGetPhysicalDeviceProperties(physical_device, &mut device_properties);
+pub unsafe fn pick_best_device(physical_devices: Vec<*mut VkPhysicalDevice_T>) -> Option<VkPhysicalDevice>
+{
+	let mut suitable_devices_vec = physical_devices
+		.iter()
+		.copied()
+		.filter(
+			|physical_device|
+			is_device_suitable(*physical_device)
+		)
+		.map(
+			|physical_device|
+			{
+				let mut device_properties = std::mem::zeroed();
+				vkGetPhysicalDeviceProperties(physical_device, &mut device_properties);
 
+				let mut device_memory_properties = std::mem::zeroed();
+				vkGetPhysicalDeviceMemoryProperties(physical_device, &mut device_memory_properties);
+
+				(physical_device, device_properties.deviceType, device_memory_properties.memoryHeaps[0].size)
+			}
+		)
+		.collect::<Vec<_>>();
+
+	if suitable_devices_vec.len() == 0
+	{
+		return None
+	}
 	
-	if c_string(&device_properties.deviceName).to_lowercase().contains("nvidia")
-	{
-		println!("Found nvidia device {}... checking for supported queues...", c_string(&device_properties.deviceName));
-
-		let queue_flags = get_physical_device_queue_flags(physical_device).expect("no supported queues found!");
-		println!("Queue flags 0b{:08b}", queue_flags);
-		if queue_flags & VkQueueFlagBits_VK_QUEUE_GRAPHICS_BIT == 0
+	suitable_devices_vec
+	.sort_by(
+		|a, b|
 		{
-			panic!("graphics queue not found for device {}", c_string(&device_properties.deviceName));
-			
+			if a.1 == VkPhysicalDeviceType_VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU 
+			&& b.1 == VkPhysicalDeviceType_VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU
+			{
+				return std::cmp::Ordering::Greater;
+			}
+			if a.2 > b.2
+			{
+				return std::cmp::Ordering::Greater;
+			}
+			return std::cmp::Ordering::Less;
 		}
-		println!("Graphics queue found, continuing...");
-
-		println!("Picked device {:?} - {}", physical_device, c_string(&device_properties.deviceName));
-		return true;
-	}
-	else 
-	{
-		println!("ignoring non-nvidia device {:?} - {}", physical_device, c_string(&device_properties.deviceName));
-	}
-
-	return false;
+	);
+	
+	return Some(suitable_devices_vec.last().unwrap().0);
 }

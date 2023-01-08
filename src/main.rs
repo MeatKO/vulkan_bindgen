@@ -162,20 +162,7 @@ fn main()
 		let mut physical_device_vec = vec![ std::mem::zeroed(); layer_count as usize ];
 		vulkan::vkEnumeratePhysicalDevices(vulkan_instance, &mut physical_device_count, physical_device_vec.as_mut_ptr());
 
-		let mut physical_device = nullptr();
-		for device in physical_device_vec.iter().cloned()
-		{
-			if vulkan::is_device_suitable(device)
-			{
-				physical_device = device;
-				break;
-			}
-		}
-		match physical_device.is_null()
-		{
-			true => { panic!("Failed to find a suitable GPU!"); }
-			false => { println!("Using device {:?}", physical_device); }
-		}
+		let physical_device = vulkan::pick_best_device(physical_device_vec).expect("Failed to find a suitable GPU!");
 
 		// Queue creation
 		let queue_flags = vulkan::get_physical_device_queue_flags(physical_device).expect("no supported queues found!");
