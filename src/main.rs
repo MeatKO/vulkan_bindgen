@@ -69,8 +69,9 @@ fn main()
 			"VK_LAYER_LUNARG_gfxreconstruct",
 			"VK_LAYER_LUNARG_api_dump",
 			"VK_LAYER_LUNARG_device_simulation",
-			"VK_LAYER_VALVE_steam_fossilize_64",
-            "VK_LAYER_VALVE_steam_fossilize_32"
+			"VK_LAYER_VALVE_steam_fossilize",
+			"VK_LAYER_VALVE_steam_fossilize_32",
+            "VK_LAYER_VALVE_steam_fossilize_64"
 		];
 
 		let mut layer_count = 0u32;
