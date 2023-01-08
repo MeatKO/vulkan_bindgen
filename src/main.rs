@@ -173,7 +173,7 @@ fn main()
 		match physical_device.is_null()
 		{
 			true => { panic!("Failed to find a suitable GPU!"); }
-			false => { println!("Picked device {:?}", physical_device); }
+			false => { println!("Using device {:?}", physical_device); }
 		}
 
 		// Queue creation
