@@ -1,14 +1,12 @@
-use std::ffi::{c_void};
+#![allow(non_upper_case_globals)]
+
+use std::ffi::c_void;
 use std::ptr::null_mut as nullptr;
 
 mod vulkan;
+use vulkan::{vk_bindgen::*, c_macros::*, debugger::*, device::*, extension::*, layers::*, strings::*};
 
-// only takes static string slices because I have trust issues 
-// (I don't know how the C code will later use this memory)
-unsafe fn c_string(input_str: &'static str) -> *const i8
-{
-	input_str.as_ptr() as *const i8
-}
+mod loseit;
 
 fn main() 
 {
@@ -16,13 +14,13 @@ fn main()
 	{
 		let enable_validation_layers = true;
 
-		let application_info = vulkan::VkApplicationInfo{
-			sType: vulkan::VkStructureType_VK_STRUCTURE_TYPE_APPLICATION_INFO,
-			pApplicationName: c_string("deta:l vulkan\0"),
-			applicationVersion: vulkan::VK_MAKE_VERSION(1, 0, 0),
-			pEngineName: c_string("deta:l alpha\0"),
-			engineVersion: vulkan::VK_MAKE_VERSION(1, 0, 0),
-			apiVersion: vulkan::VK_MAKE_API_VERSION(0, 1, 2, 0),
+		let application_info = VkApplicationInfo{
+			sType: VkStructureType_VK_STRUCTURE_TYPE_APPLICATION_INFO,
+			pApplicationName: to_c_string("deta:l vulkan\0"),
+			applicationVersion: VK_MAKE_VERSION(1, 0, 0),
+			pEngineName: to_c_string("deta:l alpha\0"),
+			engineVersion: VK_MAKE_VERSION(1, 0, 0),
+			apiVersion: VK_MAKE_API_VERSION(0, 1, 2, 0),
 			pNext: nullptr()
 		};
 
@@ -33,9 +31,9 @@ fn main()
 		];
 
 		let mut extension_count = 0u32;
-		vulkan::vkEnumerateInstanceExtensionProperties(std::ptr::null_mut(), &mut extension_count as _, nullptr());
+		vkEnumerateInstanceExtensionProperties(nullptr(), &mut extension_count as _, nullptr());
 		let mut extension_vec = vec![ std::mem::zeroed(); extension_count as usize ];
-		vulkan::vkEnumerateInstanceExtensionProperties(nullptr(), &mut extension_count as _, extension_vec.as_mut_ptr());
+		vkEnumerateInstanceExtensionProperties(nullptr(), &mut extension_count as _, extension_vec.as_mut_ptr());
 		
 		println!("Instance Extensions :");
 		println!("\tSupported extension count : {}", extension_count);
@@ -57,7 +55,7 @@ fn main()
 			.map(|extension_property|  extension_property.extensionName.as_ptr())
 			.collect::<Vec<*const i8>>();
 
-		vulkan::check_extension_availability(&needed_extensions, &extension_vec);
+		check_extension_availability(&needed_extensions, &extension_vec);
 		println!("✔️ Required extensions are available"); 
 
 		// Validation layers
@@ -75,9 +73,9 @@ fn main()
 		];
 
 		let mut layer_count = 0u32;
-		vulkan::vkEnumerateInstanceLayerProperties(&mut layer_count as _, nullptr());
+		vkEnumerateInstanceLayerProperties(&mut layer_count as _, nullptr());
 		let mut layer_vec = vec![ std::mem::zeroed(); layer_count as usize ];
-		vulkan::vkEnumerateInstanceLayerProperties(&mut layer_count as _, layer_vec.as_mut_ptr());
+		vkEnumerateInstanceLayerProperties(&mut layer_count as _, layer_vec.as_mut_ptr());
 
 		println!("\nIntance Layers :");
 		println!("\tSupported layer count: {}", layer_count);
@@ -104,73 +102,85 @@ fn main()
 
 		if enable_validation_layers
 		{
-			vulkan::check_layer_availability(&needed_layers, &layer_vec);
+			check_layer_availability(&needed_layers, &layer_vec);
 			println!("✔️ Required layers are available"); 
 		}
 
 		// Debug messenger
-		let mut debug_create_info = vulkan::VkDebugUtilsMessengerCreateInfoEXT{
-			sType: vulkan::VkStructureType_VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT,
+		let mut debug_create_info = VkDebugUtilsMessengerCreateInfoEXT{
+			sType: VkStructureType_VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT,
 			messageSeverity: 
-				vulkan::VkDebugUtilsMessageSeverityFlagBitsEXT_VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
-				vulkan::VkDebugUtilsMessageSeverityFlagBitsEXT_VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
-				vulkan::VkDebugUtilsMessageSeverityFlagBitsEXT_VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT,
+				VkDebugUtilsMessageSeverityFlagBitsEXT_VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
+				VkDebugUtilsMessageSeverityFlagBitsEXT_VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
+				VkDebugUtilsMessageSeverityFlagBitsEXT_VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT,
 			messageType: 
-				vulkan::VkDebugUtilsMessageTypeFlagBitsEXT_VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
-				vulkan::VkDebugUtilsMessageTypeFlagBitsEXT_VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
-				vulkan::VkDebugUtilsMessageTypeFlagBitsEXT_VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT,
-			pfnUserCallback: Some(vulkan::debug_callback),
+				VkDebugUtilsMessageTypeFlagBitsEXT_VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
+				VkDebugUtilsMessageTypeFlagBitsEXT_VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
+				VkDebugUtilsMessageTypeFlagBitsEXT_VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT,
+			pfnUserCallback: Some(debug_callback),
 			pUserData: nullptr(),
 			flags: 0,
 			pNext: nullptr()
 		};
 
 		// Instance
-		let instance_create_info = vulkan::VkInstanceCreateInfo{
-			sType: vulkan::VkStructureType_VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
+		let mut instance_create_info = VkInstanceCreateInfo{
+			sType: VkStructureType_VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
 			pApplicationInfo: &application_info,
 			enabledExtensionCount: extension_names.len() as u32,
 			ppEnabledExtensionNames: extension_names.as_ptr(),
-			enabledLayerCount: layer_names.len() as u32,
-			ppEnabledLayerNames: layer_names.as_ptr(),
+			enabledLayerCount: 0,
+			ppEnabledLayerNames: nullptr(),
 			flags: 0,
-			pNext: (&mut debug_create_info as *mut vulkan::VkDebugUtilsMessengerCreateInfoEXT) as *mut c_void
+			pNext: nullptr()
 		};
 
-		let mut vulkan_instance = std::mem::zeroed();
-		match vulkan::vkCreateInstance(&instance_create_info, nullptr(), &mut vulkan_instance)
+		if enable_validation_layers
 		{
-			vulkan::VkResult_VK_SUCCESS => { println!("✔️ vkCreateInstance()"); }
+			instance_create_info.enabledLayerCount = layer_names.len() as u32;
+			instance_create_info.ppEnabledLayerNames = layer_names.as_ptr();
+			instance_create_info.pNext = (&mut debug_create_info as *mut VkDebugUtilsMessengerCreateInfoEXT) as *mut c_void;
+		}
+
+		let mut vk_instance = std::mem::zeroed();
+		match vkCreateInstance(&instance_create_info, nullptr(), &mut vk_instance)
+		{
+			VkResult_VK_SUCCESS => { println!("✔️ vkCreateInstance()"); }
 			err => { panic!("vkCreateInstance() failed with code {}.", err); }
 		}
 
 		// Debug messenger again...
 		let mut debug_messenger = std::mem::zeroed();
-		match vulkan::create_debug_utils_messenger_ext( &vulkan_instance, &debug_create_info, nullptr(), &mut debug_messenger as _)
+
+		if enable_validation_layers
 		{
-			vulkan::VkResult_VK_SUCCESS => { println!("✔️ Debugger creation"); }
-			err => { panic!("Debugger creation failed with code {}.", err); }
+			match create_debug_utils_messenger_ext( &vk_instance, &debug_create_info, nullptr(), &mut debug_messenger as _)
+			{
+				VkResult_VK_SUCCESS => { println!("✔️ Debugger creation"); }
+				err => { panic!("Debugger creation failed with code {}.", err); }
+			}
 		}
 
 		// Picking physical device
 		let mut physical_device_count = 0u32;
-		vulkan::vkEnumeratePhysicalDevices(vulkan_instance, &mut physical_device_count, nullptr());
+		vkEnumeratePhysicalDevices(vk_instance, &mut physical_device_count, nullptr());
 		if physical_device_count == 0
 		{
-			panic!("No Vulkan compatible Physical Devices found!");
+			panic!("No vk compatible Physical Devices found!");
 		}
 		let mut physical_device_vec = vec![ std::mem::zeroed(); layer_count as usize ];
-		vulkan::vkEnumeratePhysicalDevices(vulkan_instance, &mut physical_device_count, physical_device_vec.as_mut_ptr());
+		vkEnumeratePhysicalDevices(vk_instance, &mut physical_device_count, physical_device_vec.as_mut_ptr());
 
-		let physical_device = vulkan::pick_best_device(physical_device_vec).expect("Failed to find a suitable GPU!");
+		let physical_device = pick_best_device(physical_device_vec).expect("Failed to find a suitable GPU!");
 
+		
 		// Queue creation
-		let queue_flags = vulkan::get_physical_device_queue_flags(physical_device).expect("no supported queues found!");
+		let queue_flags = get_physical_device_queue_flags(physical_device).expect("no supported queues found!");
 		let queue_priorities = 1.0f32;
 
-		let queue_create_info = vulkan::VkDeviceQueueCreateInfo{
-			sType: vulkan::VkStructureType_VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
-			queueFamilyIndex: queue_flags & vulkan::VkQueueFlagBits_VK_QUEUE_GRAPHICS_BIT,
+		let queue_create_info = VkDeviceQueueCreateInfo{
+			sType: VkStructureType_VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+			queueFamilyIndex: queue_flags & VkQueueFlagBits_VK_QUEUE_GRAPHICS_BIT,
 			queueCount: 1,	
 			pQueuePriorities: &queue_priorities,
 			flags: 0,
@@ -178,10 +188,10 @@ fn main()
 		};
 
 		// Device creation
-		let device_features : vulkan::VkPhysicalDeviceFeatures = std::mem::zeroed(); // essentially putting everything to VkFalse
+		let device_features : VkPhysicalDeviceFeatures = std::mem::zeroed(); // essentially putting everything to VkFalse
 
-		let mut device_create_info = vulkan::VkDeviceCreateInfo{
-			sType: vulkan::VkStructureType_VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
+		let mut device_create_info = VkDeviceCreateInfo{
+			sType: VkStructureType_VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
 			pQueueCreateInfos: &queue_create_info,
 			queueCreateInfoCount: 1,
 			pEnabledFeatures: &device_features,
@@ -198,19 +208,19 @@ fn main()
 			device_create_info.ppEnabledLayerNames = layer_names.as_ptr();
 		}
 
-		let mut vulkan_device = std::mem::zeroed();
-		match vulkan::vkCreateDevice(physical_device, &device_create_info, nullptr(), &mut vulkan_device)
+		let mut vk_device = std::mem::zeroed();
+		match vkCreateDevice(physical_device, &device_create_info, nullptr(), &mut vk_device)
 		{
-			vulkan::VkResult_VK_SUCCESS => { println!("✔️ vkCreateDevice()"); }
+			VkResult_VK_SUCCESS => { println!("✔️ vkCreateDevice()"); }
 			err => { panic!("✗ vkCreateDevice() failed with code {}.", err); }
 		}
 
 		// Queue handling
-		let mut graphics_queue : vulkan::VkQueue = nullptr();
+		let mut graphics_queue : VkQueue = nullptr();
 		let _device_queue_handle = 
-			vulkan::vkGetDeviceQueue(
-				vulkan_device, 
-				vulkan::VkQueueFlagBits_VK_QUEUE_GRAPHICS_BIT, 
+			vkGetDeviceQueue(
+				vk_device, 
+				VkQueueFlagBits_VK_QUEUE_GRAPHICS_BIT, 
 				0, 
 				&mut graphics_queue
 			);
@@ -218,9 +228,9 @@ fn main()
 		
 		
 		// Cleanup
-		println!("Destroying vulkan objects...");
-		vulkan::vkDestroyDevice(vulkan_device, nullptr());
-		vulkan::destroy_debug_utils_messenger_ext(&vulkan_instance, &debug_messenger, nullptr());
-		vulkan::vkDestroyInstance(vulkan_instance, nullptr());
+		println!("Destroying vk objects...");
+		vkDestroyDevice(vk_device, nullptr());
+		destroy_debug_utils_messenger_ext(&vk_instance, &debug_messenger, nullptr());
+		vkDestroyInstance(vk_instance, nullptr());
 	}
 }
