@@ -17,10 +17,10 @@ fn main()
 		let application_info = VkApplicationInfo{
 			sType: VkStructureType_VK_STRUCTURE_TYPE_APPLICATION_INFO,
 			pApplicationName: to_c_string("deta:l vulkan\0"),
-			applicationVersion: VK_MAKE_VERSION(1, 0, 0),
+			applicationVersion: vk_make_version(1, 0, 0),
 			pEngineName: to_c_string("deta:l alpha\0"),
-			engineVersion: VK_MAKE_VERSION(1, 0, 0),
-			apiVersion: VK_MAKE_API_VERSION(0, 1, 2, 0),
+			engineVersion: vk_make_version(1, 0, 0),
+			apiVersion: vk_make_api_version(0, 1, 2, 0),
 			pNext: nullptr()
 		};
 

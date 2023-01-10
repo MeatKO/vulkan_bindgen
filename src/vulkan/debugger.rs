@@ -1,9 +1,3 @@
-#![allow(non_snake_case)]
-#![allow(non_upper_case_globals)]
-#![allow(non_camel_case_types)]
-#![allow(dead_code)]
-#![allow(unused_variables)]
-
 use crate::vulkan::vk_bindgen::*;
 use std::ffi::c_void;
 use std::ffi::CStr;
@@ -11,9 +5,9 @@ use std::ffi::CStr;
 // left in an unfinished state
 pub unsafe extern "C" fn debug_callback(
 	message_severity: VkDebugUtilsMessageSeverityFlagBitsEXT,
-	message_type: VkDebugUtilsMessageTypeFlagsEXT,
+	_message_type: VkDebugUtilsMessageTypeFlagsEXT,
 	p_callback_data: *const VkDebugUtilsMessengerCallbackDataEXT,
-	p_user_data: *mut c_void
+	_p_user_data: *mut c_void
 ) -> VkBool32
 {
 	// these colors are for *NIX terminals

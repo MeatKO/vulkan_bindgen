@@ -1,9 +1,3 @@
-#![allow(non_snake_case)]
-#![allow(non_upper_case_globals)]
-#![allow(non_camel_case_types)]
-#![allow(dead_code)]
-#![allow(unused_variables)]
-
 use crate::vulkan::vk_bindgen::*;
 use std::ptr::null_mut as nullptr;
 
@@ -19,7 +13,6 @@ pub unsafe fn get_physical_device_queue_flags(physical_device: VkPhysicalDevice)
 	let mut queue_family_vec = vec![ std::mem::zeroed(); queue_family_count as usize ];
 	vkGetPhysicalDeviceQueueFamilyProperties(physical_device, &mut queue_family_count, queue_family_vec.as_mut_ptr());
 
-	let out_queue_bitset = 0u32;
 	let queue_flags = 
 			queue_family_vec
 			.iter()
