@@ -17,6 +17,7 @@ fn main()
         { 
             println!("cargo:rustc-link-search=native={}/lib", vulkan_sdk_location.to_str().unwrap()); 
             println!("cargo:rustc-link-lib=vulkan");
+            println!("cargo:rustc-link-lib=xcb");
         }
         "windows" => 
         { 

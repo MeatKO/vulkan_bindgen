@@ -1,7 +1,7 @@
 use std::fmt;
 
 use crate::vulkan::vk_bindgen::*;
-use crate::vulkan::strings::*;
+use crate::ffi::strings::*;
 
 impl VkLayerProperties
 {

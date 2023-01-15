@@ -4,12 +4,18 @@ use std::ffi::c_void;
 use std::ptr::null_mut as nullptr;
 
 mod vulkan;
-use vulkan::{vk_bindgen::*, c_macros::*, debugger::*, device::*, extension::*, layers::*, strings::*};
+use vulkan::{vk_bindgen::*, c_macros::*, debugger::*, device::*, extension::*, layers::*};
 
 mod loseit;
+use loseit::window::*;
+
+mod ffi;
+use ffi::strings::*;
 
 fn main() 
 {
+
+	let xcb_window = Window::new().build();
 	unsafe
 	{
 		let enable_validation_layers = true;
@@ -149,6 +155,8 @@ fn main()
 			err => { panic!("vkCreateInstance() failed with code {}.", err); }
 		}
 
+		
+
 		// Debug messenger again...
 		let mut debug_messenger = std::mem::zeroed();
 
@@ -232,5 +240,7 @@ fn main()
 		vkDestroyDevice(vk_device, nullptr());
 		destroy_debug_utils_messenger_ext(&vk_instance, &debug_messenger, nullptr());
 		vkDestroyInstance(vk_instance, nullptr());
+
+		std::thread::sleep(std::time::Duration::from_secs(10))
 	}
 }
