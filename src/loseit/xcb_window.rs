@@ -1,4 +1,7 @@
+use crate::vulkan::surface::choose_surface_format;
 use crate::vulkan::vk_bindgen::*;
+use crate::vulkan::handle::VkHandle;
+use crate::vulkan::extension::check_extension_availability;
 use crate::loseit::xcb_bindgen::*;
 use crate::loseit::xcb_functions::*;
 use crate::loseit::window_traits::*;
@@ -18,7 +21,7 @@ pub struct XcbHandle
 
 impl VulkanWindowHandle for XcbHandle
 {
-	fn new(window_title: Option<String>, width: u32, height: u32) -> Option<Self>
+	fn new(window_title: &Option<String>, width: u32, height: u32, vk_handle: &mut VkHandle) -> Option<Self>
 	{
 		let mut handle = 
 			XcbHandle
@@ -41,7 +44,6 @@ impl VulkanWindowHandle for XcbHandle
 
 			if xcb_connection_has_error(handle.xcb_conn) != 0
 			{
-				// return Err("couldn't establish XCB connection.".to_owned());
 				return None
 			}
 	
@@ -91,7 +93,7 @@ impl VulkanWindowHandle for XcbHandle
 			let title = 
 				match window_title
 				{
-					Some(title) => { title }
+					Some(title) => { title.clone() }
 					None => { DEFAULT_WINDOW_NAME.to_owned() }
 				};
 
@@ -101,13 +103,64 @@ impl VulkanWindowHandle for XcbHandle
 				handle.xcb_window,
 				get_atom(handle.xcb_conn, "_NET_WM_NAME\0"),
 				get_atom(handle.xcb_conn, "UTF8_STRING\0"),
-				8, // sizeof(char), // also holy shit what the fuck we count the bits here ?? xd
+				8, // sizeof(char), // also holy shit what the fuck we count the bits here ?? xd // crraawwwling in my skiiiiiiin
 				title.bytes().len() as u32, 
 				title.as_ptr() as _
 			);
 
 			xcb_map_window(handle.xcb_conn, handle.xcb_window);
 			xcb_flush(handle.xcb_conn);
+		
+
+			let needed_extensions = vec![
+				"VK_KHR_xcb_surface",
+				"VK_KHR_surface"
+			];
+
+			check_extension_availability(&needed_extensions, &vk_handle.available_extensions);
+
+			match get_xcb_presentation_support_function(&vk_handle.instance)
+			{
+				None => { panic!("This platform doesn't offer a 'vkGetPhysicalDeviceXcbPresentationSupportKHR' function.") }
+				Some(function) => 
+				{
+					let result = function(vk_handle.physical_device, 0, handle.xcb_conn, (*iterator.data).root_visual);
+					match result as i32 
+					{
+						VkResult_VK_SUCCESS => {}
+						res => { panic!("Vulkan is not supported on given X window. vkGetPhysicalDeviceXcbPresentationSupportKHR() resulted in {}", res) }
+					}
+				}
+			}
+
+			match create_xcb_surface_function(&vk_handle.instance)
+			{
+				None => { panic!("This platform doesn't offer a 'vkCreateXcbSurfaceKHR' function.") }
+				Some(function) => 
+				{
+					let surface_create_info = VkXcbSurfaceCreateInfoKHR {
+						sType: VkStructureType_VK_STRUCTURE_TYPE_XCB_SURFACE_CREATE_INFO_KHR,
+						connection: handle.xcb_conn,
+						window: handle.xcb_window,
+						flags: 0,
+						pNext: nullptr()
+					};
+
+					let result = function(vk_handle.instance, &surface_create_info, nullptr(), &mut vk_handle.window_surface);
+					match result as i32 
+					{
+						VkResult_VK_SUCCESS => {}
+						res => { panic!("Vulkan is not supported on given X window. vkCreateXcbSurfaceKHR() resulted in {}", res) }
+					}
+				}
+			}
+			
+			vk_handle.window_image_format = 
+				match choose_surface_format(vk_handle)
+				{
+					Some(format) => { format }
+					None => { panic!("Couldn't find suitable image format for given X window.") }
+				}
 		}
 
 		Some(handle)

@@ -2,6 +2,7 @@
 #![allow(unused_variables)]
 
 use crate::vulkan::vk_bindgen::*;
+use crate::vulkan::handle::*;
 use crate::loseit::window_traits::*;
 use crate::loseit::xcb_window::*;
 use crate::loseit::win32_window::*;
@@ -14,7 +15,10 @@ enum WindowHandle
 
 pub struct Window
 {
-	window_handle: Option<WindowHandle>
+	window_handle: Option<WindowHandle>,
+	window_title: Option<String>,
+	width: u32,
+	height: u32
 }
 
 impl Window
@@ -22,14 +26,31 @@ impl Window
 	pub fn new() -> Self
 	{
 		return Window { 
-			window_handle: None 
+			window_handle: None,
+			window_title: None,
+			width: 150,
+			height: 150
 		}
 	}
 
-	pub fn build(&mut self) -> &Self
+	pub fn with_title<T>(&mut self, title: T) -> &mut Self
+	where T: ToString
+	{
+		self.window_title = Some(title.to_string());
+		self
+	}
+
+	pub fn with_dimensions(&mut self, width: u32, height: u32) -> &mut Self
+	{
+		self.width = width;
+		self.height = height;
+		self
+	}
+
+	pub fn build_vulkan(&mut self, vk_handle: &mut VkHandle) -> &Self
 	{
 		let xcb_handle = 
-			match XcbHandle::new(None, 150, 150)
+			match XcbHandle::new(&self.window_title, self.width, self.height, vk_handle)
 			{
 				Some(handle) => { handle },
 				None => { panic!("couldn't initialize xcb") }

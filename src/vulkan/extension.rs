@@ -23,6 +23,7 @@ impl fmt::Display for VkExtensionProperties
     }
 }	
 
+// refactor this to return an option or result, this should not panic here
 pub fn check_extension_availability(needed_extensions: &Vec<&str>, available_extensions: &Vec<VkExtensionProperties>)
 {
 	for needed_extension in needed_extensions
