@@ -125,9 +125,9 @@ impl VulkanWindowHandle for XcbHandle
 				Some(function) => 
 				{
 					let result = function(vk_handle.physical_device, 0, handle.xcb_conn, (*iterator.data).root_visual);
-					match result as i32 
+					match result
 					{
-						VkResult_VK_SUCCESS => {}
+						VK_TRUE => {}
 						res => { panic!("Vulkan is not supported on given X window. vkGetPhysicalDeviceXcbPresentationSupportKHR() resulted in {}", res) }
 					}
 				}

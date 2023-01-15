@@ -245,12 +245,13 @@ fn main()
 			.with_dimensions(150, 150)
 			.build_vulkan(&mut vk_handle);
 		
+		std::thread::sleep(std::time::Duration::from_secs(10));
+
 		// Cleanup
 		println!("Destroying vk objects...");
+		vkDestroySurfaceKHR(vk_instance, vk_handle.window_surface, nullptr());
 		vkDestroyDevice(vk_device, nullptr());
 		destroy_debug_utils_messenger_ext(&vk_instance, &debug_messenger, nullptr());
 		vkDestroyInstance(vk_instance, nullptr());
-
-		std::thread::sleep(std::time::Duration::from_secs(10))
 	}
 }
