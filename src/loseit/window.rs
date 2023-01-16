@@ -1,7 +1,6 @@
 #![allow(dead_code)]
 #![allow(unused_variables)]
 
-use crate::vulkan::vk_bindgen::*;
 use crate::vulkan::handle::*;
 use crate::loseit::window_traits::*;
 use crate::loseit::xcb_window::*;

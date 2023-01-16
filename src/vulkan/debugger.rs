@@ -14,11 +14,11 @@ pub unsafe extern "C" fn debug_callback(
 	// they also work under windows in the vscode terminal
 	match message_severity 
 	{
-		VkDebugUtilsMessageSeverityFlagBitsEXT_VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT => { print!("\n\x1B[36m");} // cyan
-		VkDebugUtilsMessageSeverityFlagBitsEXT_VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT => { print!("\n\x1B[33m"); } // yellow
-		// VkDebugUtilsMessageSeverityFlagBitsEXT_VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT => { print!("\n\x1B[37m"); } // white
-		VkDebugUtilsMessageSeverityFlagBitsEXT_VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT => { return VK_FALSE }
-		VkDebugUtilsMessageSeverityFlagBitsEXT_VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT => { print!("\n\x1B[31m"); } // red
+		VkDebugUtilsMessageSeverityFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT => { print!("\n\x1B[36m");} // cyan
+		VkDebugUtilsMessageSeverityFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT => { print!("\n\x1B[33m"); } // yellow
+		// VkDebugUtilsMessageSeverityFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT => { print!("\n\x1B[37m"); } // white
+		VkDebugUtilsMessageSeverityFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT => { return VK_FALSE }
+		VkDebugUtilsMessageSeverityFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT => { print!("\n\x1B[31m"); } // red
 		_ => {}
 	}
 	
@@ -44,7 +44,7 @@ pub unsafe fn create_debug_utils_messenger_ext(
 		}
 		None => 
 		{
-			return VkResult_VK_ERROR_EXTENSION_NOT_PRESENT;
+			return VkResult::VK_ERROR_EXTENSION_NOT_PRESENT;
 		}
 	}
 }
@@ -62,11 +62,11 @@ pub unsafe fn destroy_debug_utils_messenger_ext(
 		Some(func) => 
 		{
 			func(*instance, *debug_messenger, p_allocator);
-			return VkResult_VK_SUCCESS;
+			return VkResult::VK_SUCCESS;
 		}
 		None => 
 		{
-			return VkResult_VK_ERROR_EXTENSION_NOT_PRESENT;
+			return VkResult::VK_ERROR_EXTENSION_NOT_PRESENT;
 		}
 	}
 }

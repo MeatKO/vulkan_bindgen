@@ -1,5 +1,4 @@
 use crate::vulkan::vk_bindgen::*;
-use crate::ffi::strings::*;
 
 pub struct VkHandle
 {

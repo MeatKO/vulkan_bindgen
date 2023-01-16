@@ -12,8 +12,6 @@ use loseit::window::*;
 mod ffi;
 use ffi::strings::*;
 
-// mod smth;
-
 fn main() 
 {
 	unsafe
@@ -21,7 +19,7 @@ fn main()
 		let enable_validation_layers = true;
 
 		let application_info = VkApplicationInfo{
-			sType: VkStructureType_VK_STRUCTURE_TYPE_APPLICATION_INFO,
+			sType: VkStructureType::VK_STRUCTURE_TYPE_APPLICATION_INFO,
 			pApplicationName: to_c_string("deta:l vulkan\0"),
 			applicationVersion: vk_make_version(1, 0, 0),
 			pEngineName: to_c_string("deta:l alpha\0"),
@@ -114,15 +112,15 @@ fn main()
 
 		// Debug messenger
 		let mut debug_create_info = VkDebugUtilsMessengerCreateInfoEXT{
-			sType: VkStructureType_VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT,
+			sType: VkStructureType::VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT,
 			messageSeverity: 
-				VkDebugUtilsMessageSeverityFlagBitsEXT_VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
-				VkDebugUtilsMessageSeverityFlagBitsEXT_VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
-				VkDebugUtilsMessageSeverityFlagBitsEXT_VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT,
+				VkDebugUtilsMessageSeverityFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT as u32 |
+				VkDebugUtilsMessageSeverityFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT as u32 |
+				VkDebugUtilsMessageSeverityFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT as u32 ,
 			messageType: 
-				VkDebugUtilsMessageTypeFlagBitsEXT_VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
-				VkDebugUtilsMessageTypeFlagBitsEXT_VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
-				VkDebugUtilsMessageTypeFlagBitsEXT_VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT,
+				VkDebugUtilsMessageTypeFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT as u32 |
+				VkDebugUtilsMessageTypeFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT as u32 |
+				VkDebugUtilsMessageTypeFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT as u32 ,
 			pfnUserCallback: Some(debug_callback),
 			pUserData: nullptr(),
 			flags: 0,
@@ -131,7 +129,7 @@ fn main()
 
 		// Instance
 		let mut instance_create_info = VkInstanceCreateInfo{
-			sType: VkStructureType_VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
+			sType: VkStructureType::VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
 			pApplicationInfo: &application_info,
 			enabledExtensionCount: extension_names.len() as u32,
 			ppEnabledExtensionNames: extension_names.as_ptr(),
@@ -151,8 +149,8 @@ fn main()
 		let mut vk_instance = std::mem::zeroed();
 		match vkCreateInstance(&instance_create_info, nullptr(), &mut vk_instance)
 		{
-			VkResult_VK_SUCCESS => { println!("✔️ vkCreateInstance()"); }
-			err => { panic!("vkCreateInstance() failed with code {}.", err); }
+			VkResult::VK_SUCCESS => { println!("✔️ vkCreateInstance()"); }
+			err => { panic!("vkCreateInstance() failed with code {:?}.", err); }
 		}
 
 		// Debug messenger again...
@@ -162,8 +160,8 @@ fn main()
 		{
 			match create_debug_utils_messenger_ext( &vk_instance, &debug_create_info, nullptr(), &mut debug_messenger as _)
 			{
-				VkResult_VK_SUCCESS => { println!("✔️ Debugger creation"); }
-				err => { panic!("Debugger creation failed with code {}.", err); }
+				VkResult::VK_SUCCESS => { println!("✔️ Debugger creation"); }
+				err => { panic!("Debugger creation failed with code {:?}.", err); }
 			}
 		}
 
@@ -185,8 +183,8 @@ fn main()
 		let queue_priorities = 1.0f32;
 
 		let queue_create_info = VkDeviceQueueCreateInfo{
-			sType: VkStructureType_VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
-			queueFamilyIndex: queue_flags & VkQueueFlagBits_VK_QUEUE_GRAPHICS_BIT,
+			sType: VkStructureType::VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+			queueFamilyIndex: queue_flags & VkQueueFlagBits::VK_QUEUE_GRAPHICS_BIT as u32,
 			queueCount: 1,	
 			pQueuePriorities: &queue_priorities,
 			flags: 0,
@@ -197,7 +195,7 @@ fn main()
 		let device_features : VkPhysicalDeviceFeatures = std::mem::zeroed(); // essentially putting everything to VkFalse
 
 		let mut device_create_info = VkDeviceCreateInfo{
-			sType: VkStructureType_VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
+			sType: VkStructureType::VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
 			pQueueCreateInfos: &queue_create_info,
 			queueCreateInfoCount: 1,
 			pEnabledFeatures: &device_features,
@@ -217,8 +215,8 @@ fn main()
 		let mut vk_device = std::mem::zeroed();
 		match vkCreateDevice(physical_device, &device_create_info, nullptr(), &mut vk_device)
 		{
-			VkResult_VK_SUCCESS => { println!("✔️ vkCreateDevice()"); }
-			err => { panic!("✗ vkCreateDevice() failed with code {}.", err); }
+			VkResult::VK_SUCCESS => { println!("✔️ vkCreateDevice()"); }
+			err => { panic!("✗ vkCreateDevice() failed with code {:?}.", err); }
 		}
 
 		// Queue handling
@@ -226,7 +224,7 @@ fn main()
 		let _device_queue_handle = 
 			vkGetDeviceQueue(
 				vk_device, 
-				VkQueueFlagBits_VK_QUEUE_GRAPHICS_BIT, 
+				VkQueueFlagBits::VK_QUEUE_GRAPHICS_BIT as u32, 
 				0, 
 				&mut graphics_queue
 			);
@@ -236,10 +234,10 @@ fn main()
 			physical_device: physical_device,
 			available_extensions: extension_vec,
 			window_surface: nullptr(),
-			window_image_format: 0
+			window_image_format: VkFormat::VK_FORMAT_UNDEFINED
 		};
 		
-		let window = 
+		let _window = 
 			Window::new()
 			.with_title("deta:l")
 			.with_dimensions(150, 150)

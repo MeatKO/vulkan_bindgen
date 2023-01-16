@@ -27,7 +27,7 @@ pub unsafe fn is_device_suitable(physical_device: VkPhysicalDevice) -> bool
 	match get_physical_device_queue_flags(physical_device)
 	{
 		None => { return false }
-		Some(flags) => { return flags & VkQueueFlagBits_VK_QUEUE_GRAPHICS_BIT != 0 }
+		Some(flags) => { return (flags & VkQueueFlagBits::VK_QUEUE_GRAPHICS_BIT as u32) != 0 }
 	}
 }
 
@@ -63,8 +63,8 @@ pub unsafe fn pick_best_device(physical_devices: Vec<*mut VkPhysicalDevice_T>) -
 	.sort_by(
 		|a, b|
 		{
-			if a.1 == VkPhysicalDeviceType_VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU 
-			&& b.1 == VkPhysicalDeviceType_VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU
+			if a.1 == VkPhysicalDeviceType::VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU 
+			&& b.1 == VkPhysicalDeviceType::VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU
 			{
 				return std::cmp::Ordering::Greater;
 			}

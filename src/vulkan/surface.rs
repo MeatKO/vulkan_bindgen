@@ -27,10 +27,10 @@ pub fn choose_surface_format(vk_handle: &VkHandle) -> Option<VkFormat>
 	{
 		match format_vec[i].format
 		{
-			VkFormat_VK_FORMAT_R8G8B8A8_SRGB |
-			VkFormat_VK_FORMAT_B8G8R8A8_SRGB |
-			VkFormat_VK_FORMAT_R8G8B8A8_UNORM |
-			VkFormat_VK_FORMAT_B8G8R8A8_UNORM => 
+			VkFormat::VK_FORMAT_R8G8B8A8_SRGB |
+			VkFormat::VK_FORMAT_B8G8R8A8_SRGB |
+			VkFormat::VK_FORMAT_R8G8B8A8_UNORM |
+			VkFormat::VK_FORMAT_B8G8R8A8_UNORM => 
 			{
 				return Some(format_vec[i].format)
 			}

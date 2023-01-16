@@ -1,10 +1,15 @@
-use crate::vulkan::surface::choose_surface_format;
-use crate::vulkan::vk_bindgen::*;
-use crate::vulkan::handle::VkHandle;
-use crate::vulkan::extension::check_extension_availability;
-use crate::loseit::xcb_bindgen::*;
-use crate::loseit::xcb_functions::*;
-use crate::loseit::window_traits::*;
+use crate::vulkan::{
+	vk_bindgen::*,
+	handle::VkHandle,
+	surface::choose_surface_format,
+	extension::check_extension_availability
+};
+
+use crate::loseit::{
+	xcb_bindgen::*,
+	xcb_functions::*,
+	window_traits::*,
+};
 
 use std::ptr::null_mut as nullptr;
 
@@ -33,9 +38,9 @@ impl VulkanWindowHandle for XcbHandle
 			};
 
 		let window_values: [u32; 1] = [
-			xcb_event_mask_t_XCB_EVENT_MASK_EXPOSURE |
-			xcb_event_mask_t_XCB_EVENT_MASK_STRUCTURE_NOTIFY |
-			xcb_event_mask_t_XCB_EVENT_MASK_KEY_PRESS
+			xcb_event_mask_t::XCB_EVENT_MASK_EXPOSURE as u32 |
+			xcb_event_mask_t::XCB_EVENT_MASK_STRUCTURE_NOTIFY as u32 |
+			xcb_event_mask_t::XCB_EVENT_MASK_KEY_PRESS as u32 
 		];
 		
 		unsafe
@@ -61,9 +66,9 @@ impl VulkanWindowHandle for XcbHandle
 				width as u16,
 				height as u16,
 				0,
-				xcb_window_class_t_XCB_WINDOW_CLASS_INPUT_OUTPUT as u16,
+				xcb_window_class_t::XCB_WINDOW_CLASS_INPUT_OUTPUT as u16,
 				(*iterator.data).root_visual,
-				xcb_cw_t_XCB_CW_EVENT_MASK, 
+				xcb_cw_t::XCB_CW_EVENT_MASK as u32, 
 				window_values.as_ptr() as _
 			);
 
@@ -81,10 +86,10 @@ impl VulkanWindowHandle for XcbHandle
 
 			xcb_change_property(
 				handle.xcb_conn,
-				xcb_prop_mode_t_XCB_PROP_MODE_REPLACE as u8,
+				xcb_prop_mode_t::XCB_PROP_MODE_REPLACE as u8,
 				handle.xcb_window,
 				handle.atom_wm_protocols,
-				xcb_atom_enum_t_XCB_ATOM_ATOM,
+				xcb_atom_enum_t::XCB_ATOM_ATOM as u32,
 				32,
 				1, 
 				(&mut handle.atom_wm_delete_window as *const xcb_atom_t) as _
@@ -99,7 +104,7 @@ impl VulkanWindowHandle for XcbHandle
 
 			xcb_change_property(
 				handle.xcb_conn,
-				xcb_prop_mode_t_XCB_PROP_MODE_REPLACE as u8,
+				xcb_prop_mode_t::XCB_PROP_MODE_REPLACE as u8,
 				handle.xcb_window,
 				get_atom(handle.xcb_conn, "_NET_WM_NAME\0"),
 				get_atom(handle.xcb_conn, "UTF8_STRING\0"),
@@ -139,7 +144,7 @@ impl VulkanWindowHandle for XcbHandle
 				Some(function) => 
 				{
 					let surface_create_info = VkXcbSurfaceCreateInfoKHR {
-						sType: VkStructureType_VK_STRUCTURE_TYPE_XCB_SURFACE_CREATE_INFO_KHR,
+						sType: VkStructureType::VK_STRUCTURE_TYPE_XCB_SURFACE_CREATE_INFO_KHR,
 						connection: handle.xcb_conn,
 						window: handle.xcb_window,
 						flags: 0,
@@ -147,10 +152,10 @@ impl VulkanWindowHandle for XcbHandle
 					};
 
 					let result = function(vk_handle.instance, &surface_create_info, nullptr(), &mut vk_handle.window_surface);
-					match result as i32 
+					match result
 					{
-						VkResult_VK_SUCCESS => {}
-						res => { panic!("Vulkan is not supported on given X window. vkCreateXcbSurfaceKHR() resulted in {}", res) }
+						VkResult::VK_SUCCESS => {}
+						res => { panic!("Vulkan is not supported on given X window. vkCreateXcbSurfaceKHR() resulted in {:?}", res) }
 					}
 				}
 			}
