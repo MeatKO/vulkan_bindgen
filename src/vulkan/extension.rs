@@ -9,10 +9,7 @@ impl VkExtensionProperties
 {
 	pub fn get_extension_name(&self) -> &str
 	{
-		unsafe
-		{
-			from_c_string(&self.extensionName)
-		}
+		from_c_string(&self.extensionName).unwrap()
 	}
 }
 impl fmt::Display for VkExtensionProperties 

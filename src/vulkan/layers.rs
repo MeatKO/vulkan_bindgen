@@ -7,10 +7,7 @@ impl VkLayerProperties
 {
 	pub fn get_layer_name(&self) -> &str
 	{
-		unsafe
-		{
-			from_c_string(&self.layerName)
-		}
+		from_c_string(&self.layerName).unwrap()
 	}
 }
 impl fmt::Display for VkLayerProperties 

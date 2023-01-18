@@ -6,14 +6,22 @@
 
 use std::ffi::CStr;
 
-pub unsafe fn from_c_string(char_array: &[i8]) -> &str
+pub fn from_c_string(char_array: &[i8]) -> Result<&str, std::str::Utf8Error>
 {
-	CStr::from_ptr(char_array.as_ptr()).to_str().unwrap()
+	unsafe
+	{
+		CStr::from_ptr(char_array.as_ptr()).to_str()
+	}
 }
 
-// only takes static string slices because I have trust issues 
-// (I don't know how the C code will later use this memory)
-pub unsafe fn to_c_string(input_str: &'static str) -> *const i8
+// LEAKS !
+// results in a null-terminated essentially 'static output str
+pub fn to_c_string<S: ToString>(input_str: S)-> *const i8
 {
-	input_str.as_ptr() as *const i8
+	let null_terminated_string = String::from(input_str.to_string() + "\0");
+
+	let out_ptr = null_terminated_string.as_ptr() as *const i8;
+	std::mem::forget(null_terminated_string);
+
+	out_ptr
 }

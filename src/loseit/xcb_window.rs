@@ -24,6 +24,14 @@ pub struct XcbHandle
 	atom_wm_delete_window: xcb_atom_t
 }
 
+impl Drop for XcbHandle
+{
+	fn drop(&mut self)
+	{
+		self.destroy()
+	}
+}
+
 impl VulkanWindowHandle for XcbHandle
 {
 	fn new(window_title: &Option<String>, width: u32, height: u32, vk_handle: &mut VkHandle) -> Option<Self>
@@ -169,5 +177,13 @@ impl VulkanWindowHandle for XcbHandle
 		}
 
 		Some(handle)
+	}
+
+	fn destroy(&self)
+	{
+		unsafe
+		{
+			xcb_destroy_window(self.xcb_conn, self.xcb_window);
+		}
 	}
 }

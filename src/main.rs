@@ -31,7 +31,8 @@ fn main()
 		// Extensions
 		let needed_extensions = vec![
 			"VK_EXT_debug_utils",
-			"VK_KHR_surface"
+			"VK_KHR_surface",
+			// "VK_KHR_swapchain" // this doesn't belong here, its a physical device extension...
 		];
 
 		let mut extension_count = 0u32;
@@ -138,7 +139,6 @@ fn main()
 			flags: 0,
 			pNext: nullptr()
 		};
-
 		if enable_validation_layers
 		{
 			instance_create_info.enabledLayerCount = layer_names.len() as u32;
@@ -175,9 +175,36 @@ fn main()
 		let mut physical_device_vec = vec![ std::mem::zeroed(); layer_count as usize ];
 		vkEnumeratePhysicalDevices(vk_instance, &mut physical_device_count, physical_device_vec.as_mut_ptr());
 
-		let physical_device = pick_best_device(physical_device_vec).expect("Failed to find a suitable GPU!");
+		let physical_device = pick_best_device(physical_device_vec).expect("failed to find a suitable GPU!");
 
-		
+		// Creating a window
+		let mut vk_handle = VkHandle {
+			instance: vk_instance,
+			physical_device: physical_device,
+			available_extensions: extension_vec,
+			window_surface: nullptr(),
+			window_image_format: VkFormat::VK_FORMAT_UNDEFINED
+		};
+		println!("surface pointer before window creation {:?}", vk_handle.window_surface);
+		let _window = 
+			Window::new()
+			.with_title("deta:l")
+			.with_dimensions(150, 150)
+			.build_vulkan(&mut vk_handle);
+		println!("surface pointer after window creation {:?} ( should be 0xfab64d0000000002 )", vk_handle.window_surface);
+
+		// Complete fucking bullshit below : 
+		{
+			// 
+
+			let queue_family_indices = get_physical_device_queue_family_indices(&vk_handle);
+			// let present_queue = std::mem::zeroed();
+			// let graphics_queue = std::mem::zeroed();
+
+			// vkGetDeviceQueue(device, queue_family_indices.presentation_family.expect("presentation family was not found"), 0, &presentQueue);
+
+		}
+
 		// Queue creation
 		let queue_flags = get_physical_device_queue_flags(physical_device).expect("no supported queues found!");
 		let queue_priorities = 1.0f32;
@@ -228,22 +255,8 @@ fn main()
 				0, 
 				&mut graphics_queue
 			);
-
-		let mut vk_handle = VkHandle {
-			instance: vk_instance,
-			physical_device: physical_device,
-			available_extensions: extension_vec,
-			window_surface: nullptr(),
-			window_image_format: VkFormat::VK_FORMAT_UNDEFINED
-		};
 		
-		let _window = 
-			Window::new()
-			.with_title("deta:l")
-			.with_dimensions(150, 150)
-			.build_vulkan(&mut vk_handle);
-		
-		std::thread::sleep(std::time::Duration::from_secs(10));
+		std::thread::sleep(std::time::Duration::from_secs(2));
 
 		// Cleanup
 		println!("Destroying vk objects...");

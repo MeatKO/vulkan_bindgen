@@ -16,7 +16,7 @@ pub struct Window
 {
 	window_handle: Option<WindowHandle>,
 	window_title: Option<String>,
-	width: u32,
+	pub width: u32,
 	height: u32
 }
 
@@ -32,21 +32,21 @@ impl Window
 		}
 	}
 
-	pub fn with_title<T>(&mut self, title: T) -> &mut Self
+	pub fn with_title<T>(mut self, title: T) -> Self
 	where T: ToString
 	{
 		self.window_title = Some(title.to_string());
 		self
 	}
 
-	pub fn with_dimensions(&mut self, width: u32, height: u32) -> &mut Self
+	pub fn with_dimensions(mut self, width: u32, height: u32) -> Self
 	{
 		self.width = width;
 		self.height = height;
 		self
 	}
 
-	pub fn build_vulkan(&mut self, vk_handle: &mut VkHandle) -> &Self
+	pub fn build_vulkan(mut self, vk_handle: &mut VkHandle) -> Self
 	{
 		let xcb_handle = 
 			match XcbHandle::new(&self.window_title, self.width, self.height, vk_handle)

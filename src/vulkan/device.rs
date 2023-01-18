@@ -1,6 +1,41 @@
 use crate::vulkan::vk_bindgen::*;
 use std::ptr::null_mut as nullptr;
 
+use super::handle::VkHandle;
+
+#[derive(Default)]
+pub struct QueueFamilyIndices
+{
+	pub presentation_family: Option<u32>,
+	pub graphics_family: Option<u32>
+}
+
+pub unsafe fn get_physical_device_queue_family_indices(vk_handle: &VkHandle) -> QueueFamilyIndices
+{
+	let mut indices_out = QueueFamilyIndices{..Default::default()};
+
+	let mut queue_family_count = 0u32;
+	vkGetPhysicalDeviceQueueFamilyProperties(vk_handle.physical_device, &mut queue_family_count, nullptr());
+	let mut queue_family_vec = vec![ std::mem::zeroed(); queue_family_count as usize ];
+	vkGetPhysicalDeviceQueueFamilyProperties(vk_handle.physical_device, &mut queue_family_count, queue_family_vec.as_mut_ptr());
+
+	for (i, queue_family) in queue_family_vec.iter().enumerate()
+	{
+		let mut present_support = VK_FALSE;
+		vkGetPhysicalDeviceSurfaceSupportKHR(vk_handle.physical_device, i as u32, vk_handle.window_surface, &mut present_support);
+
+		println!("queue [{}] flags : 0b{:08b} count - {} - presentation support : {}", i, queue_family.queueFlags, queue_family.queueCount,present_support)
+
+		// if (present_support > 0) && ((queue_family.queueFlags & VkQueueFlagBits::VK_QUEUE_GRAPHICS_BIT as u32) > 0)
+		// {
+		// 	indices_out.graphics_family = Some(i as u32);
+		// 	indices_out.presentation_family = Some(i as u32);
+		// }
+	}
+
+	indices_out
+}
+
 pub unsafe fn get_physical_device_queue_flags(physical_device: VkPhysicalDevice) -> Option<u32>
 {
 	if physical_device as u32 == 0
