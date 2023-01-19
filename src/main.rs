@@ -4,7 +4,7 @@ use std::ffi::c_void;
 use std::ptr::null_mut as nullptr;
 
 mod vulkan;
-use vulkan::{vk_bindgen::*, c_macros::*, debugger::*, device::*, extension::*, layers::*, handle::VkHandle};
+use vulkan::{vk_bindgen::*, c_macros::*, debugger::*, device::*, extension::*, layers::*, handle::VkHandle, queue::*};
 
 mod loseit;
 use loseit::window::*;
@@ -181,6 +181,7 @@ fn main()
 		let mut vk_handle = VkHandle {
 			instance: vk_instance,
 			physical_device: physical_device,
+			logical_device: nullptr(),
 			available_extensions: extension_vec,
 			window_surface: nullptr(),
 			window_image_format: VkFormat::VK_FORMAT_UNDEFINED
@@ -193,25 +194,19 @@ fn main()
 			.build_vulkan(&mut vk_handle);
 		println!("surface pointer after window creation {:?} ( should be 0xfab64d0000000002 )", vk_handle.window_surface);
 
-		// Complete fucking bullshit below : 
-		{
-			// 
-
-			let queue_family_indices = get_physical_device_queue_family_indices(&vk_handle);
-			// let present_queue = std::mem::zeroed();
-			// let graphics_queue = std::mem::zeroed();
-
-			// vkGetDeviceQueue(device, queue_family_indices.presentation_family.expect("presentation family was not found"), 0, &presentQueue);
-
-		}
-
 		// Queue creation
-		let queue_flags = get_physical_device_queue_flags(physical_device).expect("no supported queues found!");
+		let queue_handle = 
+			QueueHandle::new()
+			.with_graphics_support()
+			.with_presentation_support()
+			.build(&vk_handle)
+			.expect("No suitable queues found.");
+
 		let queue_priorities = 1.0f32;
 
 		let queue_create_info = VkDeviceQueueCreateInfo{
 			sType: VkStructureType::VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
-			queueFamilyIndex: queue_flags & VkQueueFlagBits::VK_QUEUE_GRAPHICS_BIT as u32,
+			queueFamilyIndex: queue_handle.graphics_queue.as_ref().unwrap().family_index,
 			queueCount: 1,	
 			pQueuePriorities: &queue_priorities,
 			flags: 0,
@@ -239,29 +234,39 @@ fn main()
 			device_create_info.ppEnabledLayerNames = layer_names.as_ptr();
 		}
 
-		let mut vk_device = std::mem::zeroed();
-		match vkCreateDevice(physical_device, &device_create_info, nullptr(), &mut vk_device)
+		vk_handle.logical_device = std::mem::zeroed();
+		match vkCreateDevice(physical_device, &device_create_info, nullptr(), &mut vk_handle.logical_device)
 		{
 			VkResult::VK_SUCCESS => { println!("✔️ vkCreateDevice()"); }
 			err => { panic!("✗ vkCreateDevice() failed with code {:?}.", err); }
 		}
 
-		// Queue handling
-		let mut graphics_queue : VkQueue = nullptr();
-		let _device_queue_handle = 
-			vkGetDeviceQueue(
-				vk_device, 
-				VkQueueFlagBits::VK_QUEUE_GRAPHICS_BIT as u32, 
-				0, 
-				&mut graphics_queue
-			);
+		// Get VkQueue objects after the Logical Device creation
+		// These queues must be created with create infos first!
+		// Check device creation above
+		let mut graphics_queue = std::mem::zeroed();
+		let mut presentation_queue = std::mem::zeroed();
+		vkGetDeviceQueue( 
+			vk_handle.logical_device, 
+			queue_handle.graphics_queue.as_ref().unwrap().family_index, 
+			queue_handle.graphics_queue.as_ref().unwrap().queue_index, 
+			&mut graphics_queue
+		);
+		vkGetDeviceQueue( 
+			vk_handle.logical_device, 
+			queue_handle.presentation_queue.as_ref().unwrap().family_index, 
+			queue_handle.presentation_queue.as_ref().unwrap().queue_index, 
+			&mut presentation_queue
+		);
+
+		
 		
 		std::thread::sleep(std::time::Duration::from_secs(2));
 
 		// Cleanup
 		println!("Destroying vk objects...");
 		vkDestroySurfaceKHR(vk_instance, vk_handle.window_surface, nullptr());
-		vkDestroyDevice(vk_device, nullptr());
+		vkDestroyDevice(vk_handle.logical_device, nullptr());
 		destroy_debug_utils_messenger_ext(&vk_instance, &debug_messenger, nullptr());
 		vkDestroyInstance(vk_instance, nullptr());
 	}

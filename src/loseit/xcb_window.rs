@@ -7,6 +7,7 @@ use crate::vulkan::{
 
 use crate::loseit::{
 	xcb_bindgen::*,
+	xcb_vk_bindgen::*,
 	xcb_functions::*,
 	window_traits::*,
 };

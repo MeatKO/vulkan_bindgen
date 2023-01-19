@@ -6,3 +6,4 @@ pub mod device;
 pub mod debugger;
 pub mod handle;
 pub mod surface;
+pub mod queue;

@@ -12,7 +12,7 @@ pub struct QueueFamilyIndices
 
 pub unsafe fn get_physical_device_queue_family_indices(vk_handle: &VkHandle) -> QueueFamilyIndices
 {
-	let mut indices_out = QueueFamilyIndices{..Default::default()};
+	let indices_out = QueueFamilyIndices{..Default::default()};
 
 	let mut queue_family_count = 0u32;
 	vkGetPhysicalDeviceQueueFamilyProperties(vk_handle.physical_device, &mut queue_family_count, nullptr());
@@ -25,12 +25,6 @@ pub unsafe fn get_physical_device_queue_family_indices(vk_handle: &VkHandle) -> 
 		vkGetPhysicalDeviceSurfaceSupportKHR(vk_handle.physical_device, i as u32, vk_handle.window_surface, &mut present_support);
 
 		println!("queue [{}] flags : 0b{:08b} count - {} - presentation support : {}", i, queue_family.queueFlags, queue_family.queueCount,present_support)
-
-		// if (present_support > 0) && ((queue_family.queueFlags & VkQueueFlagBits::VK_QUEUE_GRAPHICS_BIT as u32) > 0)
-		// {
-		// 	indices_out.graphics_family = Some(i as u32);
-		// 	indices_out.presentation_family = Some(i as u32);
-		// }
 	}
 
 	indices_out

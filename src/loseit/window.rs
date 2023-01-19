@@ -6,6 +6,8 @@ use crate::loseit::window_traits::*;
 use crate::loseit::xcb_window::*;
 use crate::loseit::win32_window::*;
 
+use std::ptr::null_mut as nullptr;
+
 enum WindowHandle
 {
 	Xcb(XcbHandle),
@@ -48,6 +50,15 @@ impl Window
 
 	pub fn build_vulkan(mut self, vk_handle: &mut VkHandle) -> Self
 	{
+		if vk_handle.instance == nullptr()
+		{
+			panic!("Window requires a valid VkInstance pointer. Consider moving the Window creation after Instance creation.")
+		}
+		if vk_handle.physical_device == nullptr()
+		{
+			panic!("Window requires a valid VkPhysicalDevice pointer. Consider moving the Window creation after PhysicalDevice creation.")
+		}
+
 		let xcb_handle = 
 			match XcbHandle::new(&self.window_title, self.width, self.height, vk_handle)
 			{

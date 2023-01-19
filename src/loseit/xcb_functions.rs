@@ -3,6 +3,7 @@
 
 use crate::vulkan::vk_bindgen::*;
 use crate::loseit::xcb_bindgen::*;
+use crate::loseit::xcb_vk_bindgen::*;
 use crate::ffi::strings::*;
 use crate::ffi::cstdlib_bindgen::*;
 
