@@ -20,24 +20,32 @@ impl fmt::Display for VkExtensionProperties
     }
 }	
 
-// refactor this to return an option or result, this should not panic here
-pub fn check_extension_availability(needed_extensions: &Vec<&str>, available_extensions: &Vec<VkExtensionProperties>)
+pub fn get_missing_extensions(required_extensions: &Vec<&str>, available_extensions: &Vec<VkExtensionProperties>) -> Option<Vec<String>>
 {
-	for needed_extension in needed_extensions
-	{
-		let mut found = false;
-		for available_extension in available_extensions
-		{
-			if (*needed_extension).to_owned() == available_extension.get_extension_name()
-			{
-				found = true;
-				break;
-			}
-		}
+	let available_extensions = 
+		available_extensions
+		.iter()
+		.map(|extension_property|  extension_property.get_extension_name())
+		.collect::<Vec<&str>>();
 
-		if found == false
-		{
-			panic!("Extension {} is not available", needed_extension);
-		}
+	let out_vec = 
+		required_extensions
+		.iter()
+		.copied()
+		.filter(
+			|required_extension|
+			!(*available_extensions).contains(required_extension)
+		)
+		.map(
+			|required_extension|
+			required_extension.to_owned()
+		)
+		.collect::<Vec<String>>();
+
+	if out_vec.is_empty()
+	{
+		return None
 	}
+
+	Some(out_vec)
 }

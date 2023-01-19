@@ -32,7 +32,6 @@ fn main()
 		let needed_extensions = vec![
 			"VK_EXT_debug_utils",
 			"VK_KHR_surface",
-			// "VK_KHR_swapchain" // this doesn't belong here, its a physical device extension...
 		];
 
 		let mut extension_count = 0u32;
@@ -55,12 +54,18 @@ fn main()
 			}
 		}
 
-		let extension_names = extension_vec
+		let extension_names = 
+			extension_vec
 			.iter()
 			.map(|extension_property|  extension_property.extensionName.as_ptr())
 			.collect::<Vec<*const i8>>();
 
-		check_extension_availability(&needed_extensions, &extension_vec);
+		match get_missing_extensions(&needed_extensions, &extension_vec)
+		{
+			Some(missing_extensions) => { panic!("Missing required extensions : {:?}", missing_extensions) }
+			_ => {}
+		}
+
 		println!("✔️ Required extensions are available"); 
 
 		// Validation layers
@@ -165,6 +170,24 @@ fn main()
 			}
 		}
 
+		// Creating a window
+		let mut vk_handle = VkHandle {
+			instance: vk_instance,
+			physical_device: nullptr(),
+			logical_device: nullptr(),
+			available_extensions: extension_vec,
+			window_surface: nullptr(),
+			window_image_format: VkFormat::VK_FORMAT_UNDEFINED
+		};
+
+		let _window = 
+			Window::new()
+			.with_title("deta:l")
+			.with_dimensions(150, 150)
+			.build_vulkan(&mut vk_handle);
+
+		println!("Window built successfully.");
+
 		// Picking physical device
 		let mut physical_device_count = 0u32;
 		vkEnumeratePhysicalDevices(vk_instance, &mut physical_device_count, nullptr());
@@ -172,28 +195,32 @@ fn main()
 		{
 			panic!("No vk compatible Physical Devices found!");
 		}
-		let mut physical_device_vec = vec![ std::mem::zeroed(); layer_count as usize ];
+		println!("{} Physical devices were found", physical_device_count);
+		let mut physical_device_vec = vec![ std::mem::zeroed(); physical_device_count as usize ];
 		vkEnumeratePhysicalDevices(vk_instance, &mut physical_device_count, physical_device_vec.as_mut_ptr());
 
-		let physical_device = pick_best_device(physical_device_vec).expect("failed to find a suitable GPU!");
+		let needed_extensions = vec![
+			"VK_KHR_swapchain"
+		];
 
-		// Creating a window
-		let mut vk_handle = VkHandle {
-			instance: vk_instance,
-			physical_device: physical_device,
-			logical_device: nullptr(),
-			available_extensions: extension_vec,
-			window_surface: nullptr(),
-			window_image_format: VkFormat::VK_FORMAT_UNDEFINED
-		};
-		println!("surface pointer before window creation {:?}", vk_handle.window_surface);
-		let _window = 
-			Window::new()
-			.with_title("deta:l")
-			.with_dimensions(150, 150)
-			.build_vulkan(&mut vk_handle);
-		println!("surface pointer after window creation {:?} ( should be 0xfab64d0000000002 )", vk_handle.window_surface);
+		// a stupid hack, fix later !
+		let needed_extensions_c = 
+			needed_extensions
+			.iter()
+			.map(|extension|  
+				to_c_string(extension)
+			)
+			.collect::<Vec<*const i8>>();
 
+		let physical_device = pick_best_device(&vk_handle, physical_device_vec, &needed_extensions).expect("failed to find a suitable GPU!");
+
+		vk_handle.physical_device = physical_device;
+
+		let mut device_properties = std::mem::zeroed();
+		vkGetPhysicalDeviceProperties(physical_device, &mut device_properties);
+
+		println!("picked device {}", from_c_string(&device_properties.deviceName).unwrap());
+			
 		// Queue creation
 		let queue_handle = 
 			QueueHandle::new()
@@ -221,8 +248,8 @@ fn main()
 			pQueueCreateInfos: &queue_create_info,
 			queueCreateInfoCount: 1,
 			pEnabledFeatures: &device_features,
-			enabledExtensionCount: 0,
-			ppEnabledExtensionNames: nullptr(),
+			enabledExtensionCount: needed_extensions_c.len() as u32,
+			ppEnabledExtensionNames: needed_extensions_c.as_ptr(),
 			enabledLayerCount: 0,
 			ppEnabledLayerNames: nullptr(),
 			flags: 0,
@@ -259,8 +286,6 @@ fn main()
 			&mut presentation_queue
 		);
 
-		
-		
 		std::thread::sleep(std::time::Duration::from_secs(2));
 
 		// Cleanup

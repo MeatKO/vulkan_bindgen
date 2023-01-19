@@ -1,33 +1,14 @@
 use crate::vulkan::vk_bindgen::*;
+use crate::vulkan::extension::*;
+use crate::vulkan::swapchain::*;
+use crate::vulkan::handle::*;
 use std::ptr::null_mut as nullptr;
-
-use super::handle::VkHandle;
 
 #[derive(Default)]
 pub struct QueueFamilyIndices
 {
 	pub presentation_family: Option<u32>,
 	pub graphics_family: Option<u32>
-}
-
-pub unsafe fn get_physical_device_queue_family_indices(vk_handle: &VkHandle) -> QueueFamilyIndices
-{
-	let indices_out = QueueFamilyIndices{..Default::default()};
-
-	let mut queue_family_count = 0u32;
-	vkGetPhysicalDeviceQueueFamilyProperties(vk_handle.physical_device, &mut queue_family_count, nullptr());
-	let mut queue_family_vec = vec![ std::mem::zeroed(); queue_family_count as usize ];
-	vkGetPhysicalDeviceQueueFamilyProperties(vk_handle.physical_device, &mut queue_family_count, queue_family_vec.as_mut_ptr());
-
-	for (i, queue_family) in queue_family_vec.iter().enumerate()
-	{
-		let mut present_support = VK_FALSE;
-		vkGetPhysicalDeviceSurfaceSupportKHR(vk_handle.physical_device, i as u32, vk_handle.window_surface, &mut present_support);
-
-		println!("queue [{}] flags : 0b{:08b} count - {} - presentation support : {}", i, queue_family.queueFlags, queue_family.queueCount,present_support)
-	}
-
-	indices_out
 }
 
 pub unsafe fn get_physical_device_queue_flags(physical_device: VkPhysicalDevice) -> Option<u32>
@@ -51,8 +32,21 @@ pub unsafe fn get_physical_device_queue_flags(physical_device: VkPhysicalDevice)
 	queue_flags
 }
 
-pub unsafe fn is_device_suitable(physical_device: VkPhysicalDevice) -> bool
+pub unsafe fn is_device_suitable(vk_handle: &VkHandle, physical_device: VkPhysicalDevice, required_extensions: &Vec<&str>) -> bool
 {
+	let mut extension_count = 0u32;
+	vkEnumerateDeviceExtensionProperties(physical_device, nullptr(), &mut extension_count, nullptr());
+	let mut extension_vec = vec![ std::mem::zeroed(); extension_count as usize ];
+	vkEnumerateDeviceExtensionProperties(physical_device, nullptr(), &mut extension_count, extension_vec.as_mut_ptr());
+
+	match get_missing_extensions(&required_extensions, &extension_vec)
+	{
+		Some(_) => { return false }
+		_ => {}
+	}
+
+	let swapchain_support_details = query_swapchain_support(vk_handle);
+
 	match get_physical_device_queue_flags(physical_device)
 	{
 		None => { return false }
@@ -60,14 +54,16 @@ pub unsafe fn is_device_suitable(physical_device: VkPhysicalDevice) -> bool
 	}
 }
 
-pub unsafe fn pick_best_device(physical_devices: Vec<*mut VkPhysicalDevice_T>) -> Option<VkPhysicalDevice>
+pub unsafe fn pick_best_device(vk_handle: &VkHandle, physical_devices: Vec<*mut VkPhysicalDevice_T>, required_extensions: &Vec<&str>) -> Option<VkPhysicalDevice>
 {
+	println!("physical device count : {}", physical_devices.len());
+
 	let mut suitable_devices_vec = physical_devices
 		.iter()
 		.copied()
 		.filter(
 			|physical_device|
-			is_device_suitable(*physical_device)
+			is_device_suitable(vk_handle, *physical_device, required_extensions)
 		)
 		.map(
 			|physical_device|
@@ -87,7 +83,6 @@ pub unsafe fn pick_best_device(physical_devices: Vec<*mut VkPhysicalDevice_T>) -
 	{
 		return None
 	}
-	
 	suitable_devices_vec
 	.sort_by(
 		|a, b|
