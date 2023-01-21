@@ -1,10 +1,10 @@
 #![allow(non_upper_case_globals)]
 
-use std::ffi::c_void;
+use std::{ffi::c_void, cmp::min};
 use std::ptr::null_mut as nullptr;
 
 mod vulkan;
-use vulkan::{vk_bindgen::*, c_macros::*, debugger::*, device::*, extension::*, layers::*, handle::VkHandle, queue::*};
+use vulkan::{vk_bindgen::*, c_macros::*, debugger::*, device::*, extension::*, layers::*, handle::VkHandle, queue::*, swapchain::*};
 
 mod loseit;
 use loseit::window::*;
@@ -20,9 +20,9 @@ fn main()
 
 		let application_info = VkApplicationInfo{
 			sType: VkStructureType::VK_STRUCTURE_TYPE_APPLICATION_INFO,
-			pApplicationName: to_c_string("deta:l vulkan\0"),
+			pApplicationName: to_c_string("deta:l vulkan"),
 			applicationVersion: vk_make_version(1, 0, 0),
-			pEngineName: to_c_string("deta:l alpha\0"),
+			pEngineName: to_c_string("deta:l alpha"),
 			engineVersion: vk_make_version(1, 0, 0),
 			apiVersion: vk_make_api_version(0, 1, 2, 0),
 			pNext: nullptr()
@@ -83,9 +83,9 @@ fn main()
 		];
 
 		let mut layer_count = 0u32;
-		vkEnumerateInstanceLayerProperties(&mut layer_count as _, nullptr());
+		vkEnumerateInstanceLayerProperties(&mut layer_count, nullptr());
 		let mut layer_vec = vec![ std::mem::zeroed(); layer_count as usize ];
-		vkEnumerateInstanceLayerProperties(&mut layer_count as _, layer_vec.as_mut_ptr());
+		vkEnumerateInstanceLayerProperties(&mut layer_count, layer_vec.as_mut_ptr());
 
 		println!("\nIntance Layers :");
 		println!("\tSupported layer count: {}", layer_count);
@@ -230,7 +230,6 @@ fn main()
 			.expect("No suitable queues found.");
 
 		let queue_priorities = 1.0f32;
-
 		let queue_create_info = VkDeviceQueueCreateInfo{
 			sType: VkStructureType::VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
 			queueFamilyIndex: queue_handle.graphics_queue.as_ref().unwrap().family_index,
@@ -286,10 +285,109 @@ fn main()
 			&mut presentation_queue
 		);
 
+		let swapchain_support_details = query_swapchain_support(vk_handle.physical_device, vk_handle.window_surface);
+		
+		// Swapchain creation
+		let surface_format = choose_swap_surface_format(&swapchain_support_details.formats).expect("Couldn't find suitable window surface format.");
+		let present_mode = choose_swap_present_mode(&swapchain_support_details.present_modes);
+		let extent = choose_swap_extent(&swapchain_support_details.capabilities);
+
+		let image_count =
+			min(
+				swapchain_support_details.capabilities.minImageCount + 1, 
+				swapchain_support_details.capabilities.maxImageCount
+			);
+
+		// queue stuff for the swapchain creation : 
+		let queue_family_indices = 
+		vec![
+			queue_handle.graphics_queue.as_ref().unwrap().family_index, 
+			queue_handle.presentation_queue.as_ref().unwrap().family_index
+		];
+
+		let mut swapchain_create_info = VkSwapchainCreateInfoKHR{
+			sType: VkStructureType::VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
+			surface: vk_handle.window_surface,
+			minImageCount: image_count,
+			imageFormat: surface_format.format,
+			imageColorSpace: surface_format.colorSpace,
+			imageExtent: extent,
+			imageArrayLayers: 1,
+			imageSharingMode: VkSharingMode::VK_SHARING_MODE_EXCLUSIVE,
+			queueFamilyIndexCount: 0,
+			pQueueFamilyIndices: nullptr(),
+			imageUsage: VkImageUsageFlagBits::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT as u32,
+			preTransform: swapchain_support_details.capabilities.currentTransform,
+			compositeAlpha: VkCompositeAlphaFlagBitsKHR::VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
+			presentMode: present_mode,
+			clipped: VK_TRUE,
+			oldSwapchain: nullptr(),
+			flags: 0,
+			pNext: nullptr(),
+		};
+		if graphics_queue != presentation_queue
+		{
+			swapchain_create_info.imageSharingMode = VkSharingMode::VK_SHARING_MODE_CONCURRENT;
+			swapchain_create_info.queueFamilyIndexCount = 2;
+			swapchain_create_info.pQueueFamilyIndices = queue_family_indices.as_ptr();
+		}
+
+		let mut swapchain = std::mem::zeroed();
+		match vkCreateSwapchainKHR(vk_handle.logical_device, &swapchain_create_info, nullptr(), &mut swapchain)
+		{
+			VkResult::VK_SUCCESS => { println!("✔️ vkCreateSwapchainKHR()"); }
+			err => { panic!("✗ vkCreateSwapchainKHR() failed with code {:?}.", err); }
+		}
+
+		// Swapchain images
+		let mut swapchain_images_count = 0u32;
+		vkGetSwapchainImagesKHR(vk_handle.logical_device, swapchain, &mut swapchain_images_count, nullptr());
+		let mut swapchain_images_vec = vec![ std::mem::zeroed(); swapchain_images_count as usize ];
+		vkGetSwapchainImagesKHR(vk_handle.logical_device, swapchain, &mut swapchain_images_count, swapchain_images_vec.as_mut_ptr());
+
+		// Swapchain image views
+		let mut swapchain_image_views_vec: Vec<VkImageView> = vec![nullptr(); swapchain_images_count as usize];
+	
+		for i in 0..swapchain_images_vec.len()
+		{
+			let swapchain_image_view_create_info = VkImageViewCreateInfo{
+				sType: VkStructureType::VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+				image: swapchain_images_vec[i],
+				viewType: VkImageViewType::VK_IMAGE_VIEW_TYPE_2D,
+				format: surface_format.format,
+				components: VkComponentMapping { 
+						r: VkComponentSwizzle::VK_COMPONENT_SWIZZLE_IDENTITY,
+						g: VkComponentSwizzle::VK_COMPONENT_SWIZZLE_IDENTITY,
+						b: VkComponentSwizzle::VK_COMPONENT_SWIZZLE_IDENTITY,
+						a: VkComponentSwizzle::VK_COMPONENT_SWIZZLE_IDENTITY
+					},
+				subresourceRange: VkImageSubresourceRange { 
+						aspectMask: VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT as u32, 
+						baseMipLevel: 0, 
+						levelCount: 1, 
+						baseArrayLayer: 0, 
+						layerCount: 1 
+					},
+				flags: 0,
+				pNext: nullptr(),
+			};
+
+			match vkCreateImageView(vk_handle.logical_device, &swapchain_image_view_create_info, nullptr(), &mut swapchain_image_views_vec[i])
+			{
+				VkResult::VK_SUCCESS => { println!("✔️ vkCreateImageView()"); }
+				err => { panic!("✗ vkCreateImageView() failed with code {:?}.", err); }
+			}
+		}
+
 		std::thread::sleep(std::time::Duration::from_secs(2));
 
 		// Cleanup
 		println!("Destroying vk objects...");
+		for image_view in swapchain_image_views_vec
+		{
+			vkDestroyImageView(vk_handle.logical_device, image_view, nullptr());
+		}
+		vkDestroySwapchainKHR(vk_handle.logical_device, swapchain, nullptr());
 		vkDestroySurfaceKHR(vk_instance, vk_handle.window_surface, nullptr());
 		vkDestroyDevice(vk_handle.logical_device, nullptr());
 		destroy_debug_utils_messenger_ext(&vk_instance, &debug_messenger, nullptr());

@@ -1,7 +1,7 @@
 use crate::vulkan::{
 	vk_bindgen::*,
 	handle::VkHandle,
-	surface::choose_surface_format,
+	// surface::choose_surface_format,
 	extension::get_missing_extensions
 };
 
@@ -14,7 +14,7 @@ use crate::loseit::{
 
 use std::ptr::null_mut as nullptr;
 
-const DEFAULT_WINDOW_NAME: &str = "Vulkan Window";
+const DEFAULT_WINDOW_NAME: &str = "Vulkan Window\0";
 
 #[derive(Clone)]
 pub struct XcbHandle

@@ -39,13 +39,18 @@ pub unsafe fn is_device_suitable(vk_handle: &VkHandle, physical_device: VkPhysic
 	let mut extension_vec = vec![ std::mem::zeroed(); extension_count as usize ];
 	vkEnumerateDeviceExtensionProperties(physical_device, nullptr(), &mut extension_count, extension_vec.as_mut_ptr());
 
-	match get_missing_extensions(&required_extensions, &extension_vec)
+	// optionally we can print the missing extensions here...
+	if get_missing_extensions(&required_extensions, &extension_vec).is_some()
 	{
-		Some(_) => { return false }
-		_ => {}
+		return false 
 	}
 
-	let swapchain_support_details = query_swapchain_support(vk_handle);
+	let swapchain_support_details = query_swapchain_support(physical_device, vk_handle.window_surface);
+
+	if !(swapchain_support_details.formats.len() > 0) || !(swapchain_support_details.present_modes.len() > 0)
+	{
+		return false
+	}
 
 	match get_physical_device_queue_flags(physical_device)
 	{
@@ -56,8 +61,6 @@ pub unsafe fn is_device_suitable(vk_handle: &VkHandle, physical_device: VkPhysic
 
 pub unsafe fn pick_best_device(vk_handle: &VkHandle, physical_devices: Vec<*mut VkPhysicalDevice_T>, required_extensions: &Vec<&str>) -> Option<VkPhysicalDevice>
 {
-	println!("physical device count : {}", physical_devices.len());
-
 	let mut suitable_devices_vec = physical_devices
 		.iter()
 		.copied()

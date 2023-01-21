@@ -4364,7 +4364,7 @@ pub enum VkStencilFaceFlagBits {
 }
 pub type VkStencilFaceFlags = VkFlags;
 #[repr(C)]
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Default)]
 pub struct VkExtent2D {
     pub width: u32,
     pub height: u32,
@@ -10017,6 +10017,14 @@ pub enum VkSurfaceTransformFlagBitsKHR {
     VK_SURFACE_TRANSFORM_INHERIT_BIT_KHR = 256,
     VK_SURFACE_TRANSFORM_FLAG_BITS_MAX_ENUM_KHR = 2147483647,
 }
+impl Default for VkSurfaceTransformFlagBitsKHR 
+{
+	fn default() -> Self 
+	{ 
+		VkSurfaceTransformFlagBitsKHR::VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR 
+	}
+}
+
 #[repr(u32)]
 #[non_exhaustive]
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
@@ -10030,7 +10038,7 @@ pub enum VkCompositeAlphaFlagBitsKHR {
 pub type VkCompositeAlphaFlagsKHR = VkFlags;
 pub type VkSurfaceTransformFlagsKHR = VkFlags;
 #[repr(C)]
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Default)]
 pub struct VkSurfaceCapabilitiesKHR {
     pub minImageCount: u32,
     pub maxImageCount: u32,
