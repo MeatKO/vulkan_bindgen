@@ -8,3 +8,4 @@ pub mod handle;
 pub mod surface;
 pub mod queue;
 pub mod swapchain;
+pub mod shader;
