@@ -7,7 +7,7 @@ mod vulkan;
 use vulkan::{
 	vk_bindgen::*, c_macros::*, debugger::*, device::*, extension::*, 
 	layers::*, handle::VkHandle, queue::*, swapchain::*, shader::*,
-	command_buffer::*,
+	command_buffer::*, draw::*,
 };
 
 mod loseit;
@@ -85,7 +85,9 @@ fn main()
 			"VK_LAYER_VALVE_steam_fossilize_32",
             "VK_LAYER_VALVE_steam_fossilize_64",
             "VK_LAYER_VALVE_steam_overlay_32",
-            "VK_LAYER_VALVE_steam_overlay_64"
+            "VK_LAYER_VALVE_steam_overlay_64",
+            "VK_LAYER_INTEL_nullhw",
+            "VK_LAYER_MESA_overlay",
 		];
 
 		let mut layer_count = 0u32;
@@ -192,13 +194,20 @@ fn main()
 			extent: VkExtent2D { width: 0, height: 0 },
 			swapchain_framebuffers: vec![],
 			render_pass: nullptr(),
-			graphics_pipeline: nullptr()
+			graphics_pipeline: nullptr(),
+			graphics_queue: nullptr(),
+			presentation_queue: nullptr(),
+			command_buffer: nullptr(),
+			image_available_semaphore: nullptr(),
+			rendering_finished_semaphore: nullptr(),
+			in_flight_fence: nullptr(),
+			swapchain: nullptr()
 		};
 
 		let _window = 
 			Window::new()
 			.with_title("deta:l")
-			.with_dimensions(150, 150)
+			.with_dimensions(400, 400)
 			.build_vulkan(&mut vk_handle);
 
 		println!("Window built successfully.");
@@ -214,9 +223,14 @@ fn main()
 		let mut physical_device_vec = vec![ std::mem::zeroed(); physical_device_count as usize ];
 		vkEnumeratePhysicalDevices(vk_instance, &mut physical_device_count, physical_device_vec.as_mut_ptr());
 
-		let needed_extensions = vec![
+		let mut needed_extensions = vec![
 			"VK_KHR_swapchain"
 		];
+
+		if enable_validation_layers
+		{
+			needed_extensions.push("VK_KHR_portability_subset");
+		}
 
 		// a stupid hack, fix later !
 		let needed_extensions_c = 
@@ -227,12 +241,15 @@ fn main()
 			)
 			.collect::<Vec<*const i8>>();
 
-		let physical_device = pick_best_device(&vk_handle, physical_device_vec, &needed_extensions).expect("failed to find a suitable GPU!");
+		for extension in needed_extensions_c.iter().copied()
+		{
+			println!("{}", from_c_string_ptr(extension).unwrap());
+		}
 
-		vk_handle.physical_device = physical_device;
+		vk_handle.physical_device = pick_best_device(&vk_handle, physical_device_vec, &needed_extensions).expect("failed to find a suitable GPU!");
 
 		let mut device_properties = std::mem::zeroed();
-		vkGetPhysicalDeviceProperties(physical_device, &mut device_properties);
+		vkGetPhysicalDeviceProperties(vk_handle.physical_device, &mut device_properties);
 
 		println!("picked device {}", from_c_string(&device_properties.deviceName).unwrap());
 			
@@ -275,8 +292,7 @@ fn main()
 			device_create_info.ppEnabledLayerNames = layer_names.as_ptr();
 		}
 
-		vk_handle.logical_device = std::mem::zeroed();
-		match vkCreateDevice(physical_device, &device_create_info, nullptr(), &mut vk_handle.logical_device)
+		match vkCreateDevice(vk_handle.physical_device, &device_create_info, nullptr(), &mut vk_handle.logical_device)
 		{
 			VkResult::VK_SUCCESS => { println!("✔️ vkCreateDevice()"); }
 			err => { panic!("✗ vkCreateDevice() failed with code {:?}.", err); }
@@ -285,19 +301,19 @@ fn main()
 		// Get VkQueue objects after the Logical Device creation
 		// These queues must be created with create infos first!
 		// Check device creation above
-		let mut graphics_queue = std::mem::zeroed();
-		let mut presentation_queue = std::mem::zeroed();
+		// let mut graphics_queue = std::mem::zeroed();
+		// let mut presentation_queue = std::mem::zeroed();
 		vkGetDeviceQueue( 
 			vk_handle.logical_device, 
 			queue_handle.graphics_queue.as_ref().unwrap().family_index, 
 			queue_handle.graphics_queue.as_ref().unwrap().queue_index, 
-			&mut graphics_queue
+			&mut vk_handle.graphics_queue
 		);
 		vkGetDeviceQueue( 
 			vk_handle.logical_device, 
 			queue_handle.presentation_queue.as_ref().unwrap().family_index, 
 			queue_handle.presentation_queue.as_ref().unwrap().queue_index, 
-			&mut presentation_queue
+			&mut vk_handle.presentation_queue
 		);
 
 		let swapchain_support_details = query_swapchain_support(vk_handle.physical_device, vk_handle.window_surface);
@@ -340,15 +356,14 @@ fn main()
 			flags: 0,
 			pNext: nullptr(),
 		};
-		if graphics_queue != presentation_queue
+		if vk_handle.graphics_queue != vk_handle.presentation_queue
 		{
 			swapchain_create_info.imageSharingMode = VkSharingMode::VK_SHARING_MODE_CONCURRENT;
 			swapchain_create_info.queueFamilyIndexCount = 2;
 			swapchain_create_info.pQueueFamilyIndices = queue_family_indices.as_ptr();
 		}
 
-		let mut swapchain = std::mem::zeroed();
-		match vkCreateSwapchainKHR(vk_handle.logical_device, &swapchain_create_info, nullptr(), &mut swapchain)
+		match vkCreateSwapchainKHR(vk_handle.logical_device, &swapchain_create_info, nullptr(), &mut vk_handle.swapchain)
 		{
 			VkResult::VK_SUCCESS => { println!("✔️ vkCreateSwapchainKHR()"); }
 			err => { panic!("✗ vkCreateSwapchainKHR() failed with code {:?}.", err); }
@@ -356,9 +371,9 @@ fn main()
 
 		// Swapchain images
 		let mut swapchain_images_count = 0u32;
-		vkGetSwapchainImagesKHR(vk_handle.logical_device, swapchain, &mut swapchain_images_count, nullptr());
+		vkGetSwapchainImagesKHR(vk_handle.logical_device, vk_handle.swapchain, &mut swapchain_images_count, nullptr());
 		let mut swapchain_images_vec = vec![ std::mem::zeroed(); swapchain_images_count as usize ];
-		vkGetSwapchainImagesKHR(vk_handle.logical_device, swapchain, &mut swapchain_images_count, swapchain_images_vec.as_mut_ptr());
+		vkGetSwapchainImagesKHR(vk_handle.logical_device, vk_handle.swapchain, &mut swapchain_images_count, swapchain_images_vec.as_mut_ptr());
 
 		// Swapchain image views
 		let mut swapchain_image_views_vec: Vec<VkImageView> = vec![nullptr(); swapchain_images_count as usize];
@@ -593,6 +608,17 @@ fn main()
 			flags: 0
 		};
 
+		// render pass dependencies
+		let subpass_dependency = VkSubpassDependency{
+			srcSubpass: VK_SUBPASS_EXTERNAL as u32,
+			dstSubpass: 0,
+			srcStageMask: VkPipelineStageFlagBits::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT as u32,
+			srcAccessMask: 0,
+			dstStageMask: VkPipelineStageFlagBits::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT as u32,
+			dstAccessMask: 0,
+			dependencyFlags: 0,
+		};
+
 		// the actual Render pass creation
 		let render_pass_create_info = VkRenderPassCreateInfo{
 			sType: VkStructureType::VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
@@ -600,13 +626,12 @@ fn main()
 			pAttachments: &color_attachment_descriptor,
 			subpassCount: 1,
 			pSubpasses: &subpass,
-			dependencyCount: 0,
-			pDependencies: nullptr(),
+			dependencyCount: 1,
+			pDependencies: &subpass_dependency,
 			flags: 0,	
 			pNext: nullptr(),
 		};
 
-		// let mut render_pass = std::mem::zeroed();
 		match vkCreateRenderPass(vk_handle.logical_device, &render_pass_create_info, nullptr(), &mut vk_handle.render_pass)
 		{
 			VkResult::VK_SUCCESS => { println!("✔️ vkCreateRenderPass()"); }
@@ -692,20 +717,56 @@ fn main()
 			pNext: nullptr(),
 		};
 
-		let mut command_buffer = std::mem::zeroed();
-		match vkAllocateCommandBuffers(vk_handle.logical_device, &command_buffer_create_info, &mut command_buffer)
+		match vkAllocateCommandBuffers(vk_handle.logical_device, &command_buffer_create_info, &mut vk_handle.command_buffer)
 		{
 			VkResult::VK_SUCCESS => { println!("✔️ vkAllocateCommandBuffers()"); }
 			err => { panic!("✗ vkAllocateCommandBuffers() failed with code {:?}.", err); }
+		}
+
+		// creating semaphores & fence
+		let semaphore_create_info = VkSemaphoreCreateInfo{
+			sType: VkStructureType::VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+			flags: 0,	
+			pNext: nullptr(),
+		};
+
+		let fence_create_info = VkFenceCreateInfo{
+			sType: VkStructureType::VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+			flags: VkFenceCreateFlagBits::VK_FENCE_CREATE_SIGNALED_BIT as u32,	
+			pNext: nullptr(),
+		};
+
+		match vkCreateSemaphore(vk_handle.logical_device, &semaphore_create_info, nullptr(), &mut vk_handle.image_available_semaphore)
+		{
+			VkResult::VK_SUCCESS => { println!("✔️ vkCreateSemaphore()"); }
+			err => { panic!("✗ vkCreateSemaphore() failed with code {:?}.", err); }
 		}	
+		match vkCreateSemaphore(vk_handle.logical_device, &semaphore_create_info, nullptr(), &mut vk_handle.rendering_finished_semaphore)
+		{
+			VkResult::VK_SUCCESS => { println!("✔️ vkCreateSemaphore()"); }
+			err => { panic!("✗ vkCreateSemaphore() failed with code {:?}.", err); }
+		}
+		match vkCreateFence(vk_handle.logical_device, &fence_create_info, nullptr(), &mut vk_handle.in_flight_fence)
+		{
+			VkResult::VK_SUCCESS => { println!("✔️ vkCreateFence()"); }
+			err => { panic!("✗ vkCreateFence() failed with code {:?}.", err); }
+		}
 
-		// Command buffer recording 
-		record_command_buffer(&vk_handle, command_buffer, 0);
+		loop 
+		{
+			draw_frame(&vk_handle);
+		}
+		
 
-		std::thread::sleep(std::time::Duration::from_secs(2));
+		// std::thread::sleep(std::time::Duration::from_secs(2));
+	
+		vkDeviceWaitIdle(vk_handle.logical_device);
 
 		// Cleanup
 		println!("Destroying vk objects...");
+		vkDestroyFence(vk_handle.logical_device, vk_handle.in_flight_fence, nullptr());
+		vkDestroySemaphore(vk_handle.logical_device, vk_handle.rendering_finished_semaphore, nullptr());
+		vkDestroySemaphore(vk_handle.logical_device, vk_handle.image_available_semaphore, nullptr());
 		vkDestroyCommandPool(vk_handle.logical_device, command_pool, nullptr());
 		for framebuffer in vk_handle.swapchain_framebuffers
 		{
@@ -720,7 +781,7 @@ fn main()
 		{
 			vkDestroyImageView(vk_handle.logical_device, image_view, nullptr());
 		}
-		vkDestroySwapchainKHR(vk_handle.logical_device, swapchain, nullptr());
+		vkDestroySwapchainKHR(vk_handle.logical_device, vk_handle.swapchain, nullptr());
 		vkDestroySurfaceKHR(vk_instance, vk_handle.window_surface, nullptr());
 		vkDestroyDevice(vk_handle.logical_device, nullptr());
 		destroy_debug_utils_messenger_ext(&vk_instance, &debug_messenger, nullptr());

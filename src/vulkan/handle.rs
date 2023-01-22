@@ -13,5 +13,15 @@ pub struct VkHandle
 	pub extent: VkExtent2D,
 	pub swapchain_framebuffers: Vec<VkFramebuffer>,
 	pub render_pass: VkRenderPass,
-	pub graphics_pipeline: VkPipeline
+	pub graphics_pipeline: VkPipeline,
+	pub swapchain: VkSwapchainKHR,
+
+	pub graphics_queue: VkQueue,
+	pub presentation_queue: VkQueue,
+
+	pub command_buffer: VkCommandBuffer,
+
+	pub image_available_semaphore: VkSemaphore,
+	pub rendering_finished_semaphore: VkSemaphore,
+	pub in_flight_fence: VkFence
 }

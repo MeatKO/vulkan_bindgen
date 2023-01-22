@@ -14,6 +14,14 @@ pub fn from_c_string(char_array: &[i8]) -> Result<&str, std::str::Utf8Error>
 	}
 }
 
+pub fn from_c_string_ptr(char_array: *const i8) -> Result<&'static str, std::str::Utf8Error>
+{
+	unsafe
+	{
+		CStr::from_ptr(char_array).to_str()
+	}
+}
+
 // LEAKS !
 // results in a null-terminated essentially 'static output str
 pub fn to_c_string<S: ToString>(input_str: S)-> *const i8

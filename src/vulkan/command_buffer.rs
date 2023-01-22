@@ -2,7 +2,7 @@ use crate::vulkan::vk_bindgen::*;
 use crate::vulkan::handle::*;
 use std::ptr::null_mut as nullptr;
 
-pub fn record_command_buffer(vk_handle: &VkHandle, command_buffer: VkCommandBuffer, image_index: u32)
+pub fn record_command_buffer(vk_handle: &VkHandle, image_index: u32)
 {
 	let command_buffer_begin_info = VkCommandBufferBeginInfo{
 		sType: VkStructureType::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
@@ -13,7 +13,7 @@ pub fn record_command_buffer(vk_handle: &VkHandle, command_buffer: VkCommandBuff
 
 	unsafe 
 	{
-		match vkBeginCommandBuffer(command_buffer, &command_buffer_begin_info)
+		match vkBeginCommandBuffer(vk_handle.command_buffer, &command_buffer_begin_info)
 		{
 			VkResult::VK_SUCCESS => { println!("✔️ vkBeginCommandBuffer()"); }
 			err => { panic!("✗ vkBeginCommandBuffer() failed with code {:?}.", err); }
@@ -42,8 +42,8 @@ pub fn record_command_buffer(vk_handle: &VkHandle, command_buffer: VkCommandBuff
 
 	unsafe
 	{
-		vkCmdBeginRenderPass(command_buffer, &render_pass_begin_info, VkSubpassContents::VK_SUBPASS_CONTENTS_INLINE);
-		vkCmdBindPipeline(command_buffer, VkPipelineBindPoint::VK_PIPELINE_BIND_POINT_GRAPHICS , vk_handle.graphics_pipeline);
+		vkCmdBeginRenderPass(vk_handle.command_buffer, &render_pass_begin_info, VkSubpassContents::VK_SUBPASS_CONTENTS_INLINE);
+		vkCmdBindPipeline(vk_handle.command_buffer, VkPipelineBindPoint::VK_PIPELINE_BIND_POINT_GRAPHICS , vk_handle.graphics_pipeline);
 	}
 
 	let viewport = VkViewport{
@@ -56,7 +56,7 @@ pub fn record_command_buffer(vk_handle: &VkHandle, command_buffer: VkCommandBuff
 	};
 	unsafe
 	{
-		vkCmdSetViewport(command_buffer, 0, 1, &viewport);
+		vkCmdSetViewport(vk_handle.command_buffer, 0, 1, &viewport);
 	}
 
 	let scissor = VkRect2D{
@@ -65,11 +65,18 @@ pub fn record_command_buffer(vk_handle: &VkHandle, command_buffer: VkCommandBuff
 	};
 	unsafe
 	{
-		vkCmdSetScissor(command_buffer, 0, 1, &scissor);
+		vkCmdSetScissor(vk_handle.command_buffer, 0, 1, &scissor);
 	}
 
 	unsafe
 	{
-		vkCmdDraw(command_buffer, 3, 1, 0, 0);
+		vkCmdDraw(vk_handle.command_buffer, 3, 1, 0, 0);
+		vkCmdEndRenderPass(vk_handle.command_buffer);
+
+		match vkEndCommandBuffer(vk_handle.command_buffer)
+		{
+			VkResult::VK_SUCCESS => { println!("✔️ vkEndCommandBuffer()"); }
+			err => { panic!("✗ vkEndCommandBuffer() failed with code {:?}.", err); }
+		}	
 	}
 }

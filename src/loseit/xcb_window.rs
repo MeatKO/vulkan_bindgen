@@ -14,7 +14,7 @@ use crate::loseit::{
 
 use std::ptr::null_mut as nullptr;
 
-const DEFAULT_WINDOW_NAME: &str = "Vulkan Window\0";
+const DEFAULT_WINDOW_NAME: &str = "Vulkan Window";
 
 #[derive(Clone)]
 pub struct XcbHandle
