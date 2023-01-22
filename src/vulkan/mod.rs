@@ -9,3 +9,4 @@ pub mod surface;
 pub mod queue;
 pub mod swapchain;
 pub mod shader;
+pub mod command_buffer;

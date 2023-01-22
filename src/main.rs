@@ -7,6 +7,7 @@ mod vulkan;
 use vulkan::{
 	vk_bindgen::*, c_macros::*, debugger::*, device::*, extension::*, 
 	layers::*, handle::VkHandle, queue::*, swapchain::*, shader::*,
+	command_buffer::*,
 };
 
 mod loseit;
@@ -182,7 +183,16 @@ fn main()
 			logical_device: nullptr(),
 			available_extensions: extension_vec,
 			window_surface: nullptr(),
-			window_image_format: VkFormat::VK_FORMAT_UNDEFINED
+			window_image_format: VkFormat::VK_FORMAT_UNDEFINED,
+			surface_format: VkSurfaceFormatKHR { 
+				format: VkFormat::VK_FORMAT_UNDEFINED, 
+				colorSpace: VkColorSpaceKHR::VK_COLOR_SPACE_SRGB_NONLINEAR_KHR 
+			},
+			present_mode: VkPresentModeKHR::VK_PRESENT_MODE_FIFO_KHR,
+			extent: VkExtent2D { width: 0, height: 0 },
+			swapchain_framebuffers: vec![],
+			render_pass: nullptr(),
+			graphics_pipeline: nullptr()
 		};
 
 		let _window = 
@@ -293,10 +303,10 @@ fn main()
 		let swapchain_support_details = query_swapchain_support(vk_handle.physical_device, vk_handle.window_surface);
 		
 		// Swapchain creation
-		let surface_format = choose_swap_surface_format(&swapchain_support_details.formats).expect("Couldn't find suitable window surface format.");
-		let present_mode = choose_swap_present_mode(&swapchain_support_details.present_modes);
-		let extent = choose_swap_extent(&swapchain_support_details.capabilities);
-		
+		vk_handle.surface_format = choose_swap_surface_format(&swapchain_support_details.formats).expect("Couldn't find suitable window surface format.");
+		vk_handle.present_mode = choose_swap_present_mode(&swapchain_support_details.present_modes);
+		vk_handle.extent = choose_swap_extent(&swapchain_support_details.capabilities);
+
 		let image_count =
 			min(
 				swapchain_support_details.capabilities.minImageCount + 1, 
@@ -305,18 +315,18 @@ fn main()
 
 		// queue stuff for the swapchain creation : 
 		let queue_family_indices = 
-		vec![
-			queue_handle.graphics_queue.as_ref().unwrap().family_index, 
-			queue_handle.presentation_queue.as_ref().unwrap().family_index
-		];
+			vec![
+				queue_handle.graphics_queue.as_ref().unwrap().family_index, 
+				queue_handle.presentation_queue.as_ref().unwrap().family_index
+			];
 
 		let mut swapchain_create_info = VkSwapchainCreateInfoKHR{
 			sType: VkStructureType::VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
 			surface: vk_handle.window_surface,
 			minImageCount: image_count,
-			imageFormat: surface_format.format,
-			imageColorSpace: surface_format.colorSpace,
-			imageExtent: extent,
+			imageFormat: vk_handle.surface_format.format,
+			imageColorSpace: vk_handle.surface_format.colorSpace,
+			imageExtent: vk_handle.extent,
 			imageArrayLayers: 1,
 			imageSharingMode: VkSharingMode::VK_SHARING_MODE_EXCLUSIVE,
 			queueFamilyIndexCount: 0,
@@ -324,7 +334,7 @@ fn main()
 			imageUsage: VkImageUsageFlagBits::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT as u32,
 			preTransform: swapchain_support_details.capabilities.currentTransform,
 			compositeAlpha: VkCompositeAlphaFlagBitsKHR::VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
-			presentMode: present_mode,
+			presentMode: vk_handle.present_mode,
 			clipped: VK_TRUE,
 			oldSwapchain: nullptr(),
 			flags: 0,
@@ -359,7 +369,7 @@ fn main()
 				sType: VkStructureType::VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
 				image: swapchain_images_vec[i],
 				viewType: VkImageViewType::VK_IMAGE_VIEW_TYPE_2D,
-				format: surface_format.format,
+				format: vk_handle.surface_format.format,
 				components: VkComponentMapping { 
 						r: VkComponentSwizzle::VK_COMPONENT_SWIZZLE_IDENTITY,
 						g: VkComponentSwizzle::VK_COMPONENT_SWIZZLE_IDENTITY,
@@ -436,8 +446,8 @@ fn main()
 		let viewport = VkViewport{
 			x: 0.0f32,
 			y: 0.0f32,
-			width: extent.width as f32,
-			height: extent.height as f32,
+			width: vk_handle.extent.width as f32,
+			height: vk_handle.extent.height as f32,
 			minDepth: 0.0f32,
 			maxDepth: 1.0f32,
 		};
@@ -445,7 +455,7 @@ fn main()
 		// Scissor
 		let scissor = VkRect2D{
 			offset: VkOffset2D { x: 0, y: 0 },
-			extent: extent
+			extent: vk_handle.extent
 		};
 
 		// Dynamic states
@@ -551,7 +561,7 @@ fn main()
 
 		//// Render pass creation
 		let color_attachment_descriptor = VkAttachmentDescription{
-			format: surface_format.format,
+			format: vk_handle.surface_format.format,
 			samples: VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT,
 			loadOp: VkAttachmentLoadOp::VK_ATTACHMENT_LOAD_OP_CLEAR,
 			storeOp: VkAttachmentStoreOp::VK_ATTACHMENT_STORE_OP_STORE,
@@ -596,8 +606,8 @@ fn main()
 			pNext: nullptr(),
 		};
 
-		let mut render_pass = std::mem::zeroed();
-		match vkCreateRenderPass(vk_handle.logical_device, &render_pass_create_info, nullptr(), &mut render_pass)
+		// let mut render_pass = std::mem::zeroed();
+		match vkCreateRenderPass(vk_handle.logical_device, &render_pass_create_info, nullptr(), &mut vk_handle.render_pass)
 		{
 			VkResult::VK_SUCCESS => { println!("✔️ vkCreateRenderPass()"); }
 			err => { panic!("✗ vkCreateRenderPass() failed with code {:?}.", err); }
@@ -617,7 +627,7 @@ fn main()
 			pColorBlendState: &color_blend_create_info,
 			pDynamicState: &dynamic_state_create_info,
 			layout: pipeline_layout,
-			renderPass: render_pass,
+			renderPass: vk_handle.render_pass,
 			subpass: 0,
 			basePipelineHandle: nullptr(),
 			basePipelineIndex: -1,
@@ -626,20 +636,84 @@ fn main()
 			pNext: nullptr(),
 		};
 
-		let mut graphics_pipeline = std::mem::zeroed();
-		match vkCreateGraphicsPipelines(vk_handle.logical_device, nullptr(), 1, &pipeline_create_info, nullptr(), &mut graphics_pipeline)
+		match vkCreateGraphicsPipelines(vk_handle.logical_device, nullptr(), 1, &pipeline_create_info, nullptr(), &mut vk_handle.graphics_pipeline)
 		{
 			VkResult::VK_SUCCESS => { println!("✔️ vkCreateGraphicsPipelines()"); }
 			err => { panic!("✗ vkCreateGraphicsPipelines() failed with code {:?}.", err); }
 		}	
 
+		// Framebuffers
+		vk_handle.swapchain_framebuffers = vec![std::mem::zeroed(); swapchain_image_views_vec.len()];
+
+		for i in 0..swapchain_image_views_vec.len()
+		{
+			let attachments = vec![swapchain_image_views_vec[i]];
+
+			let framebuffer_create_info = VkFramebufferCreateInfo{
+				sType: VkStructureType::VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
+				renderPass: vk_handle.render_pass,
+				attachmentCount: 1,
+				pAttachments: attachments.as_ptr(),
+				width: vk_handle.extent.width,
+				height: vk_handle.extent.height,
+				layers: 1,
+				flags: 0,	
+				pNext: nullptr(),
+			};
+
+			match vkCreateFramebuffer(vk_handle.logical_device, &framebuffer_create_info, nullptr(), &mut vk_handle.swapchain_framebuffers[i])
+			{
+				VkResult::VK_SUCCESS => { println!("✔️ vkCreateFramebuffer()"); }
+				err => { panic!("✗ vkCreateFramebuffer() failed with code {:?}.", err); }
+			}	
+		}
+
+		// Command pool creation
+		let command_pool_create_info = VkCommandPoolCreateInfo{
+			sType: VkStructureType::VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
+			queueFamilyIndex: queue_family_indices[0],
+			flags: VkCommandPoolCreateFlagBits::VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT as u32,	
+			pNext: nullptr(),
+		};
+
+		let mut command_pool = std::mem::zeroed();
+		match vkCreateCommandPool(vk_handle.logical_device, &command_pool_create_info, nullptr(), &mut command_pool)
+		{
+			VkResult::VK_SUCCESS => { println!("✔️ vkCreateCommandPool()"); }
+			err => { panic!("✗ vkCreateCommandPool() failed with code {:?}.", err); }
+		}	
+
+		// Command buffer
+		let command_buffer_create_info = VkCommandBufferAllocateInfo{
+			sType: VkStructureType::VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+			commandPool: command_pool,
+			level: VkCommandBufferLevel::VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+			commandBufferCount: 1,
+			pNext: nullptr(),
+		};
+
+		let mut command_buffer = std::mem::zeroed();
+		match vkAllocateCommandBuffers(vk_handle.logical_device, &command_buffer_create_info, &mut command_buffer)
+		{
+			VkResult::VK_SUCCESS => { println!("✔️ vkAllocateCommandBuffers()"); }
+			err => { panic!("✗ vkAllocateCommandBuffers() failed with code {:?}.", err); }
+		}	
+
+		// Command buffer recording 
+		record_command_buffer(&vk_handle, command_buffer, 0);
+
 		std::thread::sleep(std::time::Duration::from_secs(2));
 
 		// Cleanup
 		println!("Destroying vk objects...");
+		vkDestroyCommandPool(vk_handle.logical_device, command_pool, nullptr());
+		for framebuffer in vk_handle.swapchain_framebuffers
+		{
+			vkDestroyFramebuffer(vk_handle.logical_device, framebuffer, nullptr());
+		}
 		vkDestroyPipelineLayout(vk_handle.logical_device, pipeline_layout, nullptr());
-		vkDestroyPipeline(vk_handle.logical_device, graphics_pipeline, nullptr());
-		vkDestroyRenderPass(vk_handle.logical_device, render_pass, nullptr());
+		vkDestroyPipeline(vk_handle.logical_device, vk_handle.graphics_pipeline, nullptr());
+		vkDestroyRenderPass(vk_handle.logical_device, vk_handle.render_pass, nullptr());
 		vkDestroyShaderModule(vk_handle.logical_device, fragment_shader_module, nullptr());
 		vkDestroyShaderModule(vk_handle.logical_device, vertex_shader_module, nullptr());
 		for image_view in swapchain_image_views_vec
