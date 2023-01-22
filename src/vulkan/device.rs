@@ -2,6 +2,8 @@ use crate::vulkan::vk_bindgen::*;
 use crate::vulkan::extension::*;
 use crate::vulkan::swapchain::*;
 use crate::vulkan::handle::*;
+use crate::vulkan::queue::*;
+use crate::ffi::strings::*;
 use std::ptr::null_mut as nullptr;
 
 #[derive(Default)]
@@ -9,6 +11,77 @@ pub struct QueueFamilyIndices
 {
 	pub presentation_family: Option<u32>,
 	pub graphics_family: Option<u32>
+}
+
+pub unsafe fn create_logical_device(vk_handle: &mut VkHandle)
+{
+	// a stupid hack, fix later !
+	let needed_extensions_c = 
+		vk_handle.needed_device_extensions.iter()
+		.map(|extension|  
+			to_c_string(extension)
+		)
+		.collect::<Vec<*const i8>>();
+
+	vk_handle.queue_handle = 
+			QueueHandle::new()
+			.with_graphics_support()
+			.with_presentation_support()
+			.build(&vk_handle)
+			.expect("No suitable queues found.");
+
+	let queue_priorities = 1.0f32;
+	let queue_create_info = VkDeviceQueueCreateInfo{
+		sType: VkStructureType::VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+		queueFamilyIndex: vk_handle.queue_handle.graphics_queue.as_ref().unwrap().family_index,
+		queueCount: 1,	
+		pQueuePriorities: &queue_priorities,
+		flags: 0,
+		pNext: nullptr()
+	};
+
+	// Device creation
+	let device_features : VkPhysicalDeviceFeatures = std::mem::zeroed(); // essentially putting everything to VkFalse
+
+	let mut device_create_info = VkDeviceCreateInfo{
+		sType: VkStructureType::VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
+		pQueueCreateInfos: &queue_create_info,
+		queueCreateInfoCount: 1,
+		pEnabledFeatures: &device_features,
+		enabledExtensionCount: needed_extensions_c.len() as u32,
+		ppEnabledExtensionNames: needed_extensions_c.as_ptr(),
+		enabledLayerCount: 0,
+		ppEnabledLayerNames: nullptr(),
+		flags: 0,
+		pNext: nullptr()
+	};
+	if vk_handle.enable_validation_layers
+	{
+		device_create_info.enabledLayerCount = vk_handle.layer_names.len() as u32;
+		device_create_info.ppEnabledLayerNames = vk_handle.layer_names.as_ptr();
+	}
+
+	match vkCreateDevice(vk_handle.physical_device, &device_create_info, nullptr(), &mut vk_handle.logical_device)
+	{
+		VkResult::VK_SUCCESS => { println!("✔️ vkCreateDevice()"); }
+		err => { panic!("✗ vkCreateDevice() failed with code {:?}.", err); }
+	}
+
+	// Get VkQueue objects after the Logical Device creation
+	// These queues must be created with create infos first!
+	// Check device creation above
+	vkGetDeviceQueue( 
+		vk_handle.logical_device, 
+		vk_handle.queue_handle.graphics_queue.as_ref().unwrap().family_index, 
+		vk_handle.queue_handle.graphics_queue.as_ref().unwrap().queue_index, 
+		&mut vk_handle.graphics_queue
+	);
+	vkGetDeviceQueue( 
+		vk_handle.logical_device, 
+		vk_handle.queue_handle.presentation_queue.as_ref().unwrap().family_index, 
+		vk_handle.queue_handle.presentation_queue.as_ref().unwrap().queue_index, 
+		&mut vk_handle.presentation_queue
+	);
 }
 
 pub unsafe fn get_physical_device_queue_flags(physical_device: VkPhysicalDevice) -> Option<u32>
@@ -59,14 +132,14 @@ pub unsafe fn is_device_suitable(vk_handle: &VkHandle, physical_device: VkPhysic
 	}
 }
 
-pub unsafe fn pick_best_device(vk_handle: &VkHandle, physical_devices: Vec<*mut VkPhysicalDevice_T>, required_extensions: &Vec<&str>) -> Option<VkPhysicalDevice>
+pub unsafe fn pick_best_device(vk_handle: &VkHandle, physical_devices: Vec<*mut VkPhysicalDevice_T>) -> Option<VkPhysicalDevice>
 {
 	let mut suitable_devices_vec = physical_devices
 		.iter()
 		.copied()
 		.filter(
 			|physical_device|
-			is_device_suitable(vk_handle, *physical_device, required_extensions)
+			is_device_suitable(vk_handle, *physical_device, &vk_handle.needed_device_extensions)
 		)
 		.map(
 			|physical_device|

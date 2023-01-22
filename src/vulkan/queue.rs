@@ -8,6 +8,7 @@ pub struct QueueDescriptor
 	pub queue_index: u32
 }
 
+#[derive(Default)]
 pub struct QueueHandle
 {
 	pub presentation_queue: Option<QueueDescriptor>,
