@@ -1,5 +1,6 @@
 use crate::vulkan::vk_bindgen::*;
 use crate::vulkan::handle::VkHandle;
+use crate::vulkan::framebuffer::*;
 use std::ptr::null_mut as nullptr;
 use std::cmp::min;
 
@@ -10,8 +11,32 @@ pub struct SwapchainSupportDetails
 	pub present_modes: Vec<VkPresentModeKHR>
 }
 
+pub unsafe fn recreate_swapchain(vk_handle: &mut VkHandle)
+{
+	vkDeviceWaitIdle(vk_handle.logical_device);
+	cleanup_swapchain(vk_handle);
+	create_swapchain(vk_handle);
+	create_swapchain_image_views(vk_handle);
+	create_framebuffer(vk_handle);
+}
+
+pub unsafe fn cleanup_swapchain(vk_handle: &VkHandle)
+{
+	for framebuffer in vk_handle.swapchain_framebuffers.iter()
+	{
+		vkDestroyFramebuffer(vk_handle.logical_device, *framebuffer, nullptr());
+	}
+	for image_view in vk_handle.swapchain_image_views_vec.iter()
+	{
+		vkDestroyImageView(vk_handle.logical_device, *image_view, nullptr());
+	}
+	vkDestroySwapchainKHR(vk_handle.logical_device, vk_handle.swapchain, nullptr());
+}
+
 pub unsafe fn create_swapchain(vk_handle: &mut VkHandle)
 {
+	vk_handle.swapchain_support_details = query_swapchain_support(vk_handle.physical_device, vk_handle.window_surface);
+	
 	// Swapchain creation
 	vk_handle.surface_format = choose_swap_surface_format(&vk_handle.swapchain_support_details.formats).expect("Couldn't find suitable window surface format.");
 	vk_handle.present_mode = choose_swap_present_mode(&vk_handle.swapchain_support_details.present_modes);

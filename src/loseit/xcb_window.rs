@@ -133,20 +133,6 @@ impl VulkanWindowHandle for XcbHandle
 
 			get_missing_extensions(&needed_extensions, &vk_handle.available_extensions);
 
-			// match get_xcb_presentation_support_function(&vk_handle.instance)
-			// {
-			// 	None => { panic!("This platform doesn't offer a 'vkGetPhysicalDeviceXcbPresentationSupportKHR' function.") }
-			// 	Some(function) => 
-			// 	{
-			// 		let result = function(vk_handle.physical_device, 0, handle.xcb_conn, (*iterator.data).root_visual);
-			// 		match result
-			// 		{
-			// 			VK_TRUE => {}
-			// 			res => { panic!("Vulkan is not supported on given X window. vkGetPhysicalDeviceXcbPresentationSupportKHR() resulted in {}", res) }
-			// 		}
-			// 	}
-			// }
-
 			match create_xcb_surface_function(&vk_handle.instance)
 			{
 				None => { panic!("This platform doesn't offer a 'vkCreateXcbSurfaceKHR' function.") }
@@ -168,13 +154,6 @@ impl VulkanWindowHandle for XcbHandle
 					}
 				}
 			}
-
-			// vk_handle.window_image_format = 
-			// 	match choose_surface_format(vk_handle)
-			// 	{
-			// 		Some(format) => { format }
-			// 		None => { panic!("Couldn't find suitable image format for given X window.") }
-			// 	}
 		}
 
 		Some(handle)

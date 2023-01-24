@@ -54,10 +54,6 @@ impl Window
 		{
 			panic!("Window requires a valid VkInstance pointer. Consider moving the Window creation after Instance creation.")
 		}
-		// if vk_handle.physical_device == nullptr()
-		// {
-		// 	panic!("Window requires a valid VkPhysicalDevice pointer. Consider moving the Window creation after PhysicalDevice creation.")
-		// }
 
 		let xcb_handle = 
 			match XcbHandle::new(&self.window_title, self.width, self.height, vk_handle)

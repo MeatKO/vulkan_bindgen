@@ -1,6 +1,7 @@
 use crate::vulkan::vk_bindgen::*;
 use crate::vulkan::handle::*;
 use crate::vulkan::command_buffer::*;
+use crate::vulkan::swapchain::*;
 use std::ptr::null_mut as nullptr;
 
 pub fn draw_frame(vk_handle: &mut VkHandle)
@@ -9,10 +10,16 @@ pub fn draw_frame(vk_handle: &mut VkHandle)
 	unsafe
 	{
 		vkWaitForFences(vk_handle.logical_device, 1, &vk_handle.in_flight_fence_vec[vk_handle.current_frame], VK_TRUE, u64::MAX);
-		vkResetFences(vk_handle.logical_device, 1, &vk_handle.in_flight_fence_vec[vk_handle.current_frame]);
-
+		
 		let mut image_index = 0u32;
-		vkAcquireNextImageKHR(vk_handle.logical_device, vk_handle.swapchain, u64::MAX, vk_handle.image_available_semaphore_vec[vk_handle.current_frame], nullptr(), &mut image_index);
+		match vkAcquireNextImageKHR(vk_handle.logical_device, vk_handle.swapchain, u64::MAX, vk_handle.image_available_semaphore_vec[vk_handle.current_frame], nullptr(), &mut image_index)
+		{
+			VkResult::VK_SUCCESS => {}
+			VkResult::VK_ERROR_OUT_OF_DATE_KHR => { recreate_swapchain(vk_handle); return; }
+			e => { panic!("vkAcquireNextImageKHR() resulted in {:?}", e) }
+		}
+
+		vkResetFences(vk_handle.logical_device, 1, &vk_handle.in_flight_fence_vec[vk_handle.current_frame]);
 
 		vkResetCommandBuffer(vk_handle.command_buffer_vec[vk_handle.current_frame], 0);
 		record_command_buffer(vk_handle, image_index);
@@ -52,7 +59,12 @@ pub fn draw_frame(vk_handle: &mut VkHandle)
 			pNext: nullptr()
 		};
 
-		vkQueuePresentKHR(vk_handle.presentation_queue, &present_info);
+		match vkQueuePresentKHR(vk_handle.presentation_queue, &present_info)
+		{
+			VkResult::VK_SUCCESS => {}
+			VkResult::VK_ERROR_OUT_OF_DATE_KHR => { recreate_swapchain(vk_handle) }
+			e => { panic!("vkQueuePresentKHR() resulted in {:?}", e) }
+		}
 
 		vk_handle.current_frame = (vk_handle.current_frame + 1) % vk_handle.frames_in_flight;
 	}

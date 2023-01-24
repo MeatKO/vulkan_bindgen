@@ -13,3 +13,5 @@ pub mod draw;
 pub mod framebuffer;
 pub mod command_pool;
 pub mod pipeline;
+pub mod instance;
+pub mod physical_device;
