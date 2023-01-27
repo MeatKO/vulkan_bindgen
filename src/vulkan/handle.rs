@@ -55,6 +55,52 @@ pub struct VkHandle
 
 impl VkHandle
 {
+	pub fn new_empty() -> VkHandle
+	{
+		return  VkHandle {
+			instance: nullptr(),
+			physical_device: nullptr(),
+			logical_device: nullptr(),
+			available_extensions: vec![],
+			window_surface: nullptr(),
+			window_image_format: VkFormat::VK_FORMAT_UNDEFINED,
+			surface_format: VkSurfaceFormatKHR { 
+				format: VkFormat::VK_FORMAT_UNDEFINED, 
+				colorSpace: VkColorSpaceKHR::VK_COLOR_SPACE_SRGB_NONLINEAR_KHR 
+			},
+			present_mode: VkPresentModeKHR::VK_PRESENT_MODE_FIFO_KHR,
+			extent: VkExtent2D { width: 0, height: 0 },
+			swapchain_framebuffers: vec![],
+			render_pass: nullptr(),
+			queue_handle: QueueHandle::default(),
+			graphics_pipeline: nullptr(),
+			pipeline_layout: nullptr(),
+			queue_family_indices: vec![],
+			graphics_queue: nullptr(),
+			presentation_queue: nullptr(),
+			command_pool: nullptr(),
+			command_buffer_vec: vec![],
+			image_available_semaphore_vec: vec![],
+			rendering_finished_semaphore_vec: vec![],
+			in_flight_fence_vec: vec![],
+			swapchain: nullptr(),
+			swapchain_image_views_vec: vec![],
+			swapchain_support_details: SwapchainSupportDetails {
+				capabilities: VkSurfaceCapabilitiesKHR{ ..Default::default() },
+				formats: vec![],
+				present_modes: vec![]
+			},
+			frames_in_flight: 3,
+			current_frame: 0,
+			needed_device_extensions: vec![],
+			layer_names: vec![],
+			enable_validation_layers: true,
+			vertex_shader_module: nullptr(),
+			fragment_shader_module: nullptr(),
+			debug_messenger: nullptr()
+		};
+	}
+
 	pub unsafe fn destroy_vk_resources(&self)
 	{
 		cleanup_swapchain(self);
