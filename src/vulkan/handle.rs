@@ -1,8 +1,11 @@
+use crate::calcium::{vec2::*, vec3::*};
 use crate::vulkan::vk_bindgen::*;
 use crate::vulkan::swapchain::*;
 use crate::vulkan::queue::*;
 use crate::vulkan::debugger::*;
+use crate::vulkan::vertex::*;
 use std::ptr::null_mut as nullptr;
+use std::vec;
 
 pub struct VkHandle
 {
@@ -50,7 +53,11 @@ pub struct VkHandle
 	pub fragment_shader_module: VkShaderModule,
 	pub vertex_shader_module: VkShaderModule,
 
-	pub debug_messenger: VkDebugUtilsMessengerEXT
+	pub debug_messenger: VkDebugUtilsMessengerEXT,
+
+	pub vertices: Vec<Vertex>,
+	pub vertex_buffer: VkBuffer,
+	pub vertex_buffer_memory: VkDeviceMemory
 }
 
 impl VkHandle
@@ -97,12 +104,22 @@ impl VkHandle
 			enable_validation_layers: true,
 			vertex_shader_module: nullptr(),
 			fragment_shader_module: nullptr(),
-			debug_messenger: nullptr()
+			debug_messenger: nullptr(),
+			vertices: vec![
+				Vertex{pos: Vec2{x: 0.0f32, y: -0.5f32}, color: Vec3{x: 1.0f32, y: 0.0f32, z: 0.0f32}},
+				Vertex{pos: Vec2{x: 0.5f32, y: 0.5f32}, color: Vec3{x: 0.0f32, y: 1.0f32, z: 0.0f32}},
+				Vertex{pos: Vec2{x: -0.5f32, y: 0.5f32}, color: Vec3{x: 0.0f32, y: 0.0f32, z: 1.0f32}}
+			],
+			vertex_buffer: nullptr(),
+			vertex_buffer_memory: nullptr(),
 		};
 	}
 
 	pub unsafe fn destroy_vk_resources(&self)
 	{
+
+		vkDestroyBuffer(self.logical_device, self.vertex_buffer, nullptr());
+		vkFreeMemory(self.logical_device, self.vertex_buffer_memory, nullptr());
 		cleanup_swapchain(self);
 
 		for i in 0..self.frames_in_flight

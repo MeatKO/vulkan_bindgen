@@ -1,15 +1,16 @@
+mod ffi;
+mod calcium;
+
+mod loseit;
+use loseit::window::*;
+
 mod vulkan;
 use vulkan::{
 	vk_bindgen::*, device::*,handle::VkHandle, swapchain::*,
 	draw::*, framebuffer::*, command_pool::*, command_buffer::*,
 	pipeline::*, instance::*, physical_device::*, synchronization::*,
+	vertex::*,
 };
-
-mod loseit;
-use loseit::window::*;
-
-mod ffi;
-mod calcium;
 
 fn main() 
 {
@@ -33,6 +34,8 @@ fn main()
 
 		create_swapchain_image_views(&mut vk_handle);
 
+		create_vertex_buffer(&mut vk_handle);
+
 		create_pipeline(&mut vk_handle);
 
 		create_framebuffer(&mut vk_handle);
@@ -44,10 +47,10 @@ fn main()
 		// creating semaphores & fence
 		create_synchronization_structures(&mut vk_handle);
 		
-		// loop 
-		// {
+		loop 
+		{
 			draw_frame(&mut vk_handle);
-		// }
+		}
 		
 		vkDeviceWaitIdle(vk_handle.logical_device);
 

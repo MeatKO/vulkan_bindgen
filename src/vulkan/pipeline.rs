@@ -1,18 +1,22 @@
 use crate::vulkan::vk_bindgen::*;
 use crate::vulkan::handle::*;
 use crate::vulkan::shader::*;
+use crate::vulkan::vertex::*;
 use crate::ffi::strings::*;
 use std::ptr::null_mut as nullptr;
 
 pub unsafe fn create_pipeline(vk_handle: &mut VkHandle)
 {
+	let binding_description = Vertex::get_binding_description();
+	let attribute_descriptions_vec = Vertex::get_attribute_descriptions();
+
 	// Vertex input
 	let vertex_input_create_info = VkPipelineVertexInputStateCreateInfo{
 		sType: VkStructureType::VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
-		vertexBindingDescriptionCount: 0,
-		pVertexBindingDescriptions: nullptr(),
-		vertexAttributeDescriptionCount: 0,
-		pVertexAttributeDescriptions: nullptr(),
+		vertexBindingDescriptionCount: 1,
+		pVertexBindingDescriptions: &binding_description,
+		vertexAttributeDescriptionCount: attribute_descriptions_vec.len() as u32,
+		pVertexAttributeDescriptions: attribute_descriptions_vec.as_ptr(),
 		flags: 0,	
 		pNext: nullptr(),
 	};

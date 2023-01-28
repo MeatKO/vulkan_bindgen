@@ -16,3 +16,5 @@ pub mod pipeline;
 pub mod instance;
 pub mod physical_device;
 pub mod synchronization;
+pub mod vertex;
+pub mod memory;
