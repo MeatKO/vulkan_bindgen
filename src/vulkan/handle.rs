@@ -57,7 +57,11 @@ pub struct VkHandle
 
 	pub vertices: Vec<Vertex>,
 	pub vertex_buffer: VkBuffer,
-	pub vertex_buffer_memory: VkDeviceMemory
+	pub vertex_buffer_memory: VkDeviceMemory,
+
+	pub indices: Vec<u16>,
+	pub index_buffer: VkBuffer,
+	pub index_buffer_memory: VkDeviceMemory,
 }
 
 impl VkHandle
@@ -106,12 +110,18 @@ impl VkHandle
 			fragment_shader_module: nullptr(),
 			debug_messenger: nullptr(),
 			vertices: vec![
-				Vertex{pos: Vec2{x: 0.0f32, y: -0.5f32}, color: Vec3{x: 1.0f32, y: 0.0f32, z: 0.0f32}},
-				Vertex{pos: Vec2{x: 0.5f32, y: 0.5f32}, color: Vec3{x: 0.0f32, y: 1.0f32, z: 0.0f32}},
-				Vertex{pos: Vec2{x: -0.5f32, y: 0.5f32}, color: Vec3{x: 0.0f32, y: 0.0f32, z: 1.0f32}}
+				Vertex{pos: Vec2{x: -0.5f32, y: -0.5f32}, color: Vec3{x: 1.0f32, y: 0.0f32, z: 0.0f32}},
+				Vertex{pos: Vec2{x: 0.5f32, y: -0.5f32}, color: Vec3{x: 0.0f32, y: 1.0f32, z: 0.0f32}},
+				Vertex{pos: Vec2{x: 0.5f32, y: 0.5f32}, color: Vec3{x: 0.0f32, y: 0.0f32, z: 1.0f32}},
+				Vertex{pos: Vec2{x: -0.5f32, y: 0.5f32}, color: Vec3{x: 1.0f32, y: 1.0f32, z: 1.0f32}}
+			],
+			indices: vec![
+				0, 1, 2, 2, 3, 0
 			],
 			vertex_buffer: nullptr(),
 			vertex_buffer_memory: nullptr(),
+			index_buffer: nullptr(),
+			index_buffer_memory: nullptr(),
 		};
 	}
 
@@ -120,6 +130,10 @@ impl VkHandle
 
 		vkDestroyBuffer(self.logical_device, self.vertex_buffer, nullptr());
 		vkFreeMemory(self.logical_device, self.vertex_buffer_memory, nullptr());
+
+		vkDestroyBuffer(self.logical_device, self.index_buffer, nullptr());
+		vkFreeMemory(self.logical_device, self.index_buffer_memory, nullptr());
+
 		cleanup_swapchain(self);
 
 		for i in 0..self.frames_in_flight

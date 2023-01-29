@@ -12,6 +12,8 @@ use vulkan::{
 	vertex::*,
 };
 
+use crate::vulkan::index::create_index_buffer;
+
 fn main() 
 {
 	unsafe
@@ -34,23 +36,25 @@ fn main()
 
 		create_swapchain_image_views(&mut vk_handle);
 
+		create_command_pool(&mut vk_handle);
+
 		create_vertex_buffer(&mut vk_handle);
+
+		create_index_buffer(&mut vk_handle);
 
 		create_pipeline(&mut vk_handle);
 
 		create_framebuffer(&mut vk_handle);
 
-		create_command_pool(&mut vk_handle);
+		create_synchronization_structures(&mut vk_handle);
 
 		create_command_buffer(&mut vk_handle);
-
-		// creating semaphores & fence
-		create_synchronization_structures(&mut vk_handle);
 		
-		loop 
-		{
+		// loop 
+		// {
 			draw_frame(&mut vk_handle);
-		}
+			std::thread::sleep(std::time::Duration::from_millis(50));
+		// }
 		
 		vkDeviceWaitIdle(vk_handle.logical_device);
 

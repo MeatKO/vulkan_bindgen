@@ -1,6 +1,5 @@
 use crate::vulkan::vk_bindgen::*;
 use crate::vulkan::handle::*;
-use std::ptr::null_mut as nullptr;
 
 pub unsafe fn find_memory_type(vk_handle: &VkHandle, type_filter: u32, properties: VkMemoryPropertyFlags) -> u32
 {

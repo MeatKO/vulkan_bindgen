@@ -18,3 +18,5 @@ pub mod physical_device;
 pub mod synchronization;
 pub mod vertex;
 pub mod memory;
+pub mod buffer;
+pub mod index;
