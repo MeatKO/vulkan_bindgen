@@ -2,7 +2,9 @@ mod ffi;
 mod cotangens;
 
 mod loseit;
-use loseit::window::*;
+use loseit::{
+	window::*, window_events::*,
+};
 
 mod vulkan;
 use vulkan::{
@@ -60,28 +62,40 @@ fn main()
 		create_command_buffer(&mut vk_handle);
 		
 		// I will eventually add window event handling <.<
-		loop 
+		'main_loop: loop 
 		{
-			match _window.get_event()
-			{
-				// _ => {}
-				Some(e) => 
+			loop {
+				match _window.get_event()
 				{
-					match e 
+					// _ => {}
+					Some(e) => 
 					{
-						KeyPress => { println!("a key press !") }
-						_ => { println!("useless event") }
+						match e 
+						{
+							WindowEvent::KeyPress(val) => 
+							{ 
+								println!("a key press {:?}!", val);
+
+								match val
+								{
+									KeyValues::ESC => { break 'main_loop; }
+									_ => {}
+								}
+							}
+							_ => { println!("useless event") }
+						}
 					}
-				}
-				None => {}
-			};
+					None => { break }
+				};
+			}
+			
 			draw_frame(&mut vk_handle);
-			std::thread::sleep(std::time::Duration::from_millis(16));
+			std::thread::sleep(std::time::Duration::from_millis(1));
 		}
 		
 		vkDeviceWaitIdle(vk_handle.logical_device);
 
-		std::thread::sleep(std::time::Duration::from_secs(2));
+		// std::thread::sleep(std::time::Duration::from_secs(2));
 
 		// Cleanup
 		println!("Destroying vk objects...");

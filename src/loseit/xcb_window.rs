@@ -51,7 +51,8 @@ impl VulkanWindowHandle for XcbHandle
 		let window_values: [u32; 1] = [
 			xcb_event_mask_t::XCB_EVENT_MASK_EXPOSURE as u32 |
 			xcb_event_mask_t::XCB_EVENT_MASK_STRUCTURE_NOTIFY as u32 |
-			xcb_event_mask_t::XCB_EVENT_MASK_KEY_PRESS as u32 
+			xcb_event_mask_t::XCB_EVENT_MASK_KEY_PRESS as u32 |
+			xcb_event_mask_t::XCB_EVENT_MASK_POINTER_MOTION as u32
 		];
 		
 		unsafe
@@ -163,10 +164,6 @@ impl VulkanWindowHandle for XcbHandle
 
 	fn get_event(&self) -> Option<WindowEvent> 
 	{
-		// None
-
-
-
 		unsafe 
 		{
 			if xcb_connection_has_error(self.xcb_conn) > 0
@@ -174,34 +171,8 @@ impl VulkanWindowHandle for XcbHandle
 				panic!("XCB connection just broke :( sad face");
 			}
 
-			// xcb_flush(self.xcb_conn);
-
-			// return None;
-
-
 			let event = xcb_poll_for_event(self.xcb_conn).as_mut()?;
-			// let event = xcb_wait_for_event(self.xcb_conn).as_mut()?;
-
-			// return None;
-
-			println!("XCB Event ptr : {:?}", event as *mut xcb_generic_event_t);
-			println!("XCB Event : {:?}", event);
-
-			let res = xcb_connection_has_error(self.xcb_conn);
-			println!(">>>>>>>>>>XCB Error : {:?}", res);
-
-			// schedule repaint
-			// let client_message = 
-			// 	xcb_client_message_event_t{
-			// 		response_type: 33,
-			// 		format: 32,
-			// 		window: self.xcb_window,
-			// 		sequence: 0,
-			// 		type_: 62,
-			// 		data: xcb_client_message_data_t{ data8: [0u8; 20usize] }
-			// 	};
-			// xcb_send_event(self.xcb_conn, 0, self.xcb_window, 0, (&client_message as *const xcb_client_message_event_t) as _ );
-			// xcb_flush(self.xcb_conn);
+			let event = event as *mut xcb_generic_event_t;
 
 			// we clear the most significant bit of the 8 bit response_type
 			// for WHATEVER reason...
@@ -209,11 +180,28 @@ impl VulkanWindowHandle for XcbHandle
 			{
 				XCB_KEY_PRESS => 
 				{
-					// this is some major bs
-					let key_code = (*((event as *mut xcb_generic_event_t) as *mut xcb_key_press_event_t)).detail;
-					return Some(WindowEvent::KeyPress(convert_key_code(key_code)))
+					let key_code = *(event as *mut xcb_key_press_event_t);
+					return Some(WindowEvent::KeyPress(convert_key_code(key_code.detail)))
 				}
-				_ => { return None }
+				XCB_CLIENT_MESSAGE =>
+				{
+					let key_code = *(event as *mut xcb_client_message_event_t);
+					println!("XCB_CLIENT_MESSAGE event {:?}", key_code.data.data32[0]);
+					return None;
+				}
+				XCB_MOTION_NOTIFY => 
+				{
+					let key_code = *(event as *mut xcb_motion_notify_event_t);
+					println!("XCB_MOTION_NOTIFY X: {:?} Y: {:?}", key_code.event_x, key_code.event_y);
+					return None;
+				}
+				XCB_CONFIGURE_NOTIFY =>
+				{
+					let key_code = *(event as *mut xcb_configure_notify_event_t);
+					println!("XCB_CONFIGURE_NOTIFY height: {:?} width: {:?}", key_code.height, key_code.width);
+					return None;
+				}
+				any => { println!("unknown event {}", any); return None }
 			}
 		}
 	}

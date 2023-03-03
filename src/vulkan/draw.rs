@@ -44,7 +44,8 @@ pub fn draw_frame(vk_handle: &mut VkHandle)
 
 		match vkQueueSubmit( vk_handle.graphics_queue, 1, &submit_info, vk_handle.in_flight_fence_vec[vk_handle.current_frame])
 		{
-			VkResult::VK_SUCCESS => { println!("✔️ vkQueueSubmit()"); }
+			// VkResult::VK_SUCCESS => { println!("✔️ vkQueueSubmit()"); }
+			VkResult::VK_SUCCESS => { }
 			err => { panic!("✗ vkQueueSubmit() failed with code {:?}.", err); }
 		}
 
@@ -61,13 +62,11 @@ pub fn draw_frame(vk_handle: &mut VkHandle)
 			pNext: nullptr()
 		};
 
-		println!("before vkQueuePresentKHR()");
-
 		match vkQueuePresentKHR(vk_handle.presentation_queue, &present_info)
 		{
-			VkResult::VK_SUCCESS => { println!("✔️ vkQueuePresentKHR()"); }
+			// VkResult::VK_SUCCESS => { println!("✔️ vkQueuePresentKHR()"); }
+			VkResult::VK_SUCCESS => {  }
 			VkResult::VK_ERROR_OUT_OF_DATE_KHR => { println!("vkQueuePresentKHR() out of date - recreating"); recreate_swapchain(vk_handle) }
-			// VkResult::VK_ERROR_OUT_OF_DATE_KHR => {  }
 			e => { panic!("vkQueuePresentKHR() resulted in {:?}", e) }
 		}
 

@@ -1,3 +1,4 @@
+#[derive(Debug)]
 pub enum WindowEvent
 {
 	KeyPress(KeyValues),
@@ -5,6 +6,7 @@ pub enum WindowEvent
 	WindowAction(WindowActions)
 }
 
+#[derive(Debug)]
 pub enum WindowActions
 {
 	EXPOSE,
@@ -15,12 +17,14 @@ pub enum WindowActions
 	RESIZE
 }
 
+#[derive(Debug)]
 pub enum KeyValues
 {
 	ESC,
 	UNKNOWN,
 }
 
+#[derive(Debug)]
 pub enum MouseValues
 {
 	LEFT,

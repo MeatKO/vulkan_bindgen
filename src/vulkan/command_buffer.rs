@@ -34,7 +34,8 @@ pub fn record_command_buffer(vk_handle: &VkHandle, image_index: u32)
 	{
 		match vkBeginCommandBuffer(vk_handle.command_buffer_vec[vk_handle.current_frame], &command_buffer_begin_info)
 		{
-			VkResult::VK_SUCCESS => { println!("✔️ vkBeginCommandBuffer()"); }
+			// VkResult::VK_SUCCESS => { println!("✔️ vkBeginCommandBuffer()"); }
+			VkResult::VK_SUCCESS => {  }
 			err => { panic!("✗ vkBeginCommandBuffer() failed with code {:?}.", err); }
 		}
 	}
@@ -129,7 +130,8 @@ pub fn record_command_buffer(vk_handle: &VkHandle, image_index: u32)
 
 		match vkEndCommandBuffer(vk_handle.command_buffer_vec[vk_handle.current_frame])
 		{
-			VkResult::VK_SUCCESS => { println!("✔️ vkEndCommandBuffer()"); }
+			// VkResult::VK_SUCCESS => { println!("✔️ vkEndCommandBuffer()"); }
+			VkResult::VK_SUCCESS => {  }
 			err => { panic!("✗ vkEndCommandBuffer() failed with code {:?}.", err); }
 		}	
 	}
