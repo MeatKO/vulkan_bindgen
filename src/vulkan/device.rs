@@ -176,5 +176,5 @@ pub unsafe fn pick_best_device(vk_handle: &VkHandle, physical_devices: Vec<*mut 
 		}
 	);
 	
-	return Some(suitable_devices_vec.last().unwrap().0);
+	return Some(suitable_devices_vec.last().expect("couldn't pick a device, the suitable_devices_vec was empty.").0);
 }

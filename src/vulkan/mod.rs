@@ -20,3 +20,6 @@ pub mod vertex;
 pub mod memory;
 pub mod buffer;
 pub mod index;
+pub mod uniform_buffer;
+pub mod descriptor_set;
+pub mod descriptor_pool;

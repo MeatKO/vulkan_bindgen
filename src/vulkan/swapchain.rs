@@ -132,6 +132,8 @@ pub unsafe fn create_swapchain_image_views(vk_handle: &mut VkHandle)
 	}
 }
 
+// this mf-er segfaults
+// at some point format_count becomes 0
 pub unsafe fn query_swapchain_support(physical_device: VkPhysicalDevice, window_surface: VkSurfaceKHR) -> SwapchainSupportDetails
 {
 	let mut details = 
@@ -147,7 +149,6 @@ pub unsafe fn query_swapchain_support(physical_device: VkPhysicalDevice, window_
 	vkGetPhysicalDeviceSurfaceFormatsKHR(physical_device, window_surface, &mut format_count, nullptr());
 	details.formats = vec![ std::mem::zeroed(); format_count as usize ];
 	vkGetPhysicalDeviceSurfaceFormatsKHR(physical_device, window_surface, &mut format_count, details.formats.as_mut_ptr());
-	
 	let mut present_mode_count = 0u32;
 	vkGetPhysicalDeviceSurfacePresentModesKHR(physical_device, window_surface, &mut present_mode_count, nullptr());
 	details.present_modes = vec![ std::mem::zeroed(); format_count as usize ];

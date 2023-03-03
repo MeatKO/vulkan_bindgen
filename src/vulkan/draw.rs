@@ -2,11 +2,11 @@ use crate::vulkan::vk_bindgen::*;
 use crate::vulkan::handle::*;
 use crate::vulkan::command_buffer::*;
 use crate::vulkan::swapchain::*;
+use crate::vulkan::uniform_buffer::*;
 use std::ptr::null_mut as nullptr;
 
 pub fn draw_frame(vk_handle: &mut VkHandle)
 {
-	println!("drawing...");
 	unsafe
 	{
 		vkWaitForFences(vk_handle.logical_device, 1, &vk_handle.in_flight_fence_vec[vk_handle.current_frame], VK_TRUE, u64::MAX);
@@ -18,6 +18,8 @@ pub fn draw_frame(vk_handle: &mut VkHandle)
 			VkResult::VK_ERROR_OUT_OF_DATE_KHR => { recreate_swapchain(vk_handle); return; }
 			e => { panic!("vkAcquireNextImageKHR() resulted in {:?}", e) }
 		}
+
+		update_uniform_buffer(vk_handle);
 
 		vkResetFences(vk_handle.logical_device, 1, &vk_handle.in_flight_fence_vec[vk_handle.current_frame]);
 
@@ -59,10 +61,13 @@ pub fn draw_frame(vk_handle: &mut VkHandle)
 			pNext: nullptr()
 		};
 
+		println!("before vkQueuePresentKHR()");
+
 		match vkQueuePresentKHR(vk_handle.presentation_queue, &present_info)
 		{
-			VkResult::VK_SUCCESS => {}
-			VkResult::VK_ERROR_OUT_OF_DATE_KHR => { recreate_swapchain(vk_handle) }
+			VkResult::VK_SUCCESS => { println!("✔️ vkQueuePresentKHR()"); }
+			VkResult::VK_ERROR_OUT_OF_DATE_KHR => { println!("vkQueuePresentKHR() out of date - recreating"); recreate_swapchain(vk_handle) }
+			// VkResult::VK_ERROR_OUT_OF_DATE_KHR => {  }
 			e => { panic!("vkQueuePresentKHR() resulted in {:?}", e) }
 		}
 

@@ -5,6 +5,7 @@ use crate::vulkan::handle::*;
 use crate::loseit::window_traits::*;
 use crate::loseit::xcb_window::*;
 use crate::loseit::win32_window::*;
+use crate::loseit::window_events::WindowEvent;
 
 use std::ptr::null_mut as nullptr;
 
@@ -16,7 +17,7 @@ enum WindowHandle
 
 pub struct Window
 {
-	window_handle: Option<WindowHandle>,
+	window_handle: Box<Option<WindowHandle>>,
 	window_title: Option<String>,
 	pub width: u32,
 	height: u32
@@ -27,7 +28,7 @@ impl Window
 	pub fn new() -> Self
 	{
 		return Window { 
-			window_handle: None,
+			window_handle: Box::new(None),
 			window_title: None,
 			width: 150,
 			height: 150
@@ -62,8 +63,21 @@ impl Window
 				None => { panic!("couldn't initialize xcb") }
 			};
 
-		self.window_handle = Some(WindowHandle::Xcb(xcb_handle));
+		self.window_handle = Box::new(Some(WindowHandle::Xcb(xcb_handle)));
 
 		self
+	}
+
+	pub fn get_event(&self) -> Option<WindowEvent> 
+	{
+		// I need to get better at Rust, this clone doesn't make much sense tbh
+		// I shouldn't have to clone everything
+		let handle = &self.window_handle;
+		
+		match handle.as_ref()
+		{
+			Some(WindowHandle::Xcb(handle)) => { handle.get_event() }
+			_ => { None }
+		}
 	}
 }

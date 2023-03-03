@@ -2,8 +2,6 @@ use crate::vulkan::vk_bindgen::*;
 use crate::vulkan::handle::*;
 use crate::vulkan::buffer::*;
 
-use crate::ffi::offsetof::offset_of;
-
 use std::ffi::c_void;
 use std::mem::size_of;
 use std::ptr::null_mut as nullptr;
@@ -27,7 +25,7 @@ pub unsafe fn create_index_buffer(vk_handle: &mut VkHandle)
 
 	let mut data: *mut c_void = nullptr();
 	vkMapMemory(vk_handle.logical_device, staging_buffer_memory, 0, buffer_size as u64, 0, &mut data);
-	std::ptr::copy_nonoverlapping(vk_handle.indices.as_ptr(), data as _, buffer_size as usize);
+	std::ptr::copy_nonoverlapping(vk_handle.indices.as_ptr(), data as _, vk_handle.indices.len());
 	vkUnmapMemory(vk_handle.logical_device, staging_buffer_memory);
 
 	let (buffer, buffer_memory) = 

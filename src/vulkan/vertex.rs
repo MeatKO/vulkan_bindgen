@@ -1,7 +1,7 @@
 use crate::vulkan::vk_bindgen::*;
 use crate::vulkan::handle::*;
 use crate::vulkan::buffer::*;
-use crate::calcium::{vec2::*, vec3::*};
+use crate::cotangens::{vec2::*, vec3::*};
 
 use crate::ffi::offsetof::offset_of;
 
@@ -66,7 +66,9 @@ pub unsafe fn create_vertex_buffer(vk_handle: &mut VkHandle)
 
 	let mut data: *mut c_void = nullptr();
 	vkMapMemory(vk_handle.logical_device, staging_buffer_memory, 0, buffer_size as u64, 0, &mut data);
-	std::ptr::copy_nonoverlapping(vk_handle.vertices.as_ptr(), data as _, buffer_size as usize);
+	
+	std::ptr::copy_nonoverlapping(vk_handle.vertices.as_ptr(), data as _, vk_handle.vertices.len());
+	
 	vkUnmapMemory(vk_handle.logical_device, staging_buffer_memory);
 
 	let (buffer, buffer_memory) = 

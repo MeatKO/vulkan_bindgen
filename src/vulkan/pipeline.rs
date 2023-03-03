@@ -78,8 +78,10 @@ pub unsafe fn create_pipeline(vk_handle: &mut VkHandle)
 		rasterizerDiscardEnable: VK_FALSE,
 		polygonMode: VkPolygonMode::VK_POLYGON_MODE_FILL,
 		lineWidth: 1.0f32,
-		cullMode: VkCullModeFlagBits::VK_CULL_MODE_BACK_BIT as u32,
+		// cullMode: VkCullModeFlagBits::VK_CULL_MODE_BACK_BIT as u32,
+		cullMode: VkCullModeFlagBits::VK_CULL_MODE_NONE as u32,
 		frontFace: VkFrontFace::VK_FRONT_FACE_CLOCKWISE,
+		// frontFace: VkFrontFace::VK_FRONT_FACE_COUNTER_CLOCKWISE,
 		depthBiasEnable: VK_FALSE,
 		depthBiasConstantFactor: 0.0f32,
 		depthBiasClamp: 0.0f32,
@@ -132,8 +134,8 @@ pub unsafe fn create_pipeline(vk_handle: &mut VkHandle)
 	// Pipeline
 	let pipeline_layout_create_info = VkPipelineLayoutCreateInfo{
 		sType: VkStructureType::VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-		setLayoutCount: 0,
-		pSetLayouts: nullptr(),
+		setLayoutCount: 1,
+		pSetLayouts: &vk_handle.descriptor_set_layout,
 		pushConstantRangeCount: 0,
 		pPushConstantRanges: nullptr(),
 		flags: 0,	
@@ -211,8 +213,10 @@ pub unsafe fn create_pipeline(vk_handle: &mut VkHandle)
 	}		
 
 	// Shader creation
-	let vertex_shader_source = include_bytes!("../../shaders/basic_triangle/vert.spv");
-	let fragment_shader_source = include_bytes!("../../shaders/basic_triangle/frag.spv");
+	// let vertex_shader_source = include_bytes!("../../shaders/basic_triangle/vert.spv");
+	// let fragment_shader_source = include_bytes!("../../shaders/basic_triangle/frag.spv");
+	let vertex_shader_source = include_bytes!("../../shaders/uniform_buffer/vert.spv");
+	let fragment_shader_source = include_bytes!("../../shaders/uniform_buffer/frag.spv");
 
 	vk_handle.vertex_shader_module = create_shader_module(&vk_handle, vertex_shader_source);
 	vk_handle.fragment_shader_module = create_shader_module(&vk_handle, fragment_shader_source);

@@ -1,5 +1,5 @@
 mod ffi;
-mod calcium;
+mod cotangens;
 
 mod loseit;
 use loseit::window::*;
@@ -9,7 +9,8 @@ use vulkan::{
 	vk_bindgen::*, device::*,handle::VkHandle, swapchain::*,
 	draw::*, framebuffer::*, command_pool::*, command_buffer::*,
 	pipeline::*, instance::*, physical_device::*, synchronization::*,
-	vertex::*,
+	vertex::*, uniform_buffer::*, descriptor_set::*, descriptor_pool::*,
+	descriptor_set::*,
 };
 
 use crate::vulkan::index::create_index_buffer;
@@ -42,6 +43,14 @@ fn main()
 
 		create_index_buffer(&mut vk_handle);
 
+		create_uniform_buffers(&mut vk_handle);
+
+		create_descriptor_set_layout(&mut vk_handle);
+
+		create_descriptor_pool(&mut vk_handle);
+
+		create_descriptor_sets(&mut vk_handle);
+
 		create_pipeline(&mut vk_handle);
 
 		create_framebuffer(&mut vk_handle);
@@ -50,11 +59,25 @@ fn main()
 
 		create_command_buffer(&mut vk_handle);
 		
-		// loop 
-		// {
+		// I will eventually add window event handling <.<
+		loop 
+		{
+			match _window.get_event()
+			{
+				// _ => {}
+				Some(e) => 
+				{
+					match e 
+					{
+						KeyPress => { println!("a key press !") }
+						_ => { println!("useless event") }
+					}
+				}
+				None => {}
+			};
 			draw_frame(&mut vk_handle);
-			std::thread::sleep(std::time::Duration::from_millis(50));
-		// }
+			std::thread::sleep(std::time::Duration::from_millis(16));
+		}
 		
 		vkDeviceWaitIdle(vk_handle.logical_device);
 

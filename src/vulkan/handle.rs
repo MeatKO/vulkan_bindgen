@@ -1,9 +1,11 @@
-use crate::calcium::{vec2::*, vec3::*};
+use crate::cotangens::{vec2::*, vec3::*};
 use crate::vulkan::vk_bindgen::*;
 use crate::vulkan::swapchain::*;
 use crate::vulkan::queue::*;
 use crate::vulkan::debugger::*;
 use crate::vulkan::vertex::*;
+use crate::vulkan::uniform_buffer::*;
+
 use std::ptr::null_mut as nullptr;
 use std::vec;
 
@@ -21,6 +23,7 @@ pub struct VkHandle
 	pub swapchain_framebuffers: Vec<VkFramebuffer>,
 	pub render_pass: VkRenderPass,
 	pub graphics_pipeline: VkPipeline,
+	pub descriptor_set_layout: VkDescriptorSetLayout,
 	pub pipeline_layout: VkPipelineLayout,
 
 	pub queue_handle: QueueHandle,
@@ -62,6 +65,14 @@ pub struct VkHandle
 	pub indices: Vec<u16>,
 	pub index_buffer: VkBuffer,
 	pub index_buffer_memory: VkDeviceMemory,
+
+	pub uniform_buffers: Vec<VkBuffer>,
+	pub uniform_buffers_memory: Vec<VkDeviceMemory>,
+	pub uniform_buffers_mapped: Vec<*mut UniformBufferObject>,
+
+	pub descriptor_pool: VkDescriptorPool,
+	pub descriptor_sets: Vec<VkDescriptorSet>,
+	pub start_time: std::time::SystemTime,
 }
 
 impl VkHandle
@@ -85,6 +96,7 @@ impl VkHandle
 			render_pass: nullptr(),
 			queue_handle: QueueHandle::default(),
 			graphics_pipeline: nullptr(),
+			descriptor_set_layout: nullptr(),
 			pipeline_layout: nullptr(),
 			queue_family_indices: vec![],
 			graphics_queue: nullptr(),
@@ -106,6 +118,7 @@ impl VkHandle
 			needed_device_extensions: vec![],
 			layer_names: vec![],
 			enable_validation_layers: true,
+			// enable_validation_layers: false,
 			vertex_shader_module: nullptr(),
 			fragment_shader_module: nullptr(),
 			debug_messenger: nullptr(),
@@ -122,6 +135,14 @@ impl VkHandle
 			vertex_buffer_memory: nullptr(),
 			index_buffer: nullptr(),
 			index_buffer_memory: nullptr(),
+
+			uniform_buffers: vec![],
+			uniform_buffers_memory: vec![],
+			uniform_buffers_mapped: vec![],
+			descriptor_pool: nullptr(),
+			descriptor_sets: vec![],
+			
+			start_time: std::time::SystemTime::now(),
 		};
 	}
 
@@ -135,6 +156,15 @@ impl VkHandle
 		vkFreeMemory(self.logical_device, self.index_buffer_memory, nullptr());
 
 		cleanup_swapchain(self);
+
+		for i in 0..self.frames_in_flight
+		{
+			vkDestroyBuffer(self.logical_device, self.uniform_buffers[i], nullptr());
+			vkFreeMemory(self.logical_device, self.uniform_buffers_memory[i], nullptr());
+		}
+
+		vkDestroyDescriptorPool(self.logical_device, self.descriptor_pool, nullptr());
+		vkDestroyDescriptorSetLayout(self.logical_device, self.descriptor_set_layout, nullptr());
 
 		for i in 0..self.frames_in_flight
 		{

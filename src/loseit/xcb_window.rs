@@ -9,7 +9,9 @@ use crate::loseit::{
 	xcb_bindgen::*,
 	xcb_vk_bindgen::*,
 	xcb_functions::*,
+	xcb_events::*,
 	window_traits::*,
+	window_events::WindowEvent,
 };
 
 use std::ptr::null_mut as nullptr;
@@ -159,10 +161,68 @@ impl VulkanWindowHandle for XcbHandle
 		Some(handle)
 	}
 
+	fn get_event(&self) -> Option<WindowEvent> 
+	{
+		// None
+
+
+
+		unsafe 
+		{
+			if xcb_connection_has_error(self.xcb_conn) > 0
+			{
+				panic!("XCB connection just broke :( sad face");
+			}
+
+			// xcb_flush(self.xcb_conn);
+
+			// return None;
+
+
+			let event = xcb_poll_for_event(self.xcb_conn).as_mut()?;
+			// let event = xcb_wait_for_event(self.xcb_conn).as_mut()?;
+
+			// return None;
+
+			println!("XCB Event ptr : {:?}", event as *mut xcb_generic_event_t);
+			println!("XCB Event : {:?}", event);
+
+			let res = xcb_connection_has_error(self.xcb_conn);
+			println!(">>>>>>>>>>XCB Error : {:?}", res);
+
+			// schedule repaint
+			// let client_message = 
+			// 	xcb_client_message_event_t{
+			// 		response_type: 33,
+			// 		format: 32,
+			// 		window: self.xcb_window,
+			// 		sequence: 0,
+			// 		type_: 62,
+			// 		data: xcb_client_message_data_t{ data8: [0u8; 20usize] }
+			// 	};
+			// xcb_send_event(self.xcb_conn, 0, self.xcb_window, 0, (&client_message as *const xcb_client_message_event_t) as _ );
+			// xcb_flush(self.xcb_conn);
+
+			// we clear the most significant bit of the 8 bit response_type
+			// for WHATEVER reason...
+			match ((*event).response_type & 0x7F) as u32
+			{
+				XCB_KEY_PRESS => 
+				{
+					// this is some major bs
+					let key_code = (*((event as *mut xcb_generic_event_t) as *mut xcb_key_press_event_t)).detail;
+					return Some(WindowEvent::KeyPress(convert_key_code(key_code)))
+				}
+				_ => { return None }
+			}
+		}
+	}
+
 	fn destroy(&self)
 	{
 		unsafe
 		{
+			println!("destroying XCB window.");
 			xcb_destroy_window(self.xcb_conn, self.xcb_window);
 		}
 	}

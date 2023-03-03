@@ -104,7 +104,26 @@ pub fn record_command_buffer(vk_handle: &VkHandle, image_index: u32)
 			VkIndexType::VK_INDEX_TYPE_UINT16,
 		);
 
-		vkCmdDrawIndexed(vk_handle.command_buffer_vec[vk_handle.current_frame], vk_handle.indices.len() as u32, 1, 0, 0, 0);
+		vkCmdBindDescriptorSets(
+			vk_handle.command_buffer_vec[vk_handle.current_frame], 
+			VkPipelineBindPoint::VK_PIPELINE_BIND_POINT_GRAPHICS, 
+			vk_handle.pipeline_layout, 
+			0, 
+			1, 
+			&vk_handle.descriptor_sets[vk_handle.current_frame],
+			0, 
+			nullptr()
+		);
+
+		vkCmdDrawIndexed(
+			vk_handle.command_buffer_vec[vk_handle.current_frame], 
+			vk_handle.indices.len() as u32, 
+			1, 
+			0, 
+			0, 
+			0
+		);
+		
 		// vkCmdDraw(vk_handle.command_buffer_vec[vk_handle.current_frame], vk_handle.vertices.len() as u32, 1, 0, 0);
 		vkCmdEndRenderPass(vk_handle.command_buffer_vec[vk_handle.current_frame]);
 
