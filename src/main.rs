@@ -12,10 +12,14 @@ use vulkan::{
 	draw::*, framebuffer::*, command_pool::*, command_buffer::*,
 	pipeline::*, instance::*, physical_device::*, synchronization::*,
 	vertex::*, uniform_buffer::*, descriptor_set::*, descriptor_pool::*,
-	descriptor_set::*,
 };
 
-use crate::vulkan::index::create_index_buffer;
+mod detail_core;
+use detail_core::{
+	camera::*, input_processor::*,
+};
+
+use crate::{vulkan::index::create_index_buffer, cotangens::vec3::Vec3};
 
 fn main() 
 {
@@ -25,11 +29,13 @@ fn main()
 
 		create_instance(&mut vk_handle);
 
-		let _window = 
+		let window = 
 			Window::new()
 			.with_title("deta:l")
 			.with_dimensions(400, 400)
 			.build_vulkan(&mut vk_handle);
+
+		let mut input_processor = InputProcessor::new();
 
 		create_physical_device(&mut vk_handle);
 	
@@ -60,42 +66,30 @@ fn main()
 		create_synchronization_structures(&mut vk_handle);
 
 		create_command_buffer(&mut vk_handle);
-		
-		// I will eventually add window event handling <.<
-		'main_loop: loop 
-		{
-			loop {
-				match _window.get_event()
-				{
-					// _ => {}
-					Some(e) => 
-					{
-						match e 
-						{
-							WindowEvent::KeyPress(val) => 
-							{ 
-								println!("a key press {:?}!", val);
 
-								match val
-								{
-									KeyValues::ESC => { break 'main_loop; }
-									_ => {}
-								}
-							}
-							_ => { println!("useless event") }
-						}
-					}
-					None => { break }
-				};
-			}
+		let mut last_delta_time_ms = 0.0f32;
+
+		while !input_processor.should_quit() 
+		{
+			input_processor.process_window_events(last_delta_time_ms, &window, &mut vk_handle);
+
+			vk_handle.camera.process_movement(last_delta_time_ms, &vk_handle.input_buffer);
+			vk_handle.camera.update_camera_vectors();
+
+			let start_time = std::time::Instant::now();
 			
 			draw_frame(&mut vk_handle);
-			std::thread::sleep(std::time::Duration::from_millis(1));
+			std::thread::sleep(std::time::Duration::from_millis(16));
+
+			let end_time = std::time::Instant::now();
+
+			last_delta_time_ms = end_time.duration_since(start_time).as_secs_f32() * 1000.0f32;
+
+			// println!("pos : {:?}", vk_handle.camera.position);
+			// println!("frame time {}ms", last_delta_time_ms);
 		}
 		
 		vkDeviceWaitIdle(vk_handle.logical_device);
-
-		// std::thread::sleep(std::time::Duration::from_secs(2));
 
 		// Cleanup
 		println!("Destroying vk objects...");

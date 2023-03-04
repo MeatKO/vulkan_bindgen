@@ -11,7 +11,7 @@ use crate::loseit::{
 	xcb_functions::*,
 	xcb_events::*,
 	window_traits::*,
-	window_events::WindowEvent,
+	window_events::*,
 };
 
 use std::ptr::null_mut as nullptr;
@@ -31,6 +31,7 @@ impl Drop for XcbHandle
 {
 	fn drop(&mut self)
 	{
+		println!("Destroying XCB window.");
 		self.destroy()
 	}
 }
@@ -52,6 +53,7 @@ impl VulkanWindowHandle for XcbHandle
 			xcb_event_mask_t::XCB_EVENT_MASK_EXPOSURE as u32 |
 			xcb_event_mask_t::XCB_EVENT_MASK_STRUCTURE_NOTIFY as u32 |
 			xcb_event_mask_t::XCB_EVENT_MASK_KEY_PRESS as u32 |
+			xcb_event_mask_t::XCB_EVENT_MASK_KEY_RELEASE as u32 |
 			xcb_event_mask_t::XCB_EVENT_MASK_POINTER_MOTION as u32
 		];
 		
@@ -178,40 +180,48 @@ impl VulkanWindowHandle for XcbHandle
 			// for WHATEVER reason...
 			match ((*event).response_type & 0x7F) as u32
 			{
+				XCB_KEY_RELEASE =>
+				{
+					let key_code = *(event as *mut xcb_key_press_event_t);
+					return Some(WindowEvent::KeyRelease(key_code.detail))
+				}
 				XCB_KEY_PRESS => 
 				{
 					let key_code = *(event as *mut xcb_key_press_event_t);
-					return Some(WindowEvent::KeyPress(convert_key_code(key_code.detail)))
+					return Some(WindowEvent::KeyPress(key_code.detail))
 				}
 				XCB_CLIENT_MESSAGE =>
 				{
 					let key_code = *(event as *mut xcb_client_message_event_t);
-					println!("XCB_CLIENT_MESSAGE event {:?}", key_code.data.data32[0]);
-					return None;
+
+					if key_code.data.data32[0] == self.atom_wm_delete_window
+					{
+						return Some(WindowEvent::WindowAction(WindowActions::CLOSE))
+					}
+
+					return Some(WindowEvent::WindowAction(WindowActions::EXPOSE))
 				}
 				XCB_MOTION_NOTIFY => 
 				{
 					let key_code = *(event as *mut xcb_motion_notify_event_t);
-					println!("XCB_MOTION_NOTIFY X: {:?} Y: {:?}", key_code.event_x, key_code.event_y);
-					return None;
+					return Some(WindowEvent::WindowAction(WindowActions::MOTION(key_code.event_x as i32, key_code.event_y as i32)));
 				}
 				XCB_CONFIGURE_NOTIFY =>
 				{
 					let key_code = *(event as *mut xcb_configure_notify_event_t);
-					println!("XCB_CONFIGURE_NOTIFY height: {:?} width: {:?}", key_code.height, key_code.width);
-					return None;
+					return Some(WindowEvent::WindowAction(WindowActions::CONFIGURE(key_code.height as i32, key_code.width as i32)));
 				}
 				any => { println!("unknown event {}", any); return None }
 			}
 		}
 	}
 
-	fn destroy(&self)
+	fn destroy(&mut self)
 	{
 		unsafe
 		{
-			println!("destroying XCB window.");
 			xcb_destroy_window(self.xcb_conn, self.xcb_window);
+			self.xcb_conn = nullptr();
 		}
 	}
 }

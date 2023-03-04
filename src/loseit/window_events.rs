@@ -1,8 +1,12 @@
 #[derive(Debug)]
 pub enum WindowEvent
 {
-	KeyPress(KeyValues),
-	MousePress(MouseValues),
+	// KeyPress(KeyValues),
+	// KeyRelease(KeyValues),
+	KeyPress(u8),
+	KeyRelease(u8),
+	MousePress(u8),
+	MouseRelease(u8),
 	WindowAction(WindowActions)
 }
 
@@ -14,14 +18,22 @@ pub enum WindowActions
 	CLOSE,
 	MINIMIZE,
 	MAXIMIZE,
-	RESIZE
+	RESIZE,
+	MOTION(i32, i32),
+	CONFIGURE(i32, i32),
 }
 
 #[derive(Debug)]
+#[repr(u8)]
 pub enum KeyValues
 {
-	ESC,
-	UNKNOWN,
+	ESC = 9,
+	W = 25,
+	A = 38,
+	S = 39,
+	D = 40,
+	UNKNOWN = 255, // to record the unmapped key value
+	// UNKNOWN(u8) = 0, // to record the unmapped key value
 }
 
 #[derive(Debug)]

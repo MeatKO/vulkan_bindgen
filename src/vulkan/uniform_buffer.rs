@@ -7,7 +7,6 @@ use crate::vulkan::buffer::*;
 use std::ffi::c_void;
 use std::mem::size_of;
 use std::ptr::null_mut as nullptr;
-use crate::cotangens::radians::*;
 
 #[repr(C)]
 // #[repr(align(16))]
@@ -61,28 +60,37 @@ pub unsafe fn create_uniform_buffers(vk_handle: &mut VkHandle)
 
 pub unsafe fn update_uniform_buffer(vk_handle: &mut VkHandle) 
 {
-	let time: f32 = 
-		match std::time::SystemTime::now().duration_since(vk_handle.start_time)
-		{
-			Ok(n) => n.as_secs_f32(),
-    		Err(_) => panic!("SystemTime before UNIX EPOCH!"),
-		};
+	let time: f32 = std::time::Instant::now().duration_since(vk_handle.start_time).as_secs_f32();
+
+	// let ubo = 
+	// 	UniformBufferObject{
+	// 		foo: Vec2 { x: 0.0f32, y: 0.0f32 },
+	// 		model: Mat4x4::new_identity(1.0f32)
+	// 			.rotate_x(time * radians(90.0f32)),
+	// 		view: Mat4x4::new_lookat(
+	// 			Vec3{x: 2.0f32, y: 2.0f32, z: 2.0f32}, 
+	// 			Vec3{x: 0.0f32, y: 0.0f32, z: 0.0f32}, 
+	// 			Vec3{x: 0.0f32, y: 0.0f32, z: 1.0f32}
+	// 		),
+	// 		proj: Mat4x4::new_perspective(
+	// 			radians(45.0f32), 
+	// 			vk_handle.extent.width as f32 / vk_handle.extent.height as f32, 
+	// 			0.1f32, 
+	// 			10.0f32
+	// 		)
+	// 	};
 
 	let ubo = 
 		UniformBufferObject{
 			foo: Vec2 { x: 0.0f32, y: 0.0f32 },
 			model: Mat4x4::new_identity(1.0f32)
-				.rotate_x(time * radians(90.0f32)),
-			view: Mat4x4::new_lookat(
-				Vec3{x: 2.0f32, y: 2.0f32, z: 2.0f32}, 
-				Vec3{x: 0.0f32, y: 0.0f32, z: 0.0f32}, 
-				Vec3{x: 0.0f32, y: 0.0f32, z: 1.0f32}
-			),
+				.rotate_x(time * 90.0f32.to_radians()),
+			view: vk_handle.camera.get_view_matrix(),
 			proj: Mat4x4::new_perspective(
-				radians(45.0f32), 
+				45.0f32.to_radians(), 
 				vk_handle.extent.width as f32 / vk_handle.extent.height as f32, 
 				0.1f32, 
-				10.0f32
+				1000.0f32
 			)
 		};
 	

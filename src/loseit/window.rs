@@ -4,10 +4,13 @@
 use crate::vulkan::handle::*;
 use crate::loseit::window_traits::*;
 use crate::loseit::xcb_window::*;
+use crate::loseit::xcb_events;
 use crate::loseit::win32_window::*;
 use crate::loseit::window_events::WindowEvent;
 
 use std::ptr::null_mut as nullptr;
+
+use super::window_events::KeyValues;
 
 enum WindowHandle
 {
@@ -78,6 +81,18 @@ impl Window
 		{
 			Some(WindowHandle::Xcb(handle)) => { handle.get_event() }
 			_ => { None }
+		}
+	}
+
+	pub fn convert_key_code(&self, key_code: u8) -> KeyValues
+	{
+		let handle = &self.window_handle;
+		
+		match handle.as_ref()
+		{
+			Some(WindowHandle::Xcb(handle)) => { xcb_events::convert_key_code(key_code) }
+			_ => { KeyValues::UNKNOWN }
+			// _ => { KeyValues::UNKNOWN(key_code) }
 		}
 	}
 }

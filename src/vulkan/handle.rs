@@ -1,16 +1,25 @@
-use crate::cotangens::{vec2::*, vec3::*};
-use crate::vulkan::vk_bindgen::*;
-use crate::vulkan::swapchain::*;
-use crate::vulkan::queue::*;
-use crate::vulkan::debugger::*;
-use crate::vulkan::vertex::*;
-use crate::vulkan::uniform_buffer::*;
+use crate::cotangens::{
+	vec2::*, vec3::*
+};
+
+use crate::vulkan::{
+	vk_bindgen::*, swapchain::*, queue::*,
+	debugger::*, vertex::*, uniform_buffer::*
+};
+
+use crate::detail_core::{
+	camera::*,
+	input_buffer::*,
+};
 
 use std::ptr::null_mut as nullptr;
 use std::vec;
 
 pub struct VkHandle
 {
+	pub camera: Camera,
+	pub input_buffer: InputBuffer,
+
 	pub instance: VkInstance,
 	pub physical_device: VkPhysicalDevice,
 	pub logical_device: VkDevice,
@@ -72,7 +81,8 @@ pub struct VkHandle
 
 	pub descriptor_pool: VkDescriptorPool,
 	pub descriptor_sets: Vec<VkDescriptorSet>,
-	pub start_time: std::time::SystemTime,
+	pub start_time: std::time::Instant,
+	// pub start_time: std::time::SystemTime,
 }
 
 impl VkHandle
@@ -80,6 +90,13 @@ impl VkHandle
 	pub fn new_empty() -> VkHandle
 	{
 		return  VkHandle {
+			camera: Camera::new(
+				Vec3{ x: 0.0f32, y: 0.0f32, z: -5.0f32 },
+				Vec3{ x: 0.0f32, y: 1.0f32, z: 0.0f32 },
+				-90.0f32,
+				0.0f32
+			),
+			input_buffer: InputBuffer::new(250.0f32),
 			instance: nullptr(),
 			physical_device: nullptr(),
 			logical_device: nullptr(),
@@ -142,7 +159,7 @@ impl VkHandle
 			descriptor_pool: nullptr(),
 			descriptor_sets: vec![],
 			
-			start_time: std::time::SystemTime::now(),
+			start_time: std::time::Instant::now(),
 		};
 	}
 

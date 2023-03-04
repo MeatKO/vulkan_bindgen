@@ -111,7 +111,7 @@ impl Mat4x4
 }
 
 // Multiplying a 4x4 matrix by 3-dimensional vector to confuse the mathematicians 
-impl Mul<&Vec3> for Mat4x4 
+impl Mul<&Vec3> for &Mat4x4 
 {
     type Output = Vec3;
 
