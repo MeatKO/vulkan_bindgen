@@ -29,10 +29,10 @@ fn main()
 
 		create_instance(&mut vk_handle);
 
-		let window = 
+		let mut window = 
 			Window::new()
 			.with_title("deta:l")
-			.with_dimensions(400, 400)
+			.with_dimensions(800, 600)
 			.build_vulkan(&mut vk_handle);
 
 		let mut input_processor = InputProcessor::new();
@@ -69,12 +69,22 @@ fn main()
 
 		let mut last_delta_time_ms = 0.0f32;
 
+		// let unix_timestamp = SystemTime::now().duration_since(UNIX_EPOCH).expect("SystemTime before UNIX EPOCH!").as_secs();
+
+		window.lock_pointer();
+		window.hide_cursor();
+		// std::thread::sleep(std::time::Duration::from_millis(2000));
+		// window.unlock_pointer();
+
 		while !input_processor.should_quit() 
 		{
-			input_processor.process_window_events(last_delta_time_ms, &window, &mut vk_handle);
+			input_processor.process_window_events(last_delta_time_ms, &mut window, &mut vk_handle);
 
 			vk_handle.camera.process_movement(last_delta_time_ms, &vk_handle.input_buffer);
 			vk_handle.camera.update_camera_vectors();
+
+			// vk_handle.camera.process_mouse_movement(10.0f32, 0.0f32);
+			// vk_handle.camera.process_mouse_movement(0.0f32, -10.0f32);
 
 			let start_time = std::time::Instant::now();
 			

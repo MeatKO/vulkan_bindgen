@@ -91,7 +91,7 @@ impl VkHandle
 	{
 		return  VkHandle {
 			camera: Camera::new(
-				Vec3{ x: 0.0f32, y: 0.0f32, z: -5.0f32 },
+				Vec3{ x: 0.0f32, y: 0.0f32, z: 5.0f32 },
 				Vec3{ x: 0.0f32, y: 1.0f32, z: 0.0f32 },
 				-90.0f32,
 				0.0f32

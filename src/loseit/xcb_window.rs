@@ -14,6 +14,9 @@ use crate::loseit::{
 	window_events::*,
 };
 
+use std::ffi::c_uint;
+use std::time::SystemTime;
+use std::time::UNIX_EPOCH;
 use std::ptr::null_mut as nullptr;
 
 const DEFAULT_WINDOW_NAME: &str = "Vulkan Window";
@@ -50,10 +53,13 @@ impl VulkanWindowHandle for XcbHandle
 			};
 
 		let window_values: [u32; 1] = [
+			xcb_event_mask_t::XCB_EVENT_MASK_FOCUS_CHANGE as u32 |
 			xcb_event_mask_t::XCB_EVENT_MASK_EXPOSURE as u32 |
 			xcb_event_mask_t::XCB_EVENT_MASK_STRUCTURE_NOTIFY as u32 |
 			xcb_event_mask_t::XCB_EVENT_MASK_KEY_PRESS as u32 |
 			xcb_event_mask_t::XCB_EVENT_MASK_KEY_RELEASE as u32 |
+			xcb_event_mask_t::XCB_EVENT_MASK_BUTTON_PRESS as u32 |
+			xcb_event_mask_t::XCB_EVENT_MASK_BUTTON_RELEASE as u32 |
 			xcb_event_mask_t::XCB_EVENT_MASK_POINTER_MOTION as u32
 		];
 		
@@ -211,6 +217,14 @@ impl VulkanWindowHandle for XcbHandle
 					let key_code = *(event as *mut xcb_configure_notify_event_t);
 					return Some(WindowEvent::WindowAction(WindowActions::CONFIGURE(key_code.height as i32, key_code.width as i32)));
 				}
+				XCB_FOCUS_IN =>
+				{
+					return Some(WindowEvent::WindowAction(WindowActions::FOCUS_IN));
+				}
+				XCB_FOCUS_OUT =>
+				{
+					return Some(WindowEvent::WindowAction(WindowActions::FOCUS_OUT));
+				}
 				any => { println!("unknown event {}", any); return None }
 			}
 		}
@@ -222,6 +236,99 @@ impl VulkanWindowHandle for XcbHandle
 		{
 			xcb_destroy_window(self.xcb_conn, self.xcb_window);
 			self.xcb_conn = nullptr();
+		}
+	}
+
+	// https://manpages.ubuntu.com/manpages/bionic/man3/xcb_grab_pointer.3.html
+	fn lock_pointer(&self) 
+	{
+		unsafe 
+		{
+			let cookie = xcb_grab_pointer(
+				self.xcb_conn, 
+				0, 
+				self.xcb_window,
+				xcb_event_mask_t::XCB_EVENT_MASK_FOCUS_CHANGE as u16 |
+				xcb_event_mask_t::XCB_EVENT_MASK_BUTTON_PRESS as u16 |
+				xcb_event_mask_t::XCB_EVENT_MASK_BUTTON_RELEASE as u16 |
+				xcb_event_mask_t::XCB_EVENT_MASK_POINTER_MOTION as u16 |
+				xcb_event_mask_t::XCB_EVENT_MASK_LEAVE_WINDOW as u16,
+				xcb_grab_mode_t::XCB_GRAB_MODE_ASYNC as u8, 
+				xcb_grab_mode_t::XCB_GRAB_MODE_ASYNC as u8, 
+				self.xcb_window,
+				0,
+				XCB_CURRENT_TIME
+			);
+
+			xcb_flush(self.xcb_conn);
+		}
+	}
+
+	fn center_pointer(&self) 
+	{
+		unsafe 
+		{
+			xcb_warp_pointer(
+				self.xcb_conn, 
+				self.xcb_window, 
+				self.xcb_window, 
+				0, 
+				0, 
+				800, 
+				600, 
+				400, 
+				300
+			);
+
+			xcb_flush(self.xcb_conn);
+		}
+	}
+
+	fn hide_cursor(&self) 
+	{
+		unsafe 
+		{
+			let font = xcb_generate_id(self.xcb_conn);
+
+			let font_cookie = xcb_open_font_checked (
+				self.xcb_conn,
+				font,
+				"cursor\0".len() as u16,
+				"cursor\0".as_ptr() as _
+			);
+
+			let cursor = xcb_generate_id(self.xcb_conn);
+
+			xcb_create_glyph_cursor(
+				self.xcb_conn, 
+				cursor, 
+				font, 
+				font, 
+				cursor as u16, 
+				(cursor + 1) as u16, 
+				0, 
+				0, 
+				0, 
+				0, 
+				0, 
+				0
+			);
+
+			xcb_flush(self.xcb_conn);
+		}
+	}
+
+	// https://manpages.ubuntu.com/manpages/bionic/man3/xcb_ungrab_pointer.3.html
+	fn unlock_pointer(&self) 
+	{
+		unsafe 
+		{
+			xcb_ungrab_pointer(
+				self.xcb_conn,
+				XCB_CURRENT_TIME
+			);
+
+			xcb_flush(self.xcb_conn);
 		}
 	}
 }

@@ -23,7 +23,8 @@ pub struct Window
 	window_handle: Box<Option<WindowHandle>>,
 	window_title: Option<String>,
 	pub width: u32,
-	height: u32
+	pub height: u32,
+	pub is_focused: bool,
 }
 
 impl Window
@@ -34,7 +35,8 @@ impl Window
 			window_handle: Box::new(None),
 			window_title: None,
 			width: 150,
-			height: 150
+			height: 150,
+			is_focused: true
 		}
 	}
 
@@ -93,6 +95,50 @@ impl Window
 			Some(WindowHandle::Xcb(handle)) => { xcb_events::convert_key_code(key_code) }
 			_ => { KeyValues::UNKNOWN }
 			// _ => { KeyValues::UNKNOWN(key_code) }
+		}
+	}
+
+	pub fn lock_pointer(&self)
+	{
+		let handle = &self.window_handle;
+
+		match handle.as_ref()
+		{
+			Some(WindowHandle::Xcb(handle)) => { handle.lock_pointer() }
+			_ => { }
+		}
+	}
+
+	pub fn unlock_pointer(&self)
+	{
+		let handle = &self.window_handle;
+
+		match handle.as_ref()
+		{
+			Some(WindowHandle::Xcb(handle)) => { handle.unlock_pointer() }
+			_ => { }
+		}
+	}
+
+	pub fn center_pointer(&self)
+	{
+		let handle = &self.window_handle;
+
+		match handle.as_ref()
+		{
+			Some(WindowHandle::Xcb(handle)) => { handle.center_pointer() }
+			_ => { }
+		}
+	}
+
+	pub fn hide_cursor(&self)
+	{
+		let handle = &self.window_handle;
+
+		match handle.as_ref()
+		{
+			Some(WindowHandle::Xcb(handle)) => { handle.hide_cursor() }
+			_ => { }
 		}
 	}
 }

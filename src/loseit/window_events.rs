@@ -19,6 +19,8 @@ pub enum WindowActions
 	MINIMIZE,
 	MAXIMIZE,
 	RESIZE,
+	FOCUS_OUT,
+	FOCUS_IN,
 	MOTION(i32, i32),
 	CONFIGURE(i32, i32),
 }

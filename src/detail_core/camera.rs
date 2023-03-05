@@ -53,8 +53,8 @@ impl Camera
 			world_up: in_world_up,
 			yaw: in_yaw,
 			pitch: in_pitch,
-			movement_speed: 0.01f32,
-			mouse_sensitivity: 0.1f32,
+			movement_speed: 0.005f32,
+			mouse_sensitivity: 0.01f32,
 			zoom: 1.0f32,
 		}
 	}
@@ -89,7 +89,7 @@ impl Camera
 
 	pub fn update_camera_vectors(&mut self)
 	{
-		let front = Vec3{
+		self.front = Vec3{
 			x: self.yaw.to_radians().cos() * self.pitch.to_radians().cos(),
 			y: self.pitch.to_radians().sin(),
 			z: self.yaw.to_radians().sin() * self.pitch.to_radians().cos()
@@ -97,5 +97,27 @@ impl Camera
 
 		self.right = self.front.cross(&self.world_up).normalize();
 		self.up = self.right.cross(&self.front).normalize();
+	}
+
+	pub fn process_mouse_movement(&mut self, x_offset: f32, y_offset: f32)
+	{
+		let x_offset = x_offset * self.mouse_sensitivity;
+		let y_offset = y_offset * self.mouse_sensitivity;
+
+		let modulo_shit = self.yaw + x_offset;
+		self.yaw = modulo_shit - (360.0f32 * (modulo_shit / 360.0f32).floor());
+
+		self.pitch += y_offset;
+		
+		if self.pitch > 89.0f32
+		{
+			self.pitch = 89.0f32;
+		}
+		if self.pitch < -89.0f32
+		{
+			self.pitch = -89.0f32;
+		}
+
+		self.update_camera_vectors();
 	}
 }
