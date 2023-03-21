@@ -61,14 +61,23 @@ impl Window
 			panic!("Window requires a valid VkInstance pointer. Consider moving the Window creation after Instance creation.")
 		}
 
-		let xcb_handle = 
-			match XcbHandle::new(&self.window_title, self.width, self.height, vk_handle)
+		// let xcb_handle = 
+		// 	match XcbHandle::new(&self.window_title, self.width, self.height, vk_handle)
+		// 	{
+		// 		Some(handle) => { handle },
+		// 		None => { panic!("couldn't initialize xcb") }
+		// 	};
+
+		// self.window_handle = Box::new(Some(WindowHandle::Xcb(xcb_handle)));
+
+		let win32_handle = 
+			match Win32Handle::new(&self.window_title, self.width, self.height, vk_handle)
 			{
 				Some(handle) => { handle },
-				None => { panic!("couldn't initialize xcb") }
+				None => { panic!("couldn't initialize win32") }
 			};
 
-		self.window_handle = Box::new(Some(WindowHandle::Xcb(xcb_handle)));
+		self.window_handle = Box::new(Some(WindowHandle::Win32(win32_handle)));
 
 		self
 	}
@@ -81,7 +90,7 @@ impl Window
 		
 		match handle.as_ref()
 		{
-			Some(WindowHandle::Xcb(handle)) => { handle.get_event() }
+			// Some(WindowHandle::Xcb(handle)) => { handle.get_event() }
 			_ => { None }
 		}
 	}
@@ -92,7 +101,7 @@ impl Window
 		
 		match handle.as_ref()
 		{
-			Some(WindowHandle::Xcb(handle)) => { xcb_events::convert_key_code(key_code) }
+			// Some(WindowHandle::Xcb(handle)) => { xcb_events::convert_key_code(key_code) }
 			_ => { KeyValues::UNKNOWN }
 			// _ => { KeyValues::UNKNOWN(key_code) }
 		}
@@ -104,7 +113,7 @@ impl Window
 
 		match handle.as_ref()
 		{
-			Some(WindowHandle::Xcb(handle)) => { handle.lock_pointer() }
+			// Some(WindowHandle::Xcb(handle)) => { handle.lock_pointer() }
 			_ => { }
 		}
 	}
@@ -115,7 +124,7 @@ impl Window
 
 		match handle.as_ref()
 		{
-			Some(WindowHandle::Xcb(handle)) => { handle.unlock_pointer() }
+			// Some(WindowHandle::Xcb(handle)) => { handle.unlock_pointer() }
 			_ => { }
 		}
 	}
@@ -126,7 +135,7 @@ impl Window
 
 		match handle.as_ref()
 		{
-			Some(WindowHandle::Xcb(handle)) => { handle.center_pointer() }
+			// Some(WindowHandle::Xcb(handle)) => { handle.center_pointer() }
 			_ => { }
 		}
 	}
@@ -137,7 +146,7 @@ impl Window
 
 		match handle.as_ref()
 		{
-			Some(WindowHandle::Xcb(handle)) => { handle.hide_cursor() }
+			// Some(WindowHandle::Xcb(handle)) => { handle.hide_cursor() }
 			_ => { }
 		}
 	}

@@ -234,7 +234,7 @@ impl VulkanWindowHandle for XcbHandle
 	{
 		unsafe
 		{
-			xcb_destroy_window(self.xcb_conn, self.xcb_window);
+			// xcb_destroy_window(self.xcb_conn, self.xcb_window);
 			self.xcb_conn = nullptr();
 		}
 	}

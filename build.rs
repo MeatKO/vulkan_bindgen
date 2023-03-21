@@ -30,6 +30,7 @@ fn main()
             println!("cargo:rustc-link-search={}", libclang_path.to_str().unwrap());
             println!("cargo:rustc-link-lib=libclang");
             println!("cargo:rustc-link-lib=user32");
+            println!("cargo:rustc-link-lib=kernel32");
             
             println!("cargo:rustc-link-search=native={}/Lib", vulkan_sdk_path.to_str().unwrap());
             println!("cargo:rustc-link-lib=vulkan-1");

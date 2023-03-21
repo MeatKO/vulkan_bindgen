@@ -89,7 +89,7 @@ fn main()
 			let start_time = std::time::Instant::now();
 			
 			draw_frame(&mut vk_handle);
-			std::thread::sleep(std::time::Duration::from_millis(16));
+			// std::thread::sleep(std::time::Duration::from_millis(16));
 
 			let end_time = std::time::Instant::now();
 

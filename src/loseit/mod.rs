@@ -11,5 +11,6 @@ mod xcb_events;
 mod win32_bindgen;
 mod win32_vk_bindgen;
 mod win32_window;
+mod win32;
 
 mod window_traits;
