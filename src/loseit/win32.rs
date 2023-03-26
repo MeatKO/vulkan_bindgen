@@ -94,6 +94,7 @@ pub struct WNDCLASSW {
 }
 unsafe_impl_default_zeroed!(WNDCLASSW);
 
+#[derive(Debug)]
 #[repr(C)]
 pub struct MSG {
     hwnd: HWND,
@@ -106,6 +107,7 @@ pub struct MSG {
 }
 unsafe_impl_default_zeroed!(MSG);
 
+#[derive(Debug)]
 #[repr(C)]
 pub struct POINT {
     x: LONG,
@@ -183,6 +185,10 @@ extern "system" {
     pub fn DefWindowProcW(hWnd: HWND, Msg: UINT, wParam: WPARAM, lParam: LPARAM) -> LRESULT;
     /// [`GetMessageW`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getmessagew)
     pub fn GetMessageW(lpMsg: LPMSG, hWnd: HWND, wMsgFilterMin: UINT, wMsgFilterMax: UINT) -> BOOL;
+
+    /// [`GetMessageW`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getmessagew)
+    pub fn PeekMessageW(lpMsg: LPMSG, hWnd: HWND, wMsgFilterMin: UINT, wMsgFilterMax: UINT, wRemoveMsg: UINT) -> BOOL;
+
     /// [`TranslateMessage`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-translatemessage)
     pub fn TranslateMessage(lpMsg: *const MSG) -> BOOL;
 

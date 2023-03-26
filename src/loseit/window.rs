@@ -91,6 +91,7 @@ impl Window
 		match handle.as_ref()
 		{
 			// Some(WindowHandle::Xcb(handle)) => { handle.get_event() }
+			Some(WindowHandle::Win32(handle)) => { handle.get_event() }
 			_ => { None }
 		}
 	}

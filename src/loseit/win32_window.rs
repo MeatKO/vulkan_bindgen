@@ -64,10 +64,16 @@ impl VulkanWindowHandle for Win32Handle
                 wc: std::mem::zeroed::<_>(),
                 hwnd: nullptr(),
 			};
-		
+			
+			let title = 
+				match window_title
+				{
+					Some(title) => { title.clone() }
+					None => { DEFAULT_WINDOW_NAME.to_owned() }
+				};
 
             handle.h_instance = GetModuleHandleW(core::ptr::null());
-            let sample_window_class_wn = wide_null("Sample Window Class");
+            let sample_window_class_wn = wide_null(&title);
         
             let mut wc = std::mem::zeroed::<WNDCLASSW>();
             //let mut wc :WNDCLASSW =  unsafe { core::mem::zeroed() };
@@ -98,8 +104,8 @@ impl VulkanWindowHandle for Win32Handle
                     WS_OVERLAPPEDWINDOW,
                     CW_USEDEFAULT,
                     CW_USEDEFAULT,
-                    CW_USEDEFAULT,
-                    CW_USEDEFAULT,
+                    width as i32,
+                    height as i32,
                     nullptr(),
                     nullptr(),
                     handle.h_instance,
@@ -118,13 +124,15 @@ impl VulkanWindowHandle for Win32Handle
 				None => { panic!("This platform doesn't offer a 'vkCreateWin32SurfaceKHR' function.") }
 				Some(function) => 
 				{
-					let surface_create_info = VkWin32SurfaceCreateInfoKHR {
-						sType: VkStructureType::VK_STRUCTURE_TYPE_XCB_SURFACE_CREATE_INFO_KHR,
-						hinstance: handle.h_instance as _,
-                        hwnd: handle.hwnd as _,
-						flags: 0,
-						pNext: nullptr()
-					};
+					let surface_create_info = 
+						VkWin32SurfaceCreateInfoKHR 
+						{
+							sType: VkStructureType::VK_STRUCTURE_TYPE_XCB_SURFACE_CREATE_INFO_KHR,
+							hinstance: handle.h_instance as _,
+							hwnd: handle.hwnd as _,
+							flags: 0,
+							pNext: nullptr()
+						};
 
 					let result = function(vk_handle.instance, &surface_create_info, nullptr(), &mut vk_handle.window_surface);
 					match result
@@ -141,63 +149,28 @@ impl VulkanWindowHandle for Win32Handle
 
 	fn get_event(&self) -> Option<WindowEvent> 
 	{
-        None
-		// unsafe 
-		// {
-		// 	if xcb_connection_has_error(self.xcb_conn) > 0
-		// 	{
-		// 		panic!("XCB connection just broke :( sad face");
-		// 	}
-
-		// 	let event = xcb_poll_for_event(self.xcb_conn).as_mut()?;
-		// 	let event = event as *mut xcb_generic_event_t;
-
-		// 	// we clear the most significant bit of the 8 bit response_type
-		// 	// for WHATEVER reason...
-		// 	match ((*event).response_type & 0x7F) as u32
-		// 	{
-		// 		XCB_KEY_RELEASE =>
-		// 		{
-		// 			let key_code = *(event as *mut xcb_key_press_event_t);
-		// 			return Some(WindowEvent::KeyRelease(key_code.detail))
-		// 		}
-		// 		XCB_KEY_PRESS => 
-		// 		{
-		// 			let key_code = *(event as *mut xcb_key_press_event_t);
-		// 			return Some(WindowEvent::KeyPress(key_code.detail))
-		// 		}
-		// 		XCB_CLIENT_MESSAGE =>
-		// 		{
-		// 			let key_code = *(event as *mut xcb_client_message_event_t);
-
-		// 			if key_code.data.data32[0] == self.atom_wm_delete_window
-		// 			{
-		// 				return Some(WindowEvent::WindowAction(WindowActions::CLOSE))
-		// 			}
-
-		// 			return Some(WindowEvent::WindowAction(WindowActions::EXPOSE))
-		// 		}
-		// 		XCB_MOTION_NOTIFY => 
-		// 		{
-		// 			let key_code = *(event as *mut xcb_motion_notify_event_t);
-		// 			return Some(WindowEvent::WindowAction(WindowActions::MOTION(key_code.event_x as i32, key_code.event_y as i32)));
-		// 		}
-		// 		XCB_CONFIGURE_NOTIFY =>
-		// 		{
-		// 			let key_code = *(event as *mut xcb_configure_notify_event_t);
-		// 			return Some(WindowEvent::WindowAction(WindowActions::CONFIGURE(key_code.height as i32, key_code.width as i32)));
-		// 		}
-		// 		XCB_FOCUS_IN =>
-		// 		{
-		// 			return Some(WindowEvent::WindowAction(WindowActions::FOCUS_IN));
-		// 		}
-		// 		XCB_FOCUS_OUT =>
-		// 		{
-		// 			return Some(WindowEvent::WindowAction(WindowActions::FOCUS_OUT));
-		// 		}
-		// 		any => { println!("unknown event {}", any); return None }
-		// 	}
-		// }
+        unsafe
+		{
+			let mut msg = MSG::default();
+    
+			// BLOCKING
+			// Replace with SetWindowsHookEx() ? 
+			// match GetMessageW(&mut msg, nullptr(), 0, 0)
+			match PeekMessageW(&mut msg, nullptr(), 0, 0, 1)
+			{
+				0 => { return None; }
+				// -1 => { panic!("Error with `GetMessageW`, error code: {}", GetLastError()); }
+				-1 => { panic!("Error with `PeekMessageW`, error code: {}", GetLastError()); }
+				x =>
+				{
+					println!("Win32 msg code : {}", x);
+					println!("Win32 msg : {:?}", &msg);
+					TranslateMessage(&msg);
+					DispatchMessageW(&msg);
+					return None;
+				}
+			};
+		}		
 	}
 
 	fn destroy(&mut self)
