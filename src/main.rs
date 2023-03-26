@@ -21,10 +21,18 @@ use detail_core::{
 
 use crate::{vulkan::index::create_index_buffer, cotangens::vec3::Vec3};
 
+// use parmack::window::Window;
+
 fn main() 
 {
 	unsafe
 	{
+		let h_test = 
+			parmack::window::Window::new()
+			.with_title("windole")
+			.with_dimensions(400, 400)
+			.build();
+
 		let mut vk_handle = VkHandle::new_empty();
 
 		create_instance(&mut vk_handle);
@@ -67,7 +75,7 @@ fn main()
 
 		create_command_buffer(&mut vk_handle);
 
-		let mut last_delta_time_ms = 0.0f32;
+		let mut last_delta_time_ms = 0.0f64;
 
 		// let unix_timestamp = SystemTime::now().duration_since(UNIX_EPOCH).expect("SystemTime before UNIX EPOCH!").as_secs();
 
@@ -78,25 +86,25 @@ fn main()
 
 		while !input_processor.should_quit() 
 		{
-			input_processor.process_window_events(last_delta_time_ms, &mut window, &mut vk_handle);
-
-			vk_handle.camera.process_movement(last_delta_time_ms, &vk_handle.input_buffer);
-			vk_handle.camera.update_camera_vectors();
-
-			// vk_handle.camera.process_mouse_movement(10.0f32, 0.0f32);
-			// vk_handle.camera.process_mouse_movement(0.0f32, -10.0f32);
-
 			let start_time = std::time::Instant::now();
+			let start_time_2 = std::time::SystemTime::now();
 			
 			draw_frame(&mut vk_handle);
-			std::thread::sleep(std::time::Duration::from_millis(16));
+
+			// println!("frame time {}ms", last_delta_time_ms);
+
+			std::thread::sleep(std::time::Duration::from_millis(15));
 
 			let end_time = std::time::Instant::now();
+			last_delta_time_ms = end_time.duration_since(start_time).as_secs_f64() * 1000.0f64;
 
-			last_delta_time_ms = end_time.duration_since(start_time).as_secs_f32() * 1000.0f32;
+			input_processor.process_window_events(last_delta_time_ms as f32, &mut window, &mut vk_handle);
+			vk_handle.camera.process_movement(last_delta_time_ms as f32, &vk_handle.input_buffer);
+			vk_handle.camera.update_camera_vectors();
 
-			// println!("pos : {:?}", vk_handle.camera.position);
-			// println!("frame time {}ms", last_delta_time_ms);
+			// println!("frame time {}s", end_time.duration_since(start_time).as_secs_f64());
+			// println!("frame time {}s", start_time.elapsed().as_secs_f64());
+			// println!("frame system time {}s", start_time_2.elapsed().unwrap().as_secs_f32());
 		}
 		
 		vkDeviceWaitIdle(vk_handle.logical_device);

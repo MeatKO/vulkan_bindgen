@@ -35,11 +35,6 @@ impl InputProcessor
 	{
 		let process_start_time = std::time::Instant::now();
 		let absolute_current_time_stamp_ms = process_start_time.duration_since(vk_handle.start_time).as_secs_f32() * 1000.0f32;
-
-		// if window.is_focused
-		// {
-		// 	window.center_pointer();
-		// }
 		
 		while let Some(event) = window.get_event()
 		{
@@ -63,10 +58,20 @@ impl InputProcessor
 				{
 					match val
 					{
-						WindowActions::CLOSE => { self.should_quit = true; }
-						WindowActions::FOCUS_IN => { window.lock_pointer(); window.is_focused = true; }
-						WindowActions::FOCUS_OUT => { window.unlock_pointer(); window.is_focused = false; }
-						WindowActions::MOTION(x, y) => 
+						WindowActions::Close => { self.should_quit = true; }
+						WindowActions::FocusIn => 
+						{ 
+							window.is_focused = true; 
+							window.lock_pointer(); 
+							window.hide_cursor();
+						}
+						WindowActions::FocusOut => 
+						{ 
+							window.is_focused = false; 
+							window.unlock_pointer(); 
+							window.show_cursor(); 
+						}
+						WindowActions::Motion(x, y) => 
 						{
 							let mid_x = (window.width / 2) as i32;
 							let mid_y = (window.height / 2) as i32;
@@ -80,7 +85,7 @@ impl InputProcessor
 							{
 								window.center_pointer();
 							}
-							vk_handle.camera.process_mouse_movement(delta_x as f32, delta_y as f32);
+							vk_handle.camera.process_mouse_movement(delta_x as f32 * delta_time_ms, delta_y as f32 * delta_time_ms);
 						}
 						_ => {}
 					}

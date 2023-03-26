@@ -83,8 +83,8 @@ pub unsafe fn update_uniform_buffer(vk_handle: &mut VkHandle)
 	let ubo = 
 		UniformBufferObject{
 			foo: Vec2 { x: 0.0f32, y: 0.0f32 },
-			model: Mat4x4::new_identity(1.0f32)
-				.rotate_x(time * 90.0f32.to_radians()),
+			model: Mat4x4::new_identity(1.0f32),
+				// .rotate_x(time * 90.0f32.to_radians()),
 			view: vk_handle.camera.get_view_matrix(),
 			proj: Mat4x4::new_perspective(
 				45.0f32.to_radians(), 

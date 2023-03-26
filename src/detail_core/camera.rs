@@ -54,7 +54,7 @@ impl Camera
 			yaw: in_yaw,
 			pitch: in_pitch,
 			movement_speed: 0.005f32,
-			mouse_sensitivity: 0.01f32,
+			mouse_sensitivity: 0.001f32,
 			zoom: 1.0f32,
 		}
 	}

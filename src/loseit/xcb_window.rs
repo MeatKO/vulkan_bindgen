@@ -202,28 +202,28 @@ impl VulkanWindowHandle for XcbHandle
 
 					if key_code.data.data32[0] == self.atom_wm_delete_window
 					{
-						return Some(WindowEvent::WindowAction(WindowActions::CLOSE))
+						return Some(WindowEvent::WindowAction(WindowActions::Close))
 					}
 
-					return Some(WindowEvent::WindowAction(WindowActions::EXPOSE))
+					return Some(WindowEvent::WindowAction(WindowActions::Expose))
 				}
 				XCB_MOTION_NOTIFY => 
 				{
 					let key_code = *(event as *mut xcb_motion_notify_event_t);
-					return Some(WindowEvent::WindowAction(WindowActions::MOTION(key_code.event_x as i32, key_code.event_y as i32)));
+					return Some(WindowEvent::WindowAction(WindowActions::Motion(key_code.event_x as i32, key_code.event_y as i32)));
 				}
 				XCB_CONFIGURE_NOTIFY =>
 				{
 					let key_code = *(event as *mut xcb_configure_notify_event_t);
-					return Some(WindowEvent::WindowAction(WindowActions::CONFIGURE(key_code.height as i32, key_code.width as i32)));
+					return Some(WindowEvent::WindowAction(WindowActions::Configure(key_code.height as i32, key_code.width as i32)));
 				}
 				XCB_FOCUS_IN =>
 				{
-					return Some(WindowEvent::WindowAction(WindowActions::FOCUS_IN));
+					return Some(WindowEvent::WindowAction(WindowActions::FocusIn));
 				}
 				XCB_FOCUS_OUT =>
 				{
-					return Some(WindowEvent::WindowAction(WindowActions::FOCUS_OUT));
+					return Some(WindowEvent::WindowAction(WindowActions::FocusOut));
 				}
 				any => { println!("unknown event {}", any); return None }
 			}
@@ -288,32 +288,16 @@ impl VulkanWindowHandle for XcbHandle
 	{
 		unsafe 
 		{
-			let font = xcb_generate_id(self.xcb_conn);
+			xcb_xfixes_hide_cursor(self.xcb_conn, self.xcb_window);
+			xcb_flush(self.xcb_conn);
+		}
+	}
 
-			let font_cookie = xcb_open_font_checked (
-				self.xcb_conn,
-				font,
-				"cursor\0".len() as u16,
-				"cursor\0".as_ptr() as _
-			);
-
-			let cursor = xcb_generate_id(self.xcb_conn);
-
-			xcb_create_glyph_cursor(
-				self.xcb_conn, 
-				cursor, 
-				font, 
-				font, 
-				cursor as u16, 
-				(cursor + 1) as u16, 
-				0, 
-				0, 
-				0, 
-				0, 
-				0, 
-				0
-			);
-
+	fn show_cursor(&self) 
+	{
+		unsafe 
+		{
+			xcb_xfixes_show_cursor(self.xcb_conn, self.xcb_window);
 			xcb_flush(self.xcb_conn);
 		}
 	}

@@ -7387,3 +7387,32 @@ extern "C" {
 extern "C" {
     pub fn xcb_total_written(c: *mut xcb_connection_t) -> u64;
 }
+
+// xfies shit
+
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct xcb_xfixes_query_version_cookie_t {
+    pub sequence: ::std::os::raw::c_uint,
+}
+
+extern "C" {
+    pub fn xcb_xfixes_query_version(
+        c: *mut xcb_connection_t,
+        client_major_version: u32,
+        client_minor_version: u32,
+    ) -> xcb_xfixes_query_version_cookie_t;
+}
+
+extern "C" {
+    pub fn xcb_xfixes_hide_cursor(
+        c: *mut xcb_connection_t,
+        window: xcb_window_t,
+    ) -> xcb_void_cookie_t;
+}
+extern "C" {
+    pub fn xcb_xfixes_show_cursor(
+        c: *mut xcb_connection_t,
+        window: xcb_window_t,
+    ) -> xcb_void_cookie_t;
+}

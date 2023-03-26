@@ -13,16 +13,16 @@ pub enum WindowEvent
 #[derive(Debug)]
 pub enum WindowActions
 {
-	EXPOSE,
-	LEAVE,
-	CLOSE,
-	MINIMIZE,
-	MAXIMIZE,
-	RESIZE,
-	FOCUS_OUT,
-	FOCUS_IN,
-	MOTION(i32, i32),
-	CONFIGURE(i32, i32),
+	Expose,
+	Leave,
+	Close,
+	Minimize,
+	Maximize,
+	Resize,
+	FocusOut,
+	FocusIn,
+	Motion(i32, i32),
+	Configure(i32, i32),
 }
 
 #[derive(Debug)]
@@ -34,14 +34,13 @@ pub enum KeyValues
 	A = 38,
 	S = 39,
 	D = 40,
-	UNKNOWN = 255, // to record the unmapped key value
-	// UNKNOWN(u8) = 0, // to record the unmapped key value
+	Unknown = 255, // to record the unmapped key value
 }
 
 #[derive(Debug)]
 pub enum MouseValues
 {
-	LEFT,
-	RIGHT,
-	MIDDLE,
+	Left,
+	Right,
+	Middle,
 }

@@ -10,6 +10,7 @@ pub trait VulkanWindowHandle : Sized + Drop
 	fn center_pointer(&self);
 	fn unlock_pointer(&self);
 	fn hide_cursor(&self);
+	fn show_cursor(&self);
 	fn get_event(&self) -> Option<WindowEvent>;
 	fn destroy(&mut self);
 }

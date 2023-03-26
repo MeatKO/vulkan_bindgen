@@ -93,7 +93,7 @@ impl Window
 		match handle.as_ref()
 		{
 			Some(WindowHandle::Xcb(handle)) => { xcb_events::convert_key_code(key_code) }
-			_ => { KeyValues::UNKNOWN }
+			_ => { KeyValues::Unknown }
 			// _ => { KeyValues::UNKNOWN(key_code) }
 		}
 	}
@@ -138,6 +138,17 @@ impl Window
 		match handle.as_ref()
 		{
 			Some(WindowHandle::Xcb(handle)) => { handle.hide_cursor() }
+			_ => { }
+		}
+	}
+
+	pub fn show_cursor(&self)
+	{
+		let handle = &self.window_handle;
+
+		match handle.as_ref()
+		{
+			Some(WindowHandle::Xcb(handle)) => { handle.show_cursor() }
 			_ => { }
 		}
 	}
