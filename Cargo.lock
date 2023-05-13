@@ -5,6 +5,7 @@ version = 3
 [[package]]
 name = "parmack"
 version = "0.1.0"
+source = "git+https://github.com/MeatKO/parmack.git?branch=master#c3ba9a5d335cbf2935db4d178570ee5750f395c9"
 
 [[package]]
 name = "vulkan_bindgen"
