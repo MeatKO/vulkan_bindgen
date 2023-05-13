@@ -9,15 +9,19 @@ pub unsafe fn create_framebuffer(vk_handle: &mut VkHandle)
 
 	for i in 0.. vk_handle.swapchain_image_views_vec.len()
 	{
-		let attachments = vec![ vk_handle.swapchain_image_views_vec[i]];
+		let attachments = 
+			vec![
+				vk_handle.swapchain_image_views_vec[i],
+				vk_handle.depth_image_view,
+			];
 
 		let framebuffer_create_info = VkFramebufferCreateInfo{
 			sType: VkStructureType::VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
 			renderPass: vk_handle.render_pass,
-			attachmentCount: 1,
+			attachmentCount: attachments.len() as _,
 			pAttachments: attachments.as_ptr(),
-			width: vk_handle.extent.width,
-			height: vk_handle.extent.height,
+			width: vk_handle.swapchain_extent.width,
+			height: vk_handle.swapchain_extent.height,
 			layers: 1,
 			flags: 0,	
 			pNext: nullptr(),

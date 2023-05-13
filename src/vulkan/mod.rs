@@ -23,3 +23,6 @@ pub mod index;
 pub mod uniform_buffer;
 pub mod descriptor_set;
 pub mod descriptor_pool;
+pub mod texture;
+pub mod texture_view;
+pub mod depth_buffer;

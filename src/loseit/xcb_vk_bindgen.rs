@@ -7,6 +7,8 @@
 use crate::vulkan::vk_bindgen::*;
 use crate::loseit::xcb_bindgen::*;
 
+use parmack::handle::linux_handle::types;
+
 pub type VkXcbSurfaceCreateFlagsKHR = VkFlags;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
@@ -14,7 +16,7 @@ pub struct VkXcbSurfaceCreateInfoKHR {
     pub sType: VkStructureType,
     pub pNext: *const ::std::os::raw::c_void,
     pub flags: VkXcbSurfaceCreateFlagsKHR,
-    pub connection: *mut xcb_connection_t,
+    pub connection: *mut types::xcb_connection_t,
     pub window: xcb_window_t,
 }
 pub type PFN_vkCreateXcbSurfaceKHR = ::std::option::Option<
@@ -29,7 +31,7 @@ pub type PFN_vkGetPhysicalDeviceXcbPresentationSupportKHR = ::std::option::Optio
     unsafe extern "C" fn(
         physicalDevice: VkPhysicalDevice,
         queueFamilyIndex: u32,
-        connection: *mut xcb_connection_t,
+        connection: *mut types::xcb_connection_t,
         visual_id: xcb_visualid_t,
     ) -> VkBool32,
 >;

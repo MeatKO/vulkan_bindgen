@@ -1,15 +1,9 @@
-// The opposite of "winit" or something... whatever
-pub mod window;
-pub mod window_events;
+pub mod win32_window;
+pub mod xcb_bindgen;
+pub mod xcb_vk_bindgen;
+pub mod xcb_functions;
+pub mod xcb_window;
+// pub mod xcb_events;
 
-mod xcb_bindgen;
-mod xcb_vk_bindgen;
-mod xcb_functions;
-mod xcb_window;
-mod xcb_events;
-
-mod win32_bindgen;
-mod win32_vk_bindgen;
-mod win32_window;
-
-mod window_traits;
+pub mod win32_bindgen;
+pub mod win32_vk_bindgen;

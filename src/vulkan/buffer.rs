@@ -112,7 +112,7 @@ pub unsafe fn copy_buffer(
 	};
 
 	vkQueueSubmit(vk_handle.graphics_queue, 1, &submit_info, nullptr());
-	vkQueueWaitIdle(vk_handle.graphics_queue,);
+	vkQueueWaitIdle(vk_handle.graphics_queue);
 
 	vkFreeCommandBuffers(vk_handle.logical_device, vk_handle.command_pool, 1, &command_buffer);
 

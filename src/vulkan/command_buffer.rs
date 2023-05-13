@@ -40,12 +40,22 @@ pub fn record_command_buffer(vk_handle: &VkHandle, image_index: u32)
 		}
 	}
 
-	let clear_value = 
-		VkClearValue{
-			color: VkClearColorValue{
-				float32: [0.0f32, 0.0f32, 0.0f32, 1.0f32]
-			}
-		};
+	// order here should be identical to the order of attachments...
+	let clear_values = 
+		vec![
+			VkClearValue{
+				color: VkClearColorValue{
+					float32: [0.0f32, 0.0f32, 0.0f32, 1.0f32]
+				}
+			},
+			VkClearValue{
+				depthStencil: VkClearDepthStencilValue { 
+					depth: 1.0f32, 
+					stencil: 0,
+				}
+			},
+		];
+		
 
 	let render_pass_begin_info = VkRenderPassBeginInfo{
 		sType: VkStructureType::VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
@@ -53,10 +63,10 @@ pub fn record_command_buffer(vk_handle: &VkHandle, image_index: u32)
 		framebuffer: vk_handle.swapchain_framebuffers[image_index as usize],
 		renderArea: VkRect2D { 
 			offset: VkOffset2D { x: 0, y: 0 }, 
-			extent: vk_handle.extent
+			extent: vk_handle.swapchain_extent
 		},
-		clearValueCount: 1,
-		pClearValues: &clear_value,
+		clearValueCount: clear_values.len() as _,
+		pClearValues: clear_values.as_ptr(),
 		pNext: nullptr()
 	};
 
@@ -69,8 +79,8 @@ pub fn record_command_buffer(vk_handle: &VkHandle, image_index: u32)
 	let viewport = VkViewport{
 		x: 0.0f32,
 		y: 0.0f32,
-		width: vk_handle.extent.width as f32,
-		height: vk_handle.extent.height as f32,
+		width: vk_handle.swapchain_extent.width as f32,
+		height: vk_handle.swapchain_extent.height as f32,
 		minDepth: 0.0f32,
 		maxDepth: 1.0f32,
 	};
@@ -81,7 +91,7 @@ pub fn record_command_buffer(vk_handle: &VkHandle, image_index: u32)
 
 	let scissor = VkRect2D{
 		offset: VkOffset2D { x: 0, y: 0 },
-		extent: vk_handle.extent
+		extent: vk_handle.swapchain_extent
 	};
 	unsafe
 	{

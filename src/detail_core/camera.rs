@@ -7,9 +7,7 @@ use crate::detail_core::{
 	input_buffer::*,
 };
 
-use crate::loseit::{
-	window_events::*,
-};
+use parmack::window::event::KeyCode;
 
 pub enum CameraMovement
 {
@@ -63,19 +61,19 @@ impl Camera
 	{
 		let velocity = self.movement_speed * delta_time_ms;
 
-		if input_buffer.is_pressed(KeyValues::W as u8)
+		if input_buffer.is_pressed(KeyCode::W as u8)
 		{
 			self.position += &(&self.front * &velocity)
 		}
-		if input_buffer.is_pressed(KeyValues::A as u8)
+		if input_buffer.is_pressed(KeyCode::A as u8)
 		{
 			self.position -= &(&self.right * &velocity)
 		}
-		if input_buffer.is_pressed(KeyValues::S as u8)
+		if input_buffer.is_pressed(KeyCode::S as u8)
 		{
 			self.position -= &(&self.front * &velocity)
 		}
-		if input_buffer.is_pressed(KeyValues::D as u8)
+		if input_buffer.is_pressed(KeyCode::D as u8)
 		{
 			self.position += &(&self.right * &velocity)
 		}

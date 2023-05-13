@@ -28,7 +28,7 @@ pub struct VkHandle
 	pub window_image_format: VkFormat,
 	pub surface_format: VkSurfaceFormatKHR,
 	pub present_mode: VkPresentModeKHR,
-	pub extent: VkExtent2D,
+	pub swapchain_extent: VkExtent2D,
 	pub swapchain_framebuffers: Vec<VkFramebuffer>,
 	pub render_pass: VkRenderPass,
 	pub graphics_pipeline: VkPipeline,
@@ -82,7 +82,15 @@ pub struct VkHandle
 	pub descriptor_pool: VkDescriptorPool,
 	pub descriptor_sets: Vec<VkDescriptorSet>,
 	pub start_time: std::time::Instant,
-	// pub start_time: std::time::SystemTime,
+
+	pub texture_image: VkImage,
+	pub texture_image_memory: VkDeviceMemory,
+	pub texture_image_view: VkImageView,
+	pub texture_sampler: VkSampler,
+
+	pub depth_image: VkImage,
+	pub depth_image_memory: VkDeviceMemory,
+	pub depth_image_view: VkImageView,
 }
 
 impl VkHandle
@@ -108,7 +116,7 @@ impl VkHandle
 				colorSpace: VkColorSpaceKHR::VK_COLOR_SPACE_SRGB_NONLINEAR_KHR 
 			},
 			present_mode: VkPresentModeKHR::VK_PRESENT_MODE_FIFO_KHR,
-			extent: VkExtent2D { width: 0, height: 0 },
+			swapchain_extent: VkExtent2D { width: 0, height: 0 },
 			swapchain_framebuffers: vec![],
 			render_pass: nullptr(),
 			queue_handle: QueueHandle::default(),
@@ -140,13 +148,24 @@ impl VkHandle
 			fragment_shader_module: nullptr(),
 			debug_messenger: nullptr(),
 			vertices: vec![
-				Vertex{pos: Vec2{x: -0.5f32, y: -0.5f32}, color: Vec3{x: 1.0f32, y: 0.0f32, z: 0.0f32}},
-				Vertex{pos: Vec2{x: 0.5f32, y: -0.5f32}, color: Vec3{x: 0.0f32, y: 1.0f32, z: 0.0f32}},
-				Vertex{pos: Vec2{x: 0.5f32, y: 0.5f32}, color: Vec3{x: 0.0f32, y: 0.0f32, z: 1.0f32}},
-				Vertex{pos: Vec2{x: -0.5f32, y: 0.5f32}, color: Vec3{x: 1.0f32, y: 1.0f32, z: 1.0f32}}
+				Vertex{pos: Vec3{x: -0.5f32, y: -0.5f32, z: -0.5f32}, color: Vec3{x: 0.0f32, y: 1.0f32, z: 0.0f32}, uv: Vec2 { x: 0.0f32, y: 0.0f32 }},
+				Vertex{pos: Vec3{x: 0.5f32, y: -0.5f32, z: -0.5f32}, color: Vec3{x: 1.0f32, y: 0.0f32, z: 0.0f32}, uv: Vec2 { x: 1.0f32, y: 0.0f32 }},
+				Vertex{pos: Vec3{x: 0.5f32, y: 0.5f32, z: -0.5f32}, color: Vec3{x: 0.0f32, y: 0.0f32, z: 1.0f32}, uv: Vec2 { x: 1.0f32, y: 1.0f32 }},
+				Vertex{pos: Vec3{x: -0.5f32, y: 0.5f32, z: -0.5f32}, color: Vec3{x: 1.0f32, y: 1.0f32, z: 1.0f32}, uv: Vec2 { x: 0.0f32, y: 1.0f32 }},
+				
+				Vertex{pos: Vec3{x: -0.5f32, y: -0.5f32, z: 0.5f32}, color: Vec3{x: 0.0f32, y: 1.0f32, z: 0.0f32}, uv: Vec2 { x: 0.0f32, y: 0.0f32 }},
+				Vertex{pos: Vec3{x: 0.5f32, y: -0.5f32, z: 0.5f32}, color: Vec3{x: 1.0f32, y: 0.0f32, z: 0.0f32}, uv: Vec2 { x: 1.0f32, y: 0.0f32 }},
+				Vertex{pos: Vec3{x: 0.5f32, y: 0.5f32, z: 0.5f32}, color: Vec3{x: 0.0f32, y: 0.0f32, z: 1.0f32}, uv: Vec2 { x: 1.0f32, y: 1.0f32 }},
+				Vertex{pos: Vec3{x: -0.5f32, y: 0.5f32, z: 0.5f32}, color: Vec3{x: 1.0f32, y: 1.0f32, z: 1.0f32}, uv: Vec2 { x: 0.0f32, y: 1.0f32 }},
+			
 			],
 			indices: vec![
-				0, 1, 2, 2, 3, 0
+				0, 1, 2, 2, 3, 0,
+				4, 5, 6, 6, 7, 4,
+				0, 4, 5, 0, 5, 1,
+				2, 6, 7, 2, 7, 3, 
+				4, 7, 0, 0, 7, 3,
+				5, 1, 6, 6, 1, 2,
 			],
 			vertex_buffer: nullptr(),
 			vertex_buffer_memory: nullptr(),
@@ -160,12 +179,20 @@ impl VkHandle
 			descriptor_sets: vec![],
 			
 			start_time: std::time::Instant::now(),
+
+			texture_image: nullptr(),
+			texture_image_memory: nullptr(),
+			texture_image_view: nullptr(),
+			texture_sampler: nullptr(),
+
+			depth_image: nullptr(),
+			depth_image_memory: nullptr(),
+			depth_image_view: nullptr(),
 		};
 	}
 
 	pub unsafe fn destroy_vk_resources(&self)
 	{
-
 		vkDestroyBuffer(self.logical_device, self.vertex_buffer, nullptr());
 		vkFreeMemory(self.logical_device, self.vertex_buffer_memory, nullptr());
 
@@ -173,6 +200,12 @@ impl VkHandle
 		vkFreeMemory(self.logical_device, self.index_buffer_memory, nullptr());
 
 		cleanup_swapchain(self);
+
+		vkDestroySampler(self.logical_device, self.texture_sampler, nullptr());
+		vkDestroyImageView(self.logical_device, self.texture_image_view, nullptr());
+		
+		vkDestroyImage(self.logical_device, self.texture_image, nullptr());
+    	vkFreeMemory(self.logical_device, self.texture_image_memory, nullptr());
 
 		for i in 0..self.frames_in_flight
 		{

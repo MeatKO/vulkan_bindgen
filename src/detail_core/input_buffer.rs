@@ -7,7 +7,7 @@ pub struct ButtonInfo
 
 pub struct InputBuffer
 {
-	key_states: [ButtonInfo; 256],
+	key_states: [ButtonInfo; u8::MAX as usize + 1],
 	hold_threshold_ms: f32
 }
 

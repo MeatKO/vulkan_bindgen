@@ -15,11 +15,21 @@ pub unsafe fn create_descriptor_set_layout(vk_handle: &mut VkHandle)
 		pImmutableSamplers: nullptr()
 	};
 
+	let sampler_layout_binding = VkDescriptorSetLayoutBinding{
+		binding: 1,
+		descriptorType: VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+		descriptorCount: 1,
+		stageFlags: VkShaderStageFlagBits::VK_SHADER_STAGE_FRAGMENT_BIT as u32,
+		pImmutableSamplers: nullptr()
+	};
+
+	let bindings = vec![ubo_layout_binding, sampler_layout_binding];
+
 	// Descriptor set
 	let descriptor_set_layout_create_info = VkDescriptorSetLayoutCreateInfo{
 		sType: VkStructureType::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-		bindingCount: 1,
-		pBindings: &ubo_layout_binding,
+		bindingCount: bindings.len() as u32,
+		pBindings: bindings.as_ptr(),
 		flags: 0,	
 		pNext: nullptr(),
 	};
@@ -60,8 +70,15 @@ pub unsafe fn create_descriptor_sets(vk_handle: &mut VkHandle)
 				offset: 0,
 				range: size_of::<UniformBufferObject>() as u64
 			};
+
+		let image_info = 
+			VkDescriptorImageInfo {
+				imageLayout: VkImageLayout::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+				imageView: vk_handle.texture_image_view,
+				sampler: vk_handle.texture_sampler
+			};
 		
-		let descriptor_write = 
+		let descriptor_writes = vec![
 			VkWriteDescriptorSet {
 				sType: VkStructureType::VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
 				dstSet: vk_handle.descriptor_sets[i],
@@ -73,8 +90,21 @@ pub unsafe fn create_descriptor_sets(vk_handle: &mut VkHandle)
 				pImageInfo: nullptr(),
 				pTexelBufferView: nullptr(),
 				pNext: nullptr()
-			};
+			},
+			VkWriteDescriptorSet {
+				sType: VkStructureType::VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+				dstSet: vk_handle.descriptor_sets[i],
+				dstBinding: 1,
+				dstArrayElement: 0,
+				descriptorType: VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+				descriptorCount: 1,
+				pBufferInfo: nullptr(),
+				pImageInfo: &image_info,
+				pTexelBufferView: nullptr(),
+				pNext: nullptr()
+			},
+		];
 
-		vkUpdateDescriptorSets(vk_handle.logical_device, 1, &descriptor_write, 0, nullptr());
+		vkUpdateDescriptorSets(vk_handle.logical_device, descriptor_writes.len() as _, descriptor_writes.as_ptr(), 0, nullptr());
 	}
 }

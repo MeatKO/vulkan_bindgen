@@ -4066,6 +4066,15 @@ pub enum VkCompareOp {
     VK_COMPARE_OP_ALWAYS = 7,
     VK_COMPARE_OP_MAX_ENUM = 2147483647,
 }
+
+impl Default for VkCompareOp
+{
+	fn default() -> Self
+	{
+		VkCompareOp::VK_COMPARE_OP_NEVER
+	}
+}
+
 impl VkDynamicState {
     pub const VK_DYNAMIC_STATE_CULL_MODE_EXT: VkDynamicState =
         VkDynamicState::VK_DYNAMIC_STATE_CULL_MODE;
@@ -4256,6 +4265,13 @@ pub enum VkStencilOp {
     VK_STENCIL_OP_INCREMENT_AND_WRAP = 6,
     VK_STENCIL_OP_DECREMENT_AND_WRAP = 7,
     VK_STENCIL_OP_MAX_ENUM = 2147483647,
+}
+
+impl Default for VkStencilOp {
+	fn default() -> Self
+	{
+		return VkStencilOp::VK_STENCIL_OP_KEEP
+	}
 }
 #[repr(u32)]
 #[non_exhaustive]
@@ -6177,7 +6193,7 @@ pub struct VkPipelineMultisampleStateCreateInfo {
     pub alphaToOneEnable: VkBool32,
 }
 #[repr(C)]
-#[derive(Debug, Copy, Clone)]
+#[derive(Default, Debug, Copy, Clone)]
 pub struct VkStencilOpState {
     pub failOp: VkStencilOp,
     pub passOp: VkStencilOp,

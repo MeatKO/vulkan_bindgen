@@ -11,8 +11,9 @@ use std::ptr::null_mut as nullptr;
 
 pub struct Vertex
 {
-	pub pos: Vec2,
-	pub color: Vec3
+	pub pos: Vec3,
+	pub color: Vec3,
+	pub uv: Vec2,
 }
 
 impl Vertex
@@ -26,7 +27,7 @@ impl Vertex
 		}
 	}
 
-	pub fn get_attribute_descriptions() -> [VkVertexInputAttributeDescription; 2]
+	pub fn get_attribute_descriptions() -> [VkVertexInputAttributeDescription; 3]
 	{
 		unsafe
 		{
@@ -34,7 +35,7 @@ impl Vertex
 				VkVertexInputAttributeDescription{
 					binding: 0,
 					location: 0,
-					format: VkFormat::VK_FORMAT_R32G32_SFLOAT,
+					format: VkFormat::VK_FORMAT_R32G32B32_SFLOAT,
 					offset: offset_of!(Vertex, pos) as u32
 				},
 				VkVertexInputAttributeDescription{
@@ -42,6 +43,12 @@ impl Vertex
 					location: 1,
 					format: VkFormat::VK_FORMAT_R32G32B32_SFLOAT,
 					offset: offset_of!(Vertex, color) as u32
+				},
+				VkVertexInputAttributeDescription{
+					binding: 0,
+					location: 2,
+					format: VkFormat::VK_FORMAT_R32G32_SFLOAT,
+					offset: offset_of!(Vertex, uv) as u32
 				}
 			]	
 		}

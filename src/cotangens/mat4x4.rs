@@ -3,7 +3,7 @@ use std::ops::Mul;
 use crate::cotangens::vec3::*;
 
 #[repr(align(16))]
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub struct Mat4x4
 {
 	pub data: [[f32; 4]; 4]
@@ -52,7 +52,7 @@ impl Mat4x4
 		out_mat.data[0][0] = f / aspect_ratio;
 		out_mat.data[1][1] = f * -1.0f32; // building it for vk
 		out_mat.data[2][2] = (near + far) / range;
-		out_mat.data[2][3] = (2.0f32 * near * far) / range;
+		out_mat.data[2][3] = (1.0f32 * near * far) / range;
 		out_mat.data[3][2] = -1.0f32;
 		out_mat.data[3][3] = 0.0f32;
 
@@ -93,6 +93,30 @@ impl Mat4x4
 		rot_mat.data[2][2] = degrees.cos();
 		rot_mat.data[1][2] = degrees.sin();
 		rot_mat.data[2][1] = -degrees.sin();
+
+		return *self * &rot_mat;
+	}
+
+	pub fn rotate_y(&self, degrees: f32) -> Mat4x4
+	{
+		let mut rot_mat = Mat4x4::new_identity(1.0f32);
+
+		rot_mat.data[0][0] = degrees.cos();
+		rot_mat.data[2][2] = degrees.cos();
+		rot_mat.data[0][2] = -degrees.sin();
+		rot_mat.data[2][0] = degrees.sin();
+
+		return *self * &rot_mat;
+	}
+
+	pub fn rotate_z(&self, degrees: f32) -> Mat4x4
+	{
+		let mut rot_mat = Mat4x4::new_identity(1.0f32);
+
+		rot_mat.data[0][0] = degrees.cos();
+		rot_mat.data[1][1] = degrees.cos();
+		rot_mat.data[0][1] = degrees.sin();
+		rot_mat.data[1][0] = -degrees.sin();
 
 		return *self * &rot_mat;
 	}

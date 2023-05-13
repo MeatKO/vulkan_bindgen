@@ -1,8 +1,13 @@
 use crate::vulkan::vk_bindgen::*;
 use crate::vulkan::handle::VkHandle;
 use crate::vulkan::framebuffer::*;
+use crate::vulkan::texture_view::*;
+use crate::vulkan::depth_buffer::*;
+
 use std::ptr::null_mut as nullptr;
 use std::cmp::min;
+
+use super::depth_buffer::create_depth_buffer;
 
 pub struct SwapchainSupportDetails 
 {
@@ -17,11 +22,16 @@ pub unsafe fn recreate_swapchain(vk_handle: &mut VkHandle)
 	cleanup_swapchain(vk_handle);
 	create_swapchain(vk_handle);
 	create_swapchain_image_views(vk_handle);
+	create_depth_buffer(vk_handle);
 	create_framebuffer(vk_handle);
 }
 
 pub unsafe fn cleanup_swapchain(vk_handle: &VkHandle)
 {
+	vkDestroyImageView(vk_handle.logical_device, vk_handle.depth_image_view, nullptr());
+	vkDestroyImage(vk_handle.logical_device, vk_handle.depth_image, nullptr());
+	vkFreeMemory(vk_handle.logical_device, vk_handle.depth_image_memory, nullptr());
+
 	for framebuffer in vk_handle.swapchain_framebuffers.iter()
 	{
 		vkDestroyFramebuffer(vk_handle.logical_device, *framebuffer, nullptr());
@@ -40,7 +50,7 @@ pub unsafe fn create_swapchain(vk_handle: &mut VkHandle)
 	// Swapchain creation
 	vk_handle.surface_format = choose_swap_surface_format(&vk_handle.swapchain_support_details.formats).expect("Couldn't find suitable window surface format.");
 	vk_handle.present_mode = choose_swap_present_mode(&vk_handle.swapchain_support_details.present_modes);
-	vk_handle.extent = choose_swap_extent(&vk_handle.swapchain_support_details.capabilities);
+	vk_handle.swapchain_extent = choose_swap_extent(&vk_handle.swapchain_support_details.capabilities);
 
 	let image_count =
 		min(
@@ -61,7 +71,7 @@ pub unsafe fn create_swapchain(vk_handle: &mut VkHandle)
 		minImageCount: image_count,
 		imageFormat: vk_handle.surface_format.format,
 		imageColorSpace: vk_handle.surface_format.colorSpace,
-		imageExtent: vk_handle.extent,
+		imageExtent: vk_handle.swapchain_extent,
 		imageArrayLayers: 1,
 		imageSharingMode: VkSharingMode::VK_SHARING_MODE_EXCLUSIVE,
 		queueFamilyIndexCount: 0,
@@ -102,33 +112,41 @@ pub unsafe fn create_swapchain_image_views(vk_handle: &mut VkHandle)
 
 	for i in 0..swapchain_images_vec.len()
 	{
-		let swapchain_image_view_create_info = VkImageViewCreateInfo{
-			sType: VkStructureType::VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-			image: swapchain_images_vec[i],
-			viewType: VkImageViewType::VK_IMAGE_VIEW_TYPE_2D,
-			format: vk_handle.surface_format.format,
-			components: VkComponentMapping { 
-					r: VkComponentSwizzle::VK_COMPONENT_SWIZZLE_IDENTITY,
-					g: VkComponentSwizzle::VK_COMPONENT_SWIZZLE_IDENTITY,
-					b: VkComponentSwizzle::VK_COMPONENT_SWIZZLE_IDENTITY,
-					a: VkComponentSwizzle::VK_COMPONENT_SWIZZLE_IDENTITY
-				},
-			subresourceRange: VkImageSubresourceRange { 
-					aspectMask: VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT as u32, 
-					baseMipLevel: 0, 
-					levelCount: 1, 
-					baseArrayLayer: 0, 
-					layerCount: 1 
-				},
-			flags: 0,
-			pNext: nullptr(),
-		};
+		vk_handle.swapchain_image_views_vec[i] = 
+			create_image_view(
+				vk_handle, 
+				swapchain_images_vec[i],
+				vk_handle.surface_format.format, 
+				VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT as u32,
+			);
 
-		match vkCreateImageView(vk_handle.logical_device, &swapchain_image_view_create_info, nullptr(), &mut vk_handle.swapchain_image_views_vec[i])
-		{
-			VkResult::VK_SUCCESS => { println!("✔️ vkCreateImageView()"); }
-			err => { panic!("✗ vkCreateImageView() failed with code {:?}.", err); }
-		}
+		// let swapchain_image_view_create_info = VkImageViewCreateInfo{
+		// 	sType: VkStructureType::VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+		// 	image: swapchain_images_vec[i],
+		// 	viewType: VkImageViewType::VK_IMAGE_VIEW_TYPE_2D,
+		// 	format: vk_handle.surface_format.format,
+		// 	components: VkComponentMapping { 
+		// 			r: VkComponentSwizzle::VK_COMPONENT_SWIZZLE_IDENTITY,
+		// 			g: VkComponentSwizzle::VK_COMPONENT_SWIZZLE_IDENTITY,
+		// 			b: VkComponentSwizzle::VK_COMPONENT_SWIZZLE_IDENTITY,
+		// 			a: VkComponentSwizzle::VK_COMPONENT_SWIZZLE_IDENTITY
+		// 		},
+		// 	subresourceRange: VkImageSubresourceRange { 
+		// 			aspectMask: VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT as u32, 
+		// 			baseMipLevel: 0, 
+		// 			levelCount: 1, 
+		// 			baseArrayLayer: 0, 
+		// 			layerCount: 1 
+		// 		},
+		// 	flags: 0,
+		// 	pNext: nullptr(),
+		// };
+
+		// match vkCreateImageView(vk_handle.logical_device, &swapchain_image_view_create_info, nullptr(), &mut vk_handle.swapchain_image_views_vec[i])
+		// {
+		// 	VkResult::VK_SUCCESS => { println!("✔️ vkCreateImageView()"); }
+		// 	err => { panic!("✗ vkCreateImageView() failed with code {:?}.", err); }
+		// }
 	}
 }
 

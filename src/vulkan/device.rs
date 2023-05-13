@@ -41,7 +41,8 @@ pub unsafe fn create_logical_device(vk_handle: &mut VkHandle)
 	};
 
 	// Device creation
-	let device_features : VkPhysicalDeviceFeatures = std::mem::zeroed(); // essentially putting everything to VkFalse
+	let mut device_features : VkPhysicalDeviceFeatures = std::mem::zeroed(); // essentially putting everything to VkFalse
+	device_features.samplerAnisotropy = VK_TRUE;
 
 	let mut device_create_info = VkDeviceCreateInfo{
 		sType: VkStructureType::VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
@@ -125,10 +126,17 @@ pub unsafe fn is_device_suitable(vk_handle: &VkHandle, physical_device: VkPhysic
 		return false
 	}
 
+	let mut physical_device_features: VkPhysicalDeviceFeatures = std::mem::zeroed();
+	vkGetPhysicalDeviceFeatures(physical_device, &mut physical_device_features);
+
 	match get_physical_device_queue_flags(physical_device)
 	{
 		None => { return false }
-		Some(flags) => { return (flags & VkQueueFlagBits::VK_QUEUE_GRAPHICS_BIT as u32) != 0 }
+		Some(flags) => 
+		{ 
+			return (flags & VkQueueFlagBits::VK_QUEUE_GRAPHICS_BIT as u32) != 0 &&
+					physical_device_features.samplerAnisotropy != 0
+		}
 	}
 }
 

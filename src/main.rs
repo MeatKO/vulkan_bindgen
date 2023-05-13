@@ -1,10 +1,8 @@
+use parmack::handle::Handle;
+
 mod ffi;
 mod cotangens;
-
-mod loseit;
-use loseit::{
-	window::*, window_events::*,
-};
+mod pixcell;
 
 mod vulkan;
 use vulkan::{
@@ -12,99 +10,99 @@ use vulkan::{
 	draw::*, framebuffer::*, command_pool::*, command_buffer::*,
 	pipeline::*, instance::*, physical_device::*, synchronization::*,
 	vertex::*, uniform_buffer::*, descriptor_set::*, descriptor_pool::*,
+	texture::*, texture_view::*, index::*, depth_buffer::*,
 };
+
+mod loseit;
 
 mod detail_core;
 use detail_core::{
-	camera::*, input_processor::*,
+	input_processor::*, window::*,
 };
 
-use crate::{vulkan::index::create_index_buffer, cotangens::vec3::Vec3};
-
-// use parmack::window::Window;
+use crate::cotangens::mat4x4::Mat4x4;
 
 fn main() 
 {
+
+	// let mat = Mat4x4::new_perspective(
+	// 	45.0f32.to_radians(), 
+	// 	400.0f32 / 400.0f32, 
+	// 	0.1f32, 
+	// 	10.0f32
+	// );
+
+	// println!("mat : {:?}", mat);
+
+	// panic!("");
 	unsafe
 	{
-		let h_test = 
-			parmack::window::Window::new()
-			.with_title("windole")
-			.with_dimensions(400, 400)
-			.build();
-
 		let mut vk_handle = VkHandle::new_empty();
 
 		create_instance(&mut vk_handle);
 
 		let mut window = 
-			Window::new()
-			.with_title("deta:l")
+			parmack::window::WindowBuilder::new()
+			.with_title("windole")
 			.with_dimensions(800, 600)
-			.build_vulkan(&mut vk_handle);
+			.build()
+			.unwrap();
+
+		vk_handle.window_surface = create_vulkan_surface(&mut window, &mut vk_handle).unwrap();
 
 		let mut input_processor = InputProcessor::new();
 
 		create_physical_device(&mut vk_handle);
-	
 		create_logical_device(&mut vk_handle);
 		
 		create_swapchain(&mut vk_handle);
-
 		create_swapchain_image_views(&mut vk_handle);
 
 		create_command_pool(&mut vk_handle);
 
+		create_texture_image(&mut vk_handle);
+		create_texture_image_view(&mut vk_handle);
+		create_texture_sampler(&mut vk_handle);
+
 		create_vertex_buffer(&mut vk_handle);
-
 		create_index_buffer(&mut vk_handle);
-
 		create_uniform_buffers(&mut vk_handle);
 
 		create_descriptor_set_layout(&mut vk_handle);
-
 		create_descriptor_pool(&mut vk_handle);
-
 		create_descriptor_sets(&mut vk_handle);
 
 		create_pipeline(&mut vk_handle);
-
+		create_depth_buffer(&mut vk_handle);
 		create_framebuffer(&mut vk_handle);
 
 		create_synchronization_structures(&mut vk_handle);
 
 		create_command_buffer(&mut vk_handle);
 
-		let mut last_delta_time_ms = 0.0f64;
+		let mut last_delta_time_ms : f64;
 
-		// let unix_timestamp = SystemTime::now().duration_since(UNIX_EPOCH).expect("SystemTime before UNIX EPOCH!").as_secs();
-
-		window.lock_pointer();
-		window.hide_cursor();
-		// std::thread::sleep(std::time::Duration::from_millis(2000));
-		// window.unlock_pointer();
+		// window.confine_pointer(true);
+		// window.center_pointer(true);
+		// window.show_pointer(false);
 
 		while !input_processor.should_quit() 
 		{
 			let start_time = std::time::Instant::now();
-			let start_time_2 = std::time::SystemTime::now();
 			
 			draw_frame(&mut vk_handle);
-
-			// println!("frame time {}ms", last_delta_time_ms);
 
 			std::thread::sleep(std::time::Duration::from_millis(15));
 
 			let end_time = std::time::Instant::now();
 			last_delta_time_ms = end_time.duration_since(start_time).as_secs_f64() * 1000.0f64;
-
+			
 			input_processor.process_window_events(last_delta_time_ms as f32, &mut window, &mut vk_handle);
 			vk_handle.camera.process_movement(last_delta_time_ms as f32, &vk_handle.input_buffer);
 			vk_handle.camera.update_camera_vectors();
 
-			// println!("frame time {}s", end_time.duration_since(start_time).as_secs_f64());
-			// println!("frame time {}s", start_time.elapsed().as_secs_f64());
-			// println!("frame system time {}s", start_time_2.elapsed().unwrap().as_secs_f32());
+			// println!("window size : {:?}", window.get_size());
+			// println!("pointer loc : {:?}", window.get_pointer_location());
 		}
 		
 		vkDeviceWaitIdle(vk_handle.logical_device);

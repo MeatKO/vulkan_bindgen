@@ -9,6 +9,7 @@
 pub struct xcb_connection_t {
     _unused: [u8; 0],
 }
+
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct xcb_generic_iterator_t {
@@ -3904,11 +3905,9 @@ extern "C" {
 }
 extern "C" {
     pub fn xcb_setup_roots_iterator(R: *const xcb_setup_t) -> xcb_screen_iterator_t;
-}
-extern "C" {
+
     pub fn xcb_setup_next(i: *mut xcb_setup_iterator_t);
-}
-extern "C" {
+
     pub fn xcb_setup_end(i: xcb_setup_iterator_t) -> xcb_generic_iterator_t;
 }
 extern "C" {

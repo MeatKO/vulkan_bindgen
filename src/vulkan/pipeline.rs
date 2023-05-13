@@ -2,6 +2,7 @@ use crate::vulkan::vk_bindgen::*;
 use crate::vulkan::handle::*;
 use crate::vulkan::shader::*;
 use crate::vulkan::vertex::*;
+use crate::vulkan::depth_buffer::*;
 use crate::ffi::strings::*;
 use std::ptr::null_mut as nullptr;
 
@@ -34,8 +35,8 @@ pub unsafe fn create_pipeline(vk_handle: &mut VkHandle)
 	let viewport = VkViewport{
 		x: 0.0f32,
 		y: 0.0f32,
-		width: vk_handle.extent.width as f32,
-		height: vk_handle.extent.height as f32,
+		width: vk_handle.swapchain_extent.width as f32,
+		height: vk_handle.swapchain_extent.height as f32,
 		minDepth: 0.0f32,
 		maxDepth: 1.0f32,
 	};
@@ -43,7 +44,7 @@ pub unsafe fn create_pipeline(vk_handle: &mut VkHandle)
 	// Scissor
 	let scissor = VkRect2D{
 		offset: VkOffset2D { x: 0, y: 0 },
-		extent: vk_handle.extent
+		extent: vk_handle.swapchain_extent
 	};
 
 	// Dynamic states
@@ -161,10 +162,27 @@ pub unsafe fn create_pipeline(vk_handle: &mut VkHandle)
 		flags: 0
 	};
 
+	let depth_attachment_descriptor = VkAttachmentDescription{
+		format: find_depth_format(vk_handle),
+		samples: VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT,
+		loadOp: VkAttachmentLoadOp::VK_ATTACHMENT_LOAD_OP_CLEAR,
+		storeOp: VkAttachmentStoreOp::VK_ATTACHMENT_STORE_OP_DONT_CARE,
+		stencilLoadOp: VkAttachmentLoadOp::VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+		stencilStoreOp: VkAttachmentStoreOp::VK_ATTACHMENT_STORE_OP_DONT_CARE,
+		initialLayout: VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED,
+		finalLayout: VkImageLayout::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+		flags: 0
+	};
+
 	// Attachment references
 	let color_attachment_reference = VkAttachmentReference{
 		attachment: 0,
 		layout: VkImageLayout::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
+	};
+
+	let depth_attachment_reference = VkAttachmentReference{
+		attachment: 1,
+		layout: VkImageLayout::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
 	};
 
 	// Subpass
@@ -177,7 +195,7 @@ pub unsafe fn create_pipeline(vk_handle: &mut VkHandle)
 		pInputAttachments: nullptr(),
 		preserveAttachmentCount: 0,
 		pPreserveAttachments: nullptr(),
-		pDepthStencilAttachment: nullptr(),
+		pDepthStencilAttachment: &depth_attachment_reference,
 		pResolveAttachments: nullptr(),
 		flags: 0
 	};
@@ -186,18 +204,26 @@ pub unsafe fn create_pipeline(vk_handle: &mut VkHandle)
 	let subpass_dependency = VkSubpassDependency{
 		srcSubpass: VK_SUBPASS_EXTERNAL as u32,
 		dstSubpass: 0,
-		srcStageMask: VkPipelineStageFlagBits::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT as u32,
+		srcStageMask: 
+			VkPipelineStageFlagBits::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT as u32 |
+			VkPipelineStageFlagBits::VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT as u32,
 		srcAccessMask: 0,
-		dstStageMask: VkPipelineStageFlagBits::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT as u32,
-		dstAccessMask: 0,
+		dstStageMask: 
+			VkPipelineStageFlagBits::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT as u32 |
+			VkPipelineStageFlagBits::VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT as u32,
+		dstAccessMask: 
+			VkAccessFlagBits::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT as u32 |
+			VkAccessFlagBits::VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT as u32,
 		dependencyFlags: 0,
 	};
+
+	let attachment_descriptors = vec![color_attachment_descriptor, depth_attachment_descriptor];
 
 	// the actual Render pass creation
 	let render_pass_create_info = VkRenderPassCreateInfo{
 		sType: VkStructureType::VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
-		attachmentCount: 1,
-		pAttachments: &color_attachment_descriptor,
+		attachmentCount: attachment_descriptors.len() as _,
+		pAttachments: attachment_descriptors.as_ptr(),
 		subpassCount: 1,
 		pSubpasses: &subpass,
 		dependencyCount: 1,
@@ -212,11 +238,34 @@ pub unsafe fn create_pipeline(vk_handle: &mut VkHandle)
 		err => { panic!("✗ vkCreateRenderPass() failed with code {:?}.", err); }
 	}		
 
+	let depth_stencil_create_info = VkPipelineDepthStencilStateCreateInfo{
+		sType: VkStructureType::VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
+		depthTestEnable: VK_TRUE,
+		depthWriteEnable: VK_TRUE,
+		depthCompareOp: VkCompareOp::VK_COMPARE_OP_LESS,
+		depthBoundsTestEnable: VK_FALSE,
+		minDepthBounds: 0.0f32,
+		maxDepthBounds: 1.0f32,
+		stencilTestEnable: VK_FALSE,
+		front: VkStencilOpState{ ..Default::default() },
+		back: VkStencilOpState{ ..Default::default() },
+		flags: 0,	
+		pNext: nullptr(),
+	};
+
+
 	// Shader creation
 	// let vertex_shader_source = include_bytes!("../../shaders/basic_triangle/vert.spv");
 	// let fragment_shader_source = include_bytes!("../../shaders/basic_triangle/frag.spv");
-	let vertex_shader_source = include_bytes!("../../shaders/uniform_buffer/vert.spv");
-	let fragment_shader_source = include_bytes!("../../shaders/uniform_buffer/frag.spv");
+
+	// let vertex_shader_source = include_bytes!("../../shaders/uniform_buffer/vert.spv");
+	// let fragment_shader_source = include_bytes!("../../shaders/uniform_buffer/frag.spv");
+
+	// let vertex_shader_source = include_bytes!("../../shaders/textured/vert.spv");
+	// let fragment_shader_source = include_bytes!("../../shaders/textured/frag.spv");
+
+	let vertex_shader_source = include_bytes!("../../shaders/test/vert.spv");
+	let fragment_shader_source = include_bytes!("../../shaders/test/frag.spv");
 
 	vk_handle.vertex_shader_module = create_shader_module(&vk_handle, vertex_shader_source);
 	vk_handle.fragment_shader_module = create_shader_module(&vk_handle, fragment_shader_source);
@@ -252,7 +301,8 @@ pub unsafe fn create_pipeline(vk_handle: &mut VkHandle)
 		pViewportState: &viewport_state_create_info,
 		pRasterizationState: &rasterizer_create_info,
 		pMultisampleState: &multisampling_create_info,
-		pDepthStencilState: nullptr(),
+		pDepthStencilState: &depth_stencil_create_info,
+		// pDepthStencilState:  nullptr(),
 		pColorBlendState: &color_blend_create_info,
 		pDynamicState: &dynamic_state_create_info,
 		layout: vk_handle.pipeline_layout,

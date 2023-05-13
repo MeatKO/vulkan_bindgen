@@ -1,6 +1,5 @@
 use crate::cotangens::mat4x4::Mat4x4;
 use crate::cotangens::vec2::Vec2;
-use crate::cotangens::vec3::Vec3;
 use crate::vulkan::vk_bindgen::*;
 use crate::vulkan::handle::*;
 use crate::vulkan::buffer::*;
@@ -61,36 +60,23 @@ pub unsafe fn create_uniform_buffers(vk_handle: &mut VkHandle)
 pub unsafe fn update_uniform_buffer(vk_handle: &mut VkHandle) 
 {
 	let time: f32 = std::time::Instant::now().duration_since(vk_handle.start_time).as_secs_f32();
+	// let time: f32 = 0.0f32;
 
-	// let ubo = 
-	// 	UniformBufferObject{
-	// 		foo: Vec2 { x: 0.0f32, y: 0.0f32 },
-	// 		model: Mat4x4::new_identity(1.0f32)
-	// 			.rotate_x(time * radians(90.0f32)),
-	// 		view: Mat4x4::new_lookat(
-	// 			Vec3{x: 2.0f32, y: 2.0f32, z: 2.0f32}, 
-	// 			Vec3{x: 0.0f32, y: 0.0f32, z: 0.0f32}, 
-	// 			Vec3{x: 0.0f32, y: 0.0f32, z: 1.0f32}
-	// 		),
-	// 		proj: Mat4x4::new_perspective(
-	// 			radians(45.0f32), 
-	// 			vk_handle.extent.width as f32 / vk_handle.extent.height as f32, 
-	// 			0.1f32, 
-	// 			10.0f32
-	// 		)
-	// 	};
+	let time = time / 2.0f32;
 
 	let ubo = 
 		UniformBufferObject{
 			foo: Vec2 { x: 0.0f32, y: 0.0f32 },
-			model: Mat4x4::new_identity(1.0f32),
-				// .rotate_x(time * 90.0f32.to_radians()),
+			model: Mat4x4::new_identity(1.0f32)
+				.rotate_x(time * 90.0f32.to_radians())
+				.rotate_y(time * 90.0f32.to_radians())
+				.rotate_z(time * 90.0f32.to_radians()),
 			view: vk_handle.camera.get_view_matrix(),
 			proj: Mat4x4::new_perspective(
 				45.0f32.to_radians(), 
-				vk_handle.extent.width as f32 / vk_handle.extent.height as f32, 
+				vk_handle.swapchain_extent.width as f32 / vk_handle.swapchain_extent.height as f32, 
 				0.1f32, 
-				1000.0f32
+				100.0f32
 			)
 		};
 	
