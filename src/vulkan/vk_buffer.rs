@@ -1,22 +1,55 @@
-use crate::vulkan::vk_bindgen::*;
-use crate::vulkan::handle::*;
-use crate::vulkan::memory::*;
+use crate::vulkan::vk_bindgen::{
+	VkMemoryPropertyFlags,
+	VkBufferCreateInfo,
+	VkBuffer,
+	VkResult,
+	VkMemoryAllocateInfo,
+	VkDeviceMemory,
+	VkDeviceSize,
+	VkBufferUsageFlags,
+	VkStructureType,
+	VkSharingMode,
+	VkMemoryRequirements,
+	vkGetBufferMemoryRequirements,
+	vkBindBufferMemory,
+	VkCommandBufferAllocateInfo, 
+	VkCommandBufferLevel, 
+	vkAllocateCommandBuffers, 
+	VkCommandBufferBeginInfo, 
+	VkCommandBufferUsageFlagBits, 
+	vkBeginCommandBuffer, 
+	VkBufferCopy, 
+	vkCmdCopyBuffer, 
+	VkSubmitInfo, 
+	vkEndCommandBuffer, 
+	vkQueueWaitIdle, 
+	vkFreeCommandBuffers, 
+	vkQueueSubmit,
+};
+
+use crate::vulkan::vk_memory::{
+	vk_create_buffer, 
+	vk_allocate_memory,
+	find_memory_type,
+};
+
+use crate::vulkan::handle::{
+	VkHandle,
+};
+
 use std::ptr::null_mut as nullptr;
 
 pub unsafe fn create_buffer(
 	vk_handle: &VkHandle,
-	size: VkDeviceSize, 
-	usage: VkBufferUsageFlags, 
+	byte_size: VkDeviceSize, 
+	buffer_usage_flags: VkBufferUsageFlags, 
 	properties: VkMemoryPropertyFlags,
 ) -> Result<(VkBuffer, VkDeviceMemory), String>
 {
-	let mut buffer: VkBuffer = nullptr();
-	let mut buffer_memory: VkDeviceMemory = nullptr();
-
 	let buffer_create_info = VkBufferCreateInfo{
 		sType: VkStructureType::VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-		size: size,
-		usage: usage,
+		size: byte_size,
+		usage: buffer_usage_flags,
 		sharingMode: VkSharingMode::VK_SHARING_MODE_EXCLUSIVE,
 		flags: 0,
 		queueFamilyIndexCount: 0,
@@ -24,12 +57,9 @@ pub unsafe fn create_buffer(
 		pNext: nullptr(),
 	};
 
-	match vkCreateBuffer(vk_handle.logical_device, &buffer_create_info, nullptr(), &mut buffer)
-	{
-		VkResult::VK_SUCCESS => {}
-		err => { return Err(format!("vkCreateBuffer failed with code {:?}", err)) }
-	}
+	let buffer = vk_create_buffer(vk_handle.logical_device, &buffer_create_info)?;
 
+	// move this shit out of here, create a physical device wrapper containing these
 	let mut memory_requirements: VkMemoryRequirements = std::mem::zeroed();
 	vkGetBufferMemoryRequirements(vk_handle.logical_device, buffer, &mut memory_requirements);
 
@@ -37,18 +67,14 @@ pub unsafe fn create_buffer(
 		sType: VkStructureType::VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
 		allocationSize: memory_requirements.size,
 		memoryTypeIndex: find_memory_type(
-			vk_handle, 
+			vk_handle.physical_device, 
 			memory_requirements.memoryTypeBits, 
 			properties
-		),
+		).unwrap(), // handle this later !
 		pNext: nullptr(),
 	};
 
-	match vkAllocateMemory(vk_handle.logical_device, &memory_allocate_info, nullptr(), &mut buffer_memory)
-	{
-		VkResult::VK_SUCCESS => {}
-		err => { return Err(format!("vkAllocateMemory failed with code {:?}", err))}
-	}
+	let buffer_memory = vk_allocate_memory(vk_handle.logical_device, &memory_allocate_info)?;
 
 	vkBindBufferMemory(vk_handle.logical_device, buffer, buffer_memory, 0);
 
@@ -90,11 +116,12 @@ pub unsafe fn copy_buffer(
 		err => { return Err(format!("vkBeginCommandBuffer failed with code {:?}", err))}
 	}
 
-	let buffer_copy_region = VkBufferCopy{
-		size: size,
-		srcOffset: 0,
-		dstOffset: 0
-	};
+	let buffer_copy_region = 
+		VkBufferCopy{
+			size: size,
+			srcOffset: 0,
+			dstOffset: 0
+		};
 
 	vkCmdCopyBuffer(command_buffer, source_buffer, destination_buffer, 1, &buffer_copy_region);
 	vkEndCommandBuffer(command_buffer);

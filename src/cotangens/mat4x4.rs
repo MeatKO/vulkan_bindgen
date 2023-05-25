@@ -1,4 +1,7 @@
-use std::ops::Mul;
+use std::ops::{
+	Mul,
+	Add,
+};
 
 use crate::cotangens::vec3::*;
 
@@ -85,6 +88,18 @@ impl Mat4x4
 // members
 impl Mat4x4
 {
+	pub fn translate(&self, translation: Vec3) -> Mat4x4
+	{
+		let mut rot_mat = Mat4x4::new_identity(1.0f32);
+
+		rot_mat.data[0][3] += translation.x;
+		rot_mat.data[1][3] += translation.y;
+		rot_mat.data[2][3] += translation.z;
+
+		return *self + &rot_mat.transpose();
+		// return *self * &rot_mat;
+	}
+
 	pub fn rotate_x(&self, degrees: f32) -> Mat4x4
 	{
 		let mut rot_mat = Mat4x4::new_identity(1.0f32);
@@ -191,4 +206,24 @@ impl Mul<&Mat4x4> for Mat4x4
 
 		out_mat
     }
+}
+
+impl Add<&Mat4x4> for Mat4x4 
+{
+	type Output = Mat4x4;
+
+    fn add(self, mat_in: &Mat4x4) -> Mat4x4 
+	{
+		let mut out_mat: Mat4x4 = Mat4x4::new();
+
+		for i in 0..4
+		{
+			for j in 0..4
+			{
+				out_mat.data[i][j] = self.data[i][j] + mat_in.data[i][j];
+			}
+		}
+
+		out_mat
+	}
 }

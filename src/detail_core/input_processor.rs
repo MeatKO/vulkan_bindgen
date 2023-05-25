@@ -72,7 +72,7 @@ impl InputProcessor
 						// }
 
 						// assuming x and y are delta from the center (will think of something better later)
-						WindowActions::Motion{x: x, y: y} => 
+						WindowActions::Motion{x, y} => 
 						{
 							// println!("cursor is at : {} {}", x, y);
 
@@ -95,7 +95,8 @@ impl InputProcessor
 
 							// println!("delta x {} delta y {}", delta_x, delta_y);
 
-							vk_handle.camera.process_mouse_movement(delta_x as f32 * delta_time_ms, delta_y as f32 * delta_time_ms);
+							// vk_handle.camera.process_mouse_movement(delta_x as f32 * delta_time_ms, delta_y as f32 * delta_time_ms);
+							vk_handle.camera.process_mouse_movement(delta_x as f32 * 10.0f32, delta_y as f32 * 10.0f32);
 						}
 						_ => {}
 					}

@@ -35,6 +35,7 @@ pub unsafe fn create_xcb_surface_function(instance: &VkInstance)
 	)
 }
 
+// leaks
 pub unsafe fn get_atom<T: ToString>(conn: *mut xcb_connection_t, name: T) -> xcb_atom_t
 {
 	let c_name = CString::new(name.to_string()).unwrap();

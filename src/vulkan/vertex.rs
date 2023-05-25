@@ -1,6 +1,6 @@
 use crate::vulkan::vk_bindgen::*;
 use crate::vulkan::handle::*;
-use crate::vulkan::buffer::*;
+use crate::vulkan::vk_buffer::*;
 use crate::cotangens::{vec2::*, vec3::*};
 
 use crate::ffi::offsetof::offset_of;
@@ -9,11 +9,12 @@ use std::ffi::c_void;
 use std::mem::size_of;
 use std::ptr::null_mut as nullptr;
 
+#[derive(Eq, Hash, PartialEq, Clone)]
 pub struct Vertex
 {
 	pub pos: Vec3,
-	pub color: Vec3,
 	pub uv: Vec2,
+	pub normal: Vec3,
 }
 
 impl Vertex
@@ -27,11 +28,12 @@ impl Vertex
 		}
 	}
 
-	pub fn get_attribute_descriptions() -> [VkVertexInputAttributeDescription; 3]
+	// pub fn get_attribute_descriptions() -> [VkVertexInputAttributeDescription; 3]
+	pub fn get_attribute_descriptions() -> Vec<VkVertexInputAttributeDescription>
 	{
 		unsafe
 		{
-			return [
+			return vec![
 				VkVertexInputAttributeDescription{
 					binding: 0,
 					location: 0,
@@ -41,23 +43,27 @@ impl Vertex
 				VkVertexInputAttributeDescription{
 					binding: 0,
 					location: 1,
-					format: VkFormat::VK_FORMAT_R32G32B32_SFLOAT,
-					offset: offset_of!(Vertex, color) as u32
+					format: VkFormat::VK_FORMAT_R32G32_SFLOAT,
+					offset: offset_of!(Vertex, uv) as u32
 				},
 				VkVertexInputAttributeDescription{
 					binding: 0,
 					location: 2,
-					format: VkFormat::VK_FORMAT_R32G32_SFLOAT,
-					offset: offset_of!(Vertex, uv) as u32
-				}
+					format: VkFormat::VK_FORMAT_R32G32B32_SFLOAT,
+					offset: offset_of!(Vertex, normal) as u32
+				},
 			]	
 		}
 	}
 }
 
-pub unsafe fn create_vertex_buffer(vk_handle: &mut VkHandle)
+pub unsafe fn create_vertex_buffer(
+	vk_handle: &mut VkHandle, 
+	vertices: &mut Vec<Vertex>,
+) -> Result<(VkBuffer, VkDeviceMemory), String>
 {
-	let buffer_size = size_of::<Vertex>() * vk_handle.vertices.len();
+	let buffer_size = size_of::<Vertex>() * vertices.len();
+
 	let (staging_buffer, staging_buffer_memory) = 
 		match create_buffer(
 				vk_handle, 
@@ -68,13 +74,14 @@ pub unsafe fn create_vertex_buffer(vk_handle: &mut VkHandle)
 			)
 		{
 			Ok(tuple) => { tuple }
-			Err(e) => { panic!("Couldn't create vertex staging buffer - {}", e) }
+			// Err(e) => { panic!("Couldn't create vertex staging buffer - {}", e) }
+			Err(e) => { return Err(format!("Couldn't create vertex staging buffer - {}", e)) }
 		};
 
 	let mut data: *mut c_void = nullptr();
 	vkMapMemory(vk_handle.logical_device, staging_buffer_memory, 0, buffer_size as u64, 0, &mut data);
 	
-	std::ptr::copy_nonoverlapping(vk_handle.vertices.as_ptr(), data as _, vk_handle.vertices.len());
+	std::ptr::copy_nonoverlapping(vertices.as_ptr(), data as _, vertices.len());
 	
 	vkUnmapMemory(vk_handle.logical_device, staging_buffer_memory);
 
@@ -88,18 +95,22 @@ pub unsafe fn create_vertex_buffer(vk_handle: &mut VkHandle)
 		)
 		{
 			Ok(tuple) => { tuple }
-			Err(e) => { panic!("Couldn't create vertex buffer - {}", e) }
+			// Err(e) => { panic!("Couldn't create vertex buffer - {}", e) }
+			Err(e) => { return Err(format!("Couldn't create vertex buffer - {}", e)) }
 		};
 
 	match copy_buffer(vk_handle, staging_buffer, buffer, buffer_size as u64)
 	{
 		Ok(_) => {}
-		Err(e) => { panic!("Couldn't copy vertex buffer - {}", e) }
+		// Err(e) => { panic!("Couldn't copy vertex buffer - {}", e) }
+		Err(e) => { return Err(format!("Couldn't copy vertex buffer - {}", e)) }
 	}
 
 	vkDestroyBuffer(vk_handle.logical_device, staging_buffer, nullptr());
 	vkFreeMemory(vk_handle.logical_device, staging_buffer_memory, nullptr());
 
-	vk_handle.vertex_buffer = buffer;
-	vk_handle.vertex_buffer_memory = buffer_memory;
+	return Ok((buffer, buffer_memory))
+
+	// vk_handle.vertex_buffer = buffer;
+	// vk_handle.vertex_buffer_memory = buffer_memory;
 }

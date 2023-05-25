@@ -1,9 +1,9 @@
+use crate::exedra::model::Model;
 use crate::vulkan::vk_bindgen::*;
 use crate::vulkan::handle::*;
 use std::ptr::null_mut as nullptr;
 
-
-pub unsafe fn create_command_buffer(vk_handle: &mut VkHandle)
+pub unsafe fn create_command_buffers(vk_handle: &mut VkHandle)
 {
 	let command_buffer_create_info = VkCommandBufferAllocateInfo{
 		sType: VkStructureType::VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
@@ -21,23 +21,22 @@ pub unsafe fn create_command_buffer(vk_handle: &mut VkHandle)
 	}
 }
 
-pub fn record_command_buffer(vk_handle: &VkHandle, image_index: u32)
+pub unsafe fn record_command_buffer(vk_handle: &VkHandle, image_index: u32, model: &Model)
 {
-	let command_buffer_begin_info = VkCommandBufferBeginInfo{
-		sType: VkStructureType::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-		flags: 0,
-		pInheritanceInfo: nullptr(),
-		pNext: nullptr()
-	};
+	let current_command_buffer = vk_handle.command_buffer_vec[vk_handle.current_frame];
 
-	unsafe 
+	let command_buffer_begin_info = 
+		VkCommandBufferBeginInfo{
+			sType: VkStructureType::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+			flags: 0,
+			pInheritanceInfo: nullptr(),
+			pNext: nullptr()
+		};
+
+	match vkBeginCommandBuffer(current_command_buffer, &command_buffer_begin_info)
 	{
-		match vkBeginCommandBuffer(vk_handle.command_buffer_vec[vk_handle.current_frame], &command_buffer_begin_info)
-		{
-			// VkResult::VK_SUCCESS => { println!("✔️ vkBeginCommandBuffer()"); }
-			VkResult::VK_SUCCESS => {  }
-			err => { panic!("✗ vkBeginCommandBuffer() failed with code {:?}.", err); }
-		}
+		VkResult::VK_SUCCESS => {  }
+		err => { panic!("✗ vkBeginCommandBuffer() failed with code {:?}.", err); }
 	}
 
 	// order here should be identical to the order of attachments...
@@ -55,94 +54,97 @@ pub fn record_command_buffer(vk_handle: &VkHandle, image_index: u32)
 				}
 			},
 		];
-		
 
-	let render_pass_begin_info = VkRenderPassBeginInfo{
-		sType: VkStructureType::VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-		renderPass: vk_handle.render_pass,
-		framebuffer: vk_handle.swapchain_framebuffers[image_index as usize],
-		renderArea: VkRect2D { 
-			offset: VkOffset2D { x: 0, y: 0 }, 
-			extent: vk_handle.swapchain_extent
-		},
-		clearValueCount: clear_values.len() as _,
-		pClearValues: clear_values.as_ptr(),
-		pNext: nullptr()
-	};
+	let render_pass_begin_info = 
+		VkRenderPassBeginInfo{
+			sType: VkStructureType::VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+			renderPass: vk_handle.render_pass,
+			framebuffer: vk_handle.swapchain_framebuffers[image_index as usize],
+			renderArea: VkRect2D { 
+					offset: VkOffset2D { x: 0, y: 0 }, 
+					extent: vk_handle.swapchain_extent
+				},
+			clearValueCount: clear_values.len() as _,
+			pClearValues: clear_values.as_ptr(),
+			pNext: nullptr()
+		};
 
-	unsafe
-	{
-		vkCmdBeginRenderPass(vk_handle.command_buffer_vec[vk_handle.current_frame], &render_pass_begin_info, VkSubpassContents::VK_SUBPASS_CONTENTS_INLINE);
-		vkCmdBindPipeline(vk_handle.command_buffer_vec[vk_handle.current_frame], VkPipelineBindPoint::VK_PIPELINE_BIND_POINT_GRAPHICS , vk_handle.graphics_pipeline);
-	}
+	vkCmdBeginRenderPass(current_command_buffer, &render_pass_begin_info, VkSubpassContents::VK_SUBPASS_CONTENTS_INLINE);
+	vkCmdBindPipeline(current_command_buffer, VkPipelineBindPoint::VK_PIPELINE_BIND_POINT_GRAPHICS , vk_handle.graphics_pipeline);
 
-	let viewport = VkViewport{
-		x: 0.0f32,
-		y: 0.0f32,
-		width: vk_handle.swapchain_extent.width as f32,
-		height: vk_handle.swapchain_extent.height as f32,
-		minDepth: 0.0f32,
-		maxDepth: 1.0f32,
-	};
-	unsafe
-	{
-		vkCmdSetViewport(vk_handle.command_buffer_vec[vk_handle.current_frame], 0, 1, &viewport);
-	}
+	let viewport = 
+		VkViewport{
+			x: 0.0f32,
+			y: 0.0f32,
+			width: vk_handle.swapchain_extent.width as f32,
+			height: vk_handle.swapchain_extent.height as f32,
+			minDepth: 0.0f32,
+			maxDepth: 1.0f32,
+		};
 
-	let scissor = VkRect2D{
-		offset: VkOffset2D { x: 0, y: 0 },
-		extent: vk_handle.swapchain_extent
-	};
-	unsafe
-	{
-		vkCmdSetScissor(vk_handle.command_buffer_vec[vk_handle.current_frame], 0, 1, &scissor);
+	vkCmdSetViewport(current_command_buffer, 0, 1, &viewport);
+
+	let scissor = 
+		VkRect2D{
+			offset: VkOffset2D { 
+				x: 0, 
+				y: 0 
+			},
+			extent: vk_handle.swapchain_extent,
+		};
+
+	vkCmdSetScissor(current_command_buffer, 0, 1, &scissor);
+
+	let vertex_buffers: Vec<VkBuffer> = 
+		vec![
+			model.vertex_buffer,
+		];
+
+	let offsets = vec![0];
+
+	vkCmdBindVertexBuffers(
+		current_command_buffer, 
+		0, 
+		1, 
+		vertex_buffers.as_ptr(), 
+		offsets.as_ptr()
+	);
 	
-		let vertex_buffers: Vec<VkBuffer> = vec![vk_handle.vertex_buffer];
-		let offsets = vec![0];
+	// add a type constraint on the index buffer later, it must be equal to the type of the buffer !
+	vkCmdBindIndexBuffer(
+		current_command_buffer,
+		model.index_buffer, 
+		0,
+		VkIndexType::VK_INDEX_TYPE_UINT32,
+	);
 
-		vkCmdBindVertexBuffers(
-			vk_handle.command_buffer_vec[vk_handle.current_frame], 
-			0, 
-			1, 
-			vertex_buffers.as_ptr(), 
-			offsets.as_ptr()
-		);
-		
-		vkCmdBindIndexBuffer(
-			vk_handle.command_buffer_vec[vk_handle.current_frame], 
-			vk_handle.index_buffer, 
-			0, 
-			VkIndexType::VK_INDEX_TYPE_UINT16,
-		);
+	vkCmdBindDescriptorSets(
+		current_command_buffer, 
+		VkPipelineBindPoint::VK_PIPELINE_BIND_POINT_GRAPHICS, 
+		vk_handle.pipeline_layout, 
+		0, 
+		1, 
+		&vk_handle.descriptor_sets[vk_handle.current_frame],
+		0, 
+		nullptr()
+	);
 
-		vkCmdBindDescriptorSets(
-			vk_handle.command_buffer_vec[vk_handle.current_frame], 
-			VkPipelineBindPoint::VK_PIPELINE_BIND_POINT_GRAPHICS, 
-			vk_handle.pipeline_layout, 
-			0, 
-			1, 
-			&vk_handle.descriptor_sets[vk_handle.current_frame],
-			0, 
-			nullptr()
-		);
+	vkCmdDrawIndexed(
+		current_command_buffer,
+		model.index_count,
+		1, 
+		0, 
+		0, 
+		0
+	);
+	// vkCmdDraw(current_command_buffer, vk_handle.vertices.len() as u32, 1, 0, 0);
 
-		vkCmdDrawIndexed(
-			vk_handle.command_buffer_vec[vk_handle.current_frame], 
-			vk_handle.indices.len() as u32, 
-			1, 
-			0, 
-			0, 
-			0
-		);
-		
-		// vkCmdDraw(vk_handle.command_buffer_vec[vk_handle.current_frame], vk_handle.vertices.len() as u32, 1, 0, 0);
-		vkCmdEndRenderPass(vk_handle.command_buffer_vec[vk_handle.current_frame]);
+	vkCmdEndRenderPass(current_command_buffer);
 
-		match vkEndCommandBuffer(vk_handle.command_buffer_vec[vk_handle.current_frame])
-		{
-			// VkResult::VK_SUCCESS => { println!("✔️ vkEndCommandBuffer()"); }
-			VkResult::VK_SUCCESS => {  }
-			err => { panic!("✗ vkEndCommandBuffer() failed with code {:?}.", err); }
-		}	
+	match vkEndCommandBuffer(current_command_buffer)
+	{
+		// VkResult::VK_SUCCESS => { println!("✔️ vkEndCommandBuffer()"); }
+		VkResult::VK_SUCCESS => {  }
+		err => { panic!("✗ vkEndCommandBuffer() failed with code {:?}.", err); }
 	}
 }

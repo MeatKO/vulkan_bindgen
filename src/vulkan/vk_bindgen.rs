@@ -5825,6 +5825,7 @@ pub struct VkLayerProperties {
     pub implementationVersion: u32,
     pub description: [::std::os::raw::c_char; 256usize],
 }
+
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct VkSubmitInfo {
@@ -5838,6 +5839,7 @@ pub struct VkSubmitInfo {
     pub signalSemaphoreCount: u32,
     pub pSignalSemaphores: *const VkSemaphore,
 }
+
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct VkMappedMemoryRange {
@@ -12935,6 +12937,8 @@ extern "C" {
     ) -> VkResult;
 }
 pub type VkRenderingFlagsKHR = VkRenderingFlags;
+use std::ptr::NonNull;
+
 pub use self::VkRenderingFlagBits as VkRenderingFlagBitsKHR;
 pub type VkRenderingInfoKHR = VkRenderingInfo;
 pub type VkRenderingAttachmentInfoKHR = VkRenderingAttachmentInfo;

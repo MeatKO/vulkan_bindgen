@@ -108,21 +108,36 @@ pub unsafe fn get_physical_device_queue_flags(physical_device: VkPhysicalDevice)
 
 pub unsafe fn is_device_suitable(vk_handle: &VkHandle, physical_device: VkPhysicalDevice, required_extensions: &Vec<&str>) -> bool
 {
+	let mut device_properties = std::mem::zeroed();
+	vkGetPhysicalDeviceProperties(physical_device, &mut device_properties);
+	println!("checking if {} is compatible", from_c_string(&device_properties.deviceName).unwrap());
+
 	let mut extension_count = 0u32;
 	vkEnumerateDeviceExtensionProperties(physical_device, nullptr(), &mut extension_count, nullptr());
 	let mut extension_vec = vec![ std::mem::zeroed(); extension_count as usize ];
 	vkEnumerateDeviceExtensionProperties(physical_device, nullptr(), &mut extension_count, extension_vec.as_mut_ptr());
 
 	// optionally we can print the missing extensions here...
-	if get_missing_extensions(&required_extensions, &extension_vec).is_some()
+	match get_missing_extensions(&required_extensions, &extension_vec)
 	{
-		return false 
+		Some(missing_extensions) =>
+		{
+			println!("incompatible due to missing extensions {:?}", missing_extensions);
+			return false
+		}
+		None => {}
 	}
+
+	// if get_missing_extensions(&required_extensions, &extension_vec).is_some()
+	// {
+	// 	return false;
+	// }
 
 	let swapchain_support_details = query_swapchain_support(physical_device, vk_handle.window_surface);
 
 	if !(swapchain_support_details.formats.len() > 0) || !(swapchain_support_details.present_modes.len() > 0)
 	{
+		println!("incompatible due to lack of swapchain support details");
 		return false
 	}
 
@@ -131,18 +146,28 @@ pub unsafe fn is_device_suitable(vk_handle: &VkHandle, physical_device: VkPhysic
 
 	match get_physical_device_queue_flags(physical_device)
 	{
-		None => { return false }
+		None => 
+		{ 
+			println!("incompatible due to missing physical queue flags");
+			return false 
+		}
 		Some(flags) => 
 		{ 
+			// println!("physical queue flags are available, checking for graphics bit");
+			// println!("available flags are {:#04b}", flags);
+			// println!("required are {:#04b}", VkQueueFlagBits::VK_QUEUE_GRAPHICS_BIT as u32);
 			return (flags & VkQueueFlagBits::VK_QUEUE_GRAPHICS_BIT as u32) != 0 &&
 					physical_device_features.samplerAnisotropy != 0
+					
+			// return (flags & VkQueueFlagBits::VK_QUEUE_GRAPHICS_BIT as u32) != 0
 		}
 	}
 }
 
 pub unsafe fn pick_best_device(vk_handle: &VkHandle, physical_devices: Vec<*mut VkPhysicalDevice_T>) -> Option<VkPhysicalDevice>
 {
-	let mut suitable_devices_vec = physical_devices
+	let mut suitable_devices_vec = 
+		physical_devices
 		.iter()
 		.copied()
 		.filter(
@@ -161,28 +186,29 @@ pub unsafe fn pick_best_device(vk_handle: &VkHandle, physical_devices: Vec<*mut 
 				(physical_device, device_properties.deviceType, device_memory_properties.memoryHeaps[0].size)
 			}
 		)
-		.collect::<Vec<_>>();
+		.collect::<Vec<(VkPhysicalDevice, VkPhysicalDeviceType, u64)>>();
 
 	if suitable_devices_vec.len() == 0
 	{
 		return None
 	}
+
 	suitable_devices_vec
-	.sort_by(
-		|a, b|
-		{
-			if a.1 == VkPhysicalDeviceType::VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU 
-			&& b.1 == VkPhysicalDeviceType::VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU
+		.sort_by(
+			|a, b|
 			{
-				return std::cmp::Ordering::Greater;
+				if a.1 == VkPhysicalDeviceType::VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU 
+				&& b.1 == VkPhysicalDeviceType::VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU
+				{
+					return std::cmp::Ordering::Greater;
+				}
+				if a.2 > b.2
+				{
+					return std::cmp::Ordering::Greater;
+				}
+				return std::cmp::Ordering::Less;
 			}
-			if a.2 > b.2
-			{
-				return std::cmp::Ordering::Greater;
-			}
-			return std::cmp::Ordering::Less;
-		}
-	);
+		);
 	
 	return Some(suitable_devices_vec.last().expect("couldn't pick a device, the suitable_devices_vec was empty.").0);
 }

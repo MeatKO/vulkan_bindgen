@@ -1,15 +1,32 @@
 use std::ops::{
 	Mul, AddAssign, SubAssign, Add,
 };
+use std::cmp::Eq;
+use std::hash::{
+	Hash,
+	Hasher,
+};
 
 #[repr(align(16))]
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Vec3
 {
 	pub x: f32,
 	pub y: f32,
 	pub z: f32,
 }
+
+impl Hash for Vec3
+{
+	fn hash<H: Hasher>(&self, state: &mut H) 
+	{
+        (self.x as u32).hash(state);
+        (self.y as u32).hash(state);
+        (self.z as u32).hash(state);
+	}
+}
+
+impl Eq for Vec3 {}
 
 impl Add<&Vec3> for &Vec3 
 {

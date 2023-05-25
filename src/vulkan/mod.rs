@@ -17,8 +17,6 @@ pub mod instance;
 pub mod physical_device;
 pub mod synchronization;
 pub mod vertex;
-pub mod memory;
-pub mod buffer;
 pub mod index;
 pub mod uniform_buffer;
 pub mod descriptor_set;
@@ -26,3 +24,6 @@ pub mod descriptor_pool;
 pub mod texture;
 pub mod texture_view;
 pub mod depth_buffer;
+
+pub mod vk_buffer;
+pub mod vk_memory;

@@ -1,3 +1,4 @@
+use crate::exedra::model::Model;
 use crate::vulkan::vk_bindgen::*;
 use crate::vulkan::handle::*;
 use crate::vulkan::command_buffer::*;
@@ -5,7 +6,7 @@ use crate::vulkan::swapchain::*;
 use crate::vulkan::uniform_buffer::*;
 use std::ptr::null_mut as nullptr;
 
-pub fn draw_frame(vk_handle: &mut VkHandle)
+pub fn draw_frame(vk_handle: &mut VkHandle, model: &Model)
 {
 	unsafe
 	{
@@ -15,7 +16,7 @@ pub fn draw_frame(vk_handle: &mut VkHandle)
 		match vkAcquireNextImageKHR(vk_handle.logical_device, vk_handle.swapchain, u64::MAX, vk_handle.image_available_semaphore_vec[vk_handle.current_frame], nullptr(), &mut image_index)
 		{
 			VkResult::VK_SUCCESS => {}
-			VkResult::VK_ERROR_OUT_OF_DATE_KHR => { recreate_swapchain(vk_handle); return; }
+			VkResult::VK_ERROR_OUT_OF_DATE_KHR => { recreate_swapchain(vk_handle); }
 			e => { panic!("vkAcquireNextImageKHR() resulted in {:?}", e) }
 		}
 
@@ -24,7 +25,7 @@ pub fn draw_frame(vk_handle: &mut VkHandle)
 		vkResetFences(vk_handle.logical_device, 1, &vk_handle.in_flight_fence_vec[vk_handle.current_frame]);
 
 		vkResetCommandBuffer(vk_handle.command_buffer_vec[vk_handle.current_frame], 0);
-		record_command_buffer(vk_handle, image_index);
+		record_command_buffer(vk_handle, image_index, model);
 
 		let wait_semaphore_vec = vec![vk_handle.image_available_semaphore_vec[vk_handle.current_frame]];
 		let wait_stages_vec : Vec<VkPipelineStageFlags> = vec![VkPipelineStageFlagBits::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT as u32];
@@ -39,12 +40,11 @@ pub fn draw_frame(vk_handle: &mut VkHandle)
 			pCommandBuffers: &vk_handle.command_buffer_vec[vk_handle.current_frame],
 			signalSemaphoreCount: 1,
 			pSignalSemaphores: signal_semaphores_vec.as_ptr(),
-			pNext: nullptr()	
+			pNext: nullptr(),
 		};
 
 		match vkQueueSubmit( vk_handle.graphics_queue, 1, &submit_info, vk_handle.in_flight_fence_vec[vk_handle.current_frame])
 		{
-			// VkResult::VK_SUCCESS => { println!("✔️ vkQueueSubmit()"); }
 			VkResult::VK_SUCCESS => { }
 			err => { panic!("✗ vkQueueSubmit() failed with code {:?}.", err); }
 		}
@@ -62,13 +62,16 @@ pub fn draw_frame(vk_handle: &mut VkHandle)
 			pNext: nullptr()
 		};
 
+		// let start_time = std::time::Instant::now();
+
 		match vkQueuePresentKHR(vk_handle.presentation_queue, &present_info)
 		{
-			// VkResult::VK_SUCCESS => { println!("✔️ vkQueuePresentKHR()"); }
 			VkResult::VK_SUCCESS => {  }
 			VkResult::VK_ERROR_OUT_OF_DATE_KHR => { println!("vkQueuePresentKHR() out of date - recreating"); recreate_swapchain(vk_handle) }
 			e => { panic!("vkQueuePresentKHR() resulted in {:?}", e) }
 		}
+
+		// println!("vkQueuePresentKHR() time : {:?}ms", std::time::Instant::now().duration_since(start_time).as_secs_f64() * 1000.0f64);
 
 		vk_handle.current_frame = (vk_handle.current_frame + 1) % vk_handle.frames_in_flight;
 	}

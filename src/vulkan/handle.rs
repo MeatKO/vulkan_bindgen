@@ -67,13 +67,13 @@ pub struct VkHandle
 
 	pub debug_messenger: VkDebugUtilsMessengerEXT,
 
-	pub vertices: Vec<Vertex>,
-	pub vertex_buffer: VkBuffer,
-	pub vertex_buffer_memory: VkDeviceMemory,
+	// pub vertices: Vec<Vertex>,
+	// pub vertex_buffer: VkBuffer,
+	// pub vertex_buffer_memory: VkDeviceMemory,
 
-	pub indices: Vec<u16>,
-	pub index_buffer: VkBuffer,
-	pub index_buffer_memory: VkDeviceMemory,
+	// pub indices: Vec<u32>,
+	// pub index_buffer: VkBuffer,
+	// pub index_buffer_memory: VkDeviceMemory,
 
 	pub uniform_buffers: Vec<VkBuffer>,
 	pub uniform_buffers_memory: Vec<VkDeviceMemory>,
@@ -99,7 +99,7 @@ impl VkHandle
 	{
 		return  VkHandle {
 			camera: Camera::new(
-				Vec3{ x: 0.0f32, y: 0.0f32, z: 5.0f32 },
+				Vec3{ x: 0.0f32, y: 0.0f32, z: 1.5f32 },
 				Vec3{ x: 0.0f32, y: 1.0f32, z: 0.0f32 },
 				-90.0f32,
 				0.0f32
@@ -147,30 +147,30 @@ impl VkHandle
 			vertex_shader_module: nullptr(),
 			fragment_shader_module: nullptr(),
 			debug_messenger: nullptr(),
-			vertices: vec![
-				Vertex{pos: Vec3{x: -0.5f32, y: -0.5f32, z: -0.5f32}, color: Vec3{x: 0.0f32, y: 1.0f32, z: 0.0f32}, uv: Vec2 { x: 0.0f32, y: 0.0f32 }},
-				Vertex{pos: Vec3{x: 0.5f32, y: -0.5f32, z: -0.5f32}, color: Vec3{x: 1.0f32, y: 0.0f32, z: 0.0f32}, uv: Vec2 { x: 1.0f32, y: 0.0f32 }},
-				Vertex{pos: Vec3{x: 0.5f32, y: 0.5f32, z: -0.5f32}, color: Vec3{x: 0.0f32, y: 0.0f32, z: 1.0f32}, uv: Vec2 { x: 1.0f32, y: 1.0f32 }},
-				Vertex{pos: Vec3{x: -0.5f32, y: 0.5f32, z: -0.5f32}, color: Vec3{x: 1.0f32, y: 1.0f32, z: 1.0f32}, uv: Vec2 { x: 0.0f32, y: 1.0f32 }},
+			// vertices: vec![
+			// 	Vertex{pos: Vec3{x: -0.5f32, y: -0.5f32, z: -0.5f32}, normal: Vec3{x: 0.0f32, y: 1.0f32, z: 0.0f32}, uv: Vec2 { x: 0.0f32, y: 0.0f32 }},
+			// 	Vertex{pos: Vec3{x: 0.5f32, y: -0.5f32, z: -0.5f32}, normal: Vec3{x: 1.0f32, y: 0.0f32, z: 0.0f32}, uv: Vec2 { x: 1.0f32, y: 0.0f32 }},
+			// 	Vertex{pos: Vec3{x: 0.5f32, y: 0.5f32, z: -0.5f32}, normal: Vec3{x: 0.0f32, y: 0.0f32, z: 1.0f32}, uv: Vec2 { x: 1.0f32, y: 1.0f32 }},
+			// 	Vertex{pos: Vec3{x: -0.5f32, y: 0.5f32, z: -0.5f32}, normal: Vec3{x: 1.0f32, y: 1.0f32, z: 1.0f32}, uv: Vec2 { x: 0.0f32, y: 1.0f32 }},
 				
-				Vertex{pos: Vec3{x: -0.5f32, y: -0.5f32, z: 0.5f32}, color: Vec3{x: 0.0f32, y: 1.0f32, z: 0.0f32}, uv: Vec2 { x: 0.0f32, y: 0.0f32 }},
-				Vertex{pos: Vec3{x: 0.5f32, y: -0.5f32, z: 0.5f32}, color: Vec3{x: 1.0f32, y: 0.0f32, z: 0.0f32}, uv: Vec2 { x: 1.0f32, y: 0.0f32 }},
-				Vertex{pos: Vec3{x: 0.5f32, y: 0.5f32, z: 0.5f32}, color: Vec3{x: 0.0f32, y: 0.0f32, z: 1.0f32}, uv: Vec2 { x: 1.0f32, y: 1.0f32 }},
-				Vertex{pos: Vec3{x: -0.5f32, y: 0.5f32, z: 0.5f32}, color: Vec3{x: 1.0f32, y: 1.0f32, z: 1.0f32}, uv: Vec2 { x: 0.0f32, y: 1.0f32 }},
+			// 	Vertex{pos: Vec3{x: -0.5f32, y: -0.5f32, z: 0.5f32}, normal: Vec3{x: 0.0f32, y: 1.0f32, z: 0.0f32}, uv: Vec2 { x: 0.0f32, y: 0.0f32 }},
+			// 	Vertex{pos: Vec3{x: 0.5f32, y: -0.5f32, z: 0.5f32}, normal: Vec3{x: 1.0f32, y: 0.0f32, z: 0.0f32}, uv: Vec2 { x: 1.0f32, y: 0.0f32 }},
+			// 	Vertex{pos: Vec3{x: 0.5f32, y: 0.5f32, z: 0.5f32}, normal: Vec3{x: 0.0f32, y: 0.0f32, z: 1.0f32}, uv: Vec2 { x: 1.0f32, y: 1.0f32 }},
+			// 	Vertex{pos: Vec3{x: -0.5f32, y: 0.5f32, z: 0.5f32}, normal: Vec3{x: 1.0f32, y: 1.0f32, z: 1.0f32}, uv: Vec2 { x: 0.0f32, y: 1.0f32 }},
 			
-			],
-			indices: vec![
-				0, 1, 2, 2, 3, 0,
-				4, 5, 6, 6, 7, 4,
-				0, 4, 5, 0, 5, 1,
-				2, 6, 7, 2, 7, 3, 
-				4, 7, 0, 0, 7, 3,
-				5, 1, 6, 6, 1, 2,
-			],
-			vertex_buffer: nullptr(),
-			vertex_buffer_memory: nullptr(),
-			index_buffer: nullptr(),
-			index_buffer_memory: nullptr(),
+			// ],
+			// indices: vec![
+			// 	0, 1, 2, 2, 3, 0,
+			// 	4, 5, 6, 6, 7, 4,
+			// 	0, 4, 5, 0, 5, 1,
+			// 	2, 6, 7, 2, 7, 3, 
+			// 	4, 7, 0, 0, 7, 3,
+			// 	5, 1, 6, 6, 1, 2,
+			// ],
+			// vertex_buffer: nullptr(),
+			// vertex_buffer_memory: nullptr(),
+			// index_buffer: nullptr(),
+			// index_buffer_memory: nullptr(),
 
 			uniform_buffers: vec![],
 			uniform_buffers_memory: vec![],
@@ -193,11 +193,11 @@ impl VkHandle
 
 	pub unsafe fn destroy_vk_resources(&self)
 	{
-		vkDestroyBuffer(self.logical_device, self.vertex_buffer, nullptr());
-		vkFreeMemory(self.logical_device, self.vertex_buffer_memory, nullptr());
+		// vkDestroyBuffer(self.logical_device, self.vertex_buffer, nullptr());
+		// vkFreeMemory(self.logical_device, self.vertex_buffer_memory, nullptr());
 
-		vkDestroyBuffer(self.logical_device, self.index_buffer, nullptr());
-		vkFreeMemory(self.logical_device, self.index_buffer_memory, nullptr());
+		// vkDestroyBuffer(self.logical_device, self.index_buffer, nullptr());
+		// vkFreeMemory(self.logical_device, self.index_buffer_memory, nullptr());
 
 		cleanup_swapchain(self);
 

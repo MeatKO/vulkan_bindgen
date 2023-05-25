@@ -2,7 +2,6 @@ use crate::vulkan::vk_bindgen::*;
 use crate::vulkan::handle::VkHandle;
 use crate::vulkan::framebuffer::*;
 use crate::vulkan::texture_view::*;
-use crate::vulkan::depth_buffer::*;
 
 use std::ptr::null_mut as nullptr;
 use std::cmp::min;
@@ -47,6 +46,10 @@ pub unsafe fn create_swapchain(vk_handle: &mut VkHandle)
 {
 	vk_handle.swapchain_support_details = query_swapchain_support(vk_handle.physical_device, vk_handle.window_surface);
 	
+	println!("{:?}",vk_handle.swapchain_support_details.formats);
+	println!("{:?}",vk_handle.swapchain_support_details.present_modes);
+	// panic!();
+
 	// Swapchain creation
 	vk_handle.surface_format = choose_swap_surface_format(&vk_handle.swapchain_support_details.formats).expect("Couldn't find suitable window surface format.");
 	vk_handle.present_mode = choose_swap_present_mode(&vk_handle.swapchain_support_details.present_modes);
@@ -119,39 +122,12 @@ pub unsafe fn create_swapchain_image_views(vk_handle: &mut VkHandle)
 				vk_handle.surface_format.format, 
 				VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT as u32,
 			);
-
-		// let swapchain_image_view_create_info = VkImageViewCreateInfo{
-		// 	sType: VkStructureType::VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-		// 	image: swapchain_images_vec[i],
-		// 	viewType: VkImageViewType::VK_IMAGE_VIEW_TYPE_2D,
-		// 	format: vk_handle.surface_format.format,
-		// 	components: VkComponentMapping { 
-		// 			r: VkComponentSwizzle::VK_COMPONENT_SWIZZLE_IDENTITY,
-		// 			g: VkComponentSwizzle::VK_COMPONENT_SWIZZLE_IDENTITY,
-		// 			b: VkComponentSwizzle::VK_COMPONENT_SWIZZLE_IDENTITY,
-		// 			a: VkComponentSwizzle::VK_COMPONENT_SWIZZLE_IDENTITY
-		// 		},
-		// 	subresourceRange: VkImageSubresourceRange { 
-		// 			aspectMask: VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT as u32, 
-		// 			baseMipLevel: 0, 
-		// 			levelCount: 1, 
-		// 			baseArrayLayer: 0, 
-		// 			layerCount: 1 
-		// 		},
-		// 	flags: 0,
-		// 	pNext: nullptr(),
-		// };
-
-		// match vkCreateImageView(vk_handle.logical_device, &swapchain_image_view_create_info, nullptr(), &mut vk_handle.swapchain_image_views_vec[i])
-		// {
-		// 	VkResult::VK_SUCCESS => { println!("✔️ vkCreateImageView()"); }
-		// 	err => { panic!("✗ vkCreateImageView() failed with code {:?}.", err); }
-		// }
 	}
 }
 
 // this mf-er segfaults
 // at some point format_count becomes 0
+// EDIT : I was destroying the window surface alongside the window handle, fixed
 pub unsafe fn query_swapchain_support(physical_device: VkPhysicalDevice, window_surface: VkSurfaceKHR) -> SwapchainSupportDetails
 {
 	let mut details = 
@@ -171,6 +147,11 @@ pub unsafe fn query_swapchain_support(physical_device: VkPhysicalDevice, window_
 	vkGetPhysicalDeviceSurfacePresentModesKHR(physical_device, window_surface, &mut present_mode_count, nullptr());
 	details.present_modes = vec![ std::mem::zeroed(); format_count as usize ];
 	vkGetPhysicalDeviceSurfacePresentModesKHR(physical_device, window_surface, &mut present_mode_count, details.present_modes.as_mut_ptr());
+
+	println!("---------------------------------------------");
+	println!("{:?}", details.formats);
+	println!("{:?}", details.present_modes);
+	// panic!();
 
 	details
 }
@@ -199,6 +180,11 @@ pub fn choose_swap_surface_format(available_formats: &Vec<VkSurfaceFormatKHR>) -
 // Panics... well not always I guess ?... Sometimes
 pub fn choose_swap_present_mode(available_present_modes: &Vec<VkPresentModeKHR>) -> VkPresentModeKHR
 {
+	// return VkPresentModeKHR::VK_PRESENT_MODE_FIFO_KHR;
+	// return VkPresentModeKHR::VK_PRESENT_MODE_MAILBOX_KHR;
+	// return VkPresentModeKHR::VK_PRESENT_MODE_FIFO_RELAXED_KHR;
+	// return VkPresentModeKHR::VK_PRESENT_MODE_IMMEDIATE_KHR;
+
 	if available_present_modes.len() == 0
 	{
 		panic!("Empty available_present_modes vec!\nThe Vulkan specs state that VK_PRESENT_MODE_FIFO_KHR is always available.");

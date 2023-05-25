@@ -1,8 +1,8 @@
 use crate::vulkan::vk_bindgen::*;
 use crate::vulkan::handle::*;
-use crate::vulkan::buffer::*;
+use crate::vulkan::vk_buffer::*;
 use crate::vulkan::depth_buffer::*;
-use crate::vulkan::memory::find_memory_type;
+use crate::vulkan::vk_memory::find_memory_type;
 
 use crate::pixcell::tga::*;
 
@@ -11,7 +11,8 @@ use std::ptr::null_mut as nullptr;
 
 pub unsafe fn create_texture_image(vk_handle: &mut VkHandle)
 {
-	let image = TGAImage::new("./detail/textures/test_marked.tga").unwrap();
+	// let image = TGAImage::new("./detail/textures/test_marked.tga").unwrap();
+	let image = TGAImage::new("./detail/models/viking_room/viking_room.tga").unwrap();
 
 	let (staging_buffer, staging_buffer_memory) = 
 		match create_buffer(
@@ -102,19 +103,19 @@ pub unsafe fn create_image(
 		sType: VkStructureType::VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
 		allocationSize: memory_requirements.size,
 		memoryTypeIndex: find_memory_type(
-			vk_handle, 
+			vk_handle.physical_device, 
 			memory_requirements.memoryTypeBits, 
 			properties
-		),
+		).unwrap(),
 		pNext: nullptr(),
 	};
 
+	// replace with dt_memory func
 	match vkAllocateMemory(vk_handle.logical_device, &memory_allocate_info, nullptr(), &mut image_memory)
 	{
 		VkResult::VK_SUCCESS => { println!("✔️ vkAllocateMemory() for texture"); }
 		err => { panic!("vkAllocateMemory() failed with code {:?}", err) }
 	}
-
 
 	vkBindImageMemory(vk_handle.logical_device, image, image_memory, 0);
 

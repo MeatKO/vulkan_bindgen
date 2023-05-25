@@ -1,12 +1,15 @@
 use crate::cotangens::mat4x4::Mat4x4;
 use crate::cotangens::vec2::Vec2;
+use crate::cotangens::vec3::Vec3;
+use crate::detail_core::camera::*;
 use crate::vulkan::vk_bindgen::*;
 use crate::vulkan::handle::*;
-use crate::vulkan::buffer::*;
+use crate::vulkan::vk_buffer::*;
 use std::ffi::c_void;
 use std::mem::size_of;
 use std::ptr::null_mut as nullptr;
 
+// don't remember if this should be commented out : EDIT - its *not* needed because inner structs have 16B alignment
 #[repr(C)]
 // #[repr(align(16))]
 pub struct UniformBufferObject
@@ -59,8 +62,8 @@ pub unsafe fn create_uniform_buffers(vk_handle: &mut VkHandle)
 
 pub unsafe fn update_uniform_buffer(vk_handle: &mut VkHandle) 
 {
-	let time: f32 = std::time::Instant::now().duration_since(vk_handle.start_time).as_secs_f32();
-	// let time: f32 = 0.0f32;
+	// let time: f32 = std::time::Instant::now().duration_since(vk_handle.start_time).as_secs_f32();
+	let time: f32 = 0.0f32;
 
 	let time = time / 2.0f32;
 
@@ -68,10 +71,15 @@ pub unsafe fn update_uniform_buffer(vk_handle: &mut VkHandle)
 		UniformBufferObject{
 			foo: Vec2 { x: 0.0f32, y: 0.0f32 },
 			model: Mat4x4::new_identity(1.0f32)
-				.rotate_x(time * 90.0f32.to_radians())
-				.rotate_y(time * 90.0f32.to_radians())
-				.rotate_z(time * 90.0f32.to_radians()),
+				.translate(Vec3 { x: 0.0f32, y: -0.5f32, z: 0.0f32 })
+				.rotate_x(-90.0f32.to_radians())
+				.rotate_z(-90.0f32.to_radians()),
+
+				// .rotate_x(time * 90.0f32.to_radians())
+				// .rotate_y(time * 90.0f32.to_radians())
+				// .rotate_z(time * 90.0f32.to_radians()),
 			view: vk_handle.camera.get_view_matrix(),
+			// view: Mat4x4::new_lookat(vk_handle.camera.position.clone(), Vec3::new(0.0f32), Vec3 { x: 0.0f32, y: 1.0f32, z: 0.0f32 }),
 			proj: Mat4x4::new_perspective(
 				45.0f32.to_radians(), 
 				vk_handle.swapchain_extent.width as f32 / vk_handle.swapchain_extent.height as f32, 

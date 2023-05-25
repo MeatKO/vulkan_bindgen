@@ -23,9 +23,12 @@ pub unsafe fn create_descriptor_set_layout(vk_handle: &mut VkHandle)
 		pImmutableSamplers: nullptr()
 	};
 
-	let bindings = vec![ubo_layout_binding, sampler_layout_binding];
+	let bindings = 
+		vec![
+			ubo_layout_binding, 
+			sampler_layout_binding
+		];
 
-	// Descriptor set
 	let descriptor_set_layout_create_info = VkDescriptorSetLayoutCreateInfo{
 		sType: VkStructureType::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
 		bindingCount: bindings.len() as u32,
