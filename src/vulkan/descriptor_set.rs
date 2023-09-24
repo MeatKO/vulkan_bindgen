@@ -7,21 +7,23 @@ use std::ptr::null_mut as nullptr;
 
 pub unsafe fn create_descriptor_set_layout(vk_handle: &mut VkHandle)
 {
-	let ubo_layout_binding = VkDescriptorSetLayoutBinding{
-		binding: 0,
-		descriptorType: VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-		descriptorCount: 1,
-		stageFlags: VkShaderStageFlagBits::VK_SHADER_STAGE_VERTEX_BIT as u32,
-		pImmutableSamplers: nullptr()
-	};
+	let ubo_layout_binding = 
+		VkDescriptorSetLayoutBinding{
+			binding: 0,
+			descriptorType: VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+			descriptorCount: 1,
+			stageFlags: VkShaderStageFlagBits::VK_SHADER_STAGE_VERTEX_BIT as u32,
+			pImmutableSamplers: nullptr()
+		};
 
-	let sampler_layout_binding = VkDescriptorSetLayoutBinding{
-		binding: 1,
-		descriptorType: VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-		descriptorCount: 1,
-		stageFlags: VkShaderStageFlagBits::VK_SHADER_STAGE_FRAGMENT_BIT as u32,
-		pImmutableSamplers: nullptr()
-	};
+	let sampler_layout_binding = 
+		VkDescriptorSetLayoutBinding{
+			binding: 1,
+			descriptorType: VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+			descriptorCount: 1,
+			stageFlags: VkShaderStageFlagBits::VK_SHADER_STAGE_FRAGMENT_BIT as u32,
+			pImmutableSamplers: nullptr()
+		};
 
 	let bindings = 
 		vec![
@@ -29,13 +31,14 @@ pub unsafe fn create_descriptor_set_layout(vk_handle: &mut VkHandle)
 			sampler_layout_binding
 		];
 
-	let descriptor_set_layout_create_info = VkDescriptorSetLayoutCreateInfo{
-		sType: VkStructureType::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-		bindingCount: bindings.len() as u32,
-		pBindings: bindings.as_ptr(),
-		flags: 0,	
-		pNext: nullptr(),
-	};
+	let descriptor_set_layout_create_info = 
+		VkDescriptorSetLayoutCreateInfo{
+			sType: VkStructureType::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+			bindingCount: bindings.len() as u32,
+			pBindings: bindings.as_ptr(),
+			flags: 0,	
+			pNext: nullptr(),
+		};
 
 	match vkCreateDescriptorSetLayout(vk_handle.logical_device, &descriptor_set_layout_create_info, nullptr(), &mut vk_handle.descriptor_set_layout)
 	{
@@ -46,7 +49,11 @@ pub unsafe fn create_descriptor_set_layout(vk_handle: &mut VkHandle)
 
 pub unsafe fn create_descriptor_sets(vk_handle: &mut VkHandle)
 {
-	let layouts: Vec<VkDescriptorSetLayout> = vec![vk_handle.descriptor_set_layout; vk_handle.frames_in_flight];
+	let layouts: Vec<VkDescriptorSetLayout> = 
+		vec![
+			vk_handle.descriptor_set_layout; 
+			vk_handle.frames_in_flight
+		];
 
 	let descriptor_set_allocate_info = 
 		VkDescriptorSetAllocateInfo {
@@ -65,7 +72,7 @@ pub unsafe fn create_descriptor_sets(vk_handle: &mut VkHandle)
 		err => { panic!("✗ vkAllocateDescriptorSets() failed with code {:?}.", err); }
 	}
 
-	for i in 0..(vk_handle.descriptor_sets.len())
+	for i in 0..vk_handle.descriptor_sets.len()
 	{
 		let buffer_info = 
 			VkDescriptorBufferInfo {

@@ -26,7 +26,7 @@ pub unsafe fn find_memory_type(
 	for i in 0..memory_properties.memoryTypeCount
 	{
 		if ((type_filter & (1 << i)) > 0) && 
-			(memory_properties.memoryTypes[i as usize].propertyFlags & properties) == properties
+			((memory_properties.memoryTypes[i as usize].propertyFlags & properties) == properties)
 		{
 			return Some(i);
 		}
@@ -35,6 +35,7 @@ pub unsafe fn find_memory_type(
 	None
 }
 
+// this shouldn't panic wtf, remove the .expect() below
 pub fn vk_create_buffer(
 	device: VkDevice,
 	create_info: &VkBufferCreateInfo,

@@ -1,10 +1,15 @@
 use crate::cotangens::{
-	vec2::*, vec3::*
+	// vec2::*, 
+	vec3::*,
 };
 
 use crate::vulkan::{
-	vk_bindgen::*, swapchain::*, queue::*,
-	debugger::*, vertex::*, uniform_buffer::*
+	vk_bindgen::*, 
+	swapchain::*, 
+	queue::*,
+	debugger::*, 
+	// vertex::*, 
+	uniform_buffer::*,
 };
 
 use crate::detail_core::{

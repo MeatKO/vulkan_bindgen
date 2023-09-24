@@ -7,15 +7,22 @@ mod exedra;
 mod vulkan;
 
 use vulkan::{
-	vk_bindgen::{
-		vkDeviceWaitIdle
+	vk_bindgen::
+		vkDeviceWaitIdle, 
+	texture_view::{
+		create_texture_image_view, 
+		create_texture_sampler
 	}, 
-	device::create_logical_device,
-	handle::VkHandle, 
 	swapchain::{
 		create_swapchain, 
 		create_swapchain_image_views
 	},
+	descriptor_set::{
+		create_descriptor_set_layout, 
+		create_descriptor_sets
+	}, 
+	device::create_logical_device,
+	handle::VkHandle,
 	draw::draw_frame, 
 	framebuffer::create_framebuffer, 
 	command_pool::create_command_pool, 
@@ -25,17 +32,9 @@ use vulkan::{
 	physical_device::create_physical_device, 
 	synchronization::create_synchronization_structures,
 	vertex::create_vertex_buffer, 
-	uniform_buffer::create_uniform_buffers, 
-	descriptor_set::{
-		create_descriptor_set_layout, 
-		create_descriptor_sets
-	}, 
+	uniform_buffer::create_uniform_buffers,
 	descriptor_pool::create_descriptor_pool,
-	texture::create_texture_image, 
-	texture_view::{
-		create_texture_image_view, 
-		create_texture_sampler
-	}, 
+	texture::create_texture_image,
 	index::create_index_buffer, 
 	depth_buffer::create_depth_buffer,
 };
@@ -52,10 +51,6 @@ fn main()
 
 	unsafe
 	{
-		let mut vk_handle = VkHandle::new_empty();
-
-		create_instance(&mut vk_handle);
-
 		let mut window = 
 			parmack::window::WindowBuilder::new()
 			.with_title("windole")
@@ -63,9 +58,13 @@ fn main()
 			.build()
 			.unwrap();
 
-		vk_handle.window_surface = create_vulkan_surface(&mut window, &mut vk_handle).unwrap();
-
 		let mut input_processor = InputProcessor::new();
+
+		let mut vk_handle = VkHandle::new_empty();
+
+		create_instance(&mut vk_handle);
+
+		vk_handle.window_surface = create_vulkan_surface(&mut window, &mut vk_handle).unwrap();
 
 		create_physical_device(&mut vk_handle);
 		create_logical_device(&mut vk_handle);
@@ -105,7 +104,7 @@ fn main()
 		create_command_buffers(&mut vk_handle);
 
 		let mut last_delta_time_ms : f64;
-
+		
 		// window.confine_pointer(true);
 		// window.center_pointer(true);
 		// window.show_pointer(false);

@@ -13,7 +13,8 @@ layout(location = 2) in vec3 inNormal;
 
 layout(location = 1) out vec2 fragTexCoord;
 
-void main() {
+void main() 
+{
     gl_Position = ubo.proj * ubo.view * ubo.model * vec4(inPosition, 1.0);
 	fragTexCoord = inTexCoord;
 }

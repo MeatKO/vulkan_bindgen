@@ -81,8 +81,7 @@ impl Camera
 
 	pub fn get_view_matrix(&self) -> Mat4x4
 	{
-		return Mat4x4::new_lookat(self.position.clone(), &self.position + &self.front, self.up.clone());
-		// return Mat4x4::new_lookat(self.position.clone(), Vec3::new(0.0f32), self.up.clone());
+		return Mat4x4::new_lookat(&self.position, &(&self.position + &self.front), &self.up);
 	}
 
 	pub fn update_camera_vectors(&mut self)

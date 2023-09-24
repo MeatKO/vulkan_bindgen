@@ -13,7 +13,6 @@ use crate::vulkan::vk_bindgen::{
 	vkFreeMemory,
 };
 
-use core::panic;
 use std::collections::HashMap;
 use std::ptr::null_mut as nullptr;
 use std::time;
@@ -46,6 +45,7 @@ impl Model
 		}
 	}
 
+	// not doing normals for now ?
 	pub fn load<T: ToString>(model_path: T) -> Result<Model, String>
 	{
 		let start = time::Instant::now();
@@ -145,7 +145,7 @@ impl Model
 		// 	println!("f {:?} {:?} {:?}", faces[0], faces[1], faces[2]);
 		// }
 
-		let mut vertex_duplication_map: HashMap<Vertex, u32> = HashMap::new();
+		// let mut vertex_duplication_map: HashMap<Vertex, u32> = HashMap::new();
 
 		for face in f_vec
 		{

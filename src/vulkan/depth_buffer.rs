@@ -42,9 +42,8 @@ pub unsafe fn has_stencil_component(
 	format: &VkFormat
 ) -> bool
 {
-	let format = *format;
-	return (format == VkFormat::VK_FORMAT_D32_SFLOAT_S8_UINT) || 
-			(format == VkFormat::VK_FORMAT_D24_UNORM_S8_UINT);
+	return format.eq(&VkFormat::VK_FORMAT_D32_SFLOAT_S8_UINT)|| 
+			format.eq(&VkFormat::VK_FORMAT_D24_UNORM_S8_UINT)
 }
 
 pub unsafe fn find_depth_format(
@@ -83,7 +82,7 @@ unsafe fn find_supported_format(
 			return format
 		}
 		else if tiling == VkImageTiling::VK_IMAGE_TILING_OPTIMAL &&
-		(properties.optimalTilingFeatures & features) == features
+			(properties.optimalTilingFeatures & features) == features
 		{
 			return format
 		}

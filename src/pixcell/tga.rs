@@ -1,4 +1,3 @@
-use core::panic;
 use std::array::TryFromSliceError;
 
 use crate::pixcell::format::ImageFormat;
@@ -86,14 +85,15 @@ impl TGAImage
 		// println!("estimated image byte size : {}", image_byte_size);
 		// println!("file len : {}", file_bytes.len());
 
+		// not sure if < or <= 
 		if file_bytes.len() < read_offset + image_byte_size
 		{
 			return Err("estimated image size is larger than file size".to_owned()) 
 		}
 
-		let mut image_data = file_bytes[read_offset..(read_offset + image_byte_size)].to_vec();
+		let image_data = file_bytes[read_offset..(read_offset + image_byte_size)].to_vec();
 
-		let mut final_image = vec![];
+		let final_image: Vec<u8>;
 
 		match format
 		{

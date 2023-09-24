@@ -5,15 +5,18 @@ use std::ptr::null_mut as nullptr;
 
 pub unsafe fn create_command_buffers(vk_handle: &mut VkHandle)
 {
-	let command_buffer_create_info = VkCommandBufferAllocateInfo{
-		sType: VkStructureType::VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-		commandPool: vk_handle.command_pool,
-		level: VkCommandBufferLevel::VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-		commandBufferCount: vk_handle.frames_in_flight as u32,
-		pNext: nullptr(),
-	};
+	let command_buffer_count = vk_handle.frames_in_flight;
 
-	vk_handle.command_buffer_vec.resize(vk_handle.frames_in_flight, nullptr());
+	let command_buffer_create_info = 
+		VkCommandBufferAllocateInfo{
+			sType: VkStructureType::VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+			commandPool: vk_handle.command_pool,
+			level: VkCommandBufferLevel::VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+			commandBufferCount: command_buffer_count as u32,
+			pNext: nullptr(),
+		};
+
+	vk_handle.command_buffer_vec.resize(command_buffer_count, nullptr());
 	match vkAllocateCommandBuffers(vk_handle.logical_device, &command_buffer_create_info, vk_handle.command_buffer_vec.as_mut_ptr())
 	{
 		VkResult::VK_SUCCESS => { println!("✔️ vkAllocateCommandBuffers()"); }
@@ -69,8 +72,17 @@ pub unsafe fn record_command_buffer(vk_handle: &VkHandle, image_index: u32, mode
 			pNext: nullptr()
 		};
 
-	vkCmdBeginRenderPass(current_command_buffer, &render_pass_begin_info, VkSubpassContents::VK_SUBPASS_CONTENTS_INLINE);
-	vkCmdBindPipeline(current_command_buffer, VkPipelineBindPoint::VK_PIPELINE_BIND_POINT_GRAPHICS , vk_handle.graphics_pipeline);
+	vkCmdBeginRenderPass(
+		current_command_buffer, 
+		&render_pass_begin_info, 
+		VkSubpassContents::VK_SUBPASS_CONTENTS_INLINE
+	);
+
+	vkCmdBindPipeline(
+		current_command_buffer, 
+		VkPipelineBindPoint::VK_PIPELINE_BIND_POINT_GRAPHICS, 
+		vk_handle.graphics_pipeline
+	);
 
 	let viewport = 
 		VkViewport{
@@ -82,7 +94,12 @@ pub unsafe fn record_command_buffer(vk_handle: &VkHandle, image_index: u32, mode
 			maxDepth: 1.0f32,
 		};
 
-	vkCmdSetViewport(current_command_buffer, 0, 1, &viewport);
+	vkCmdSetViewport(
+		current_command_buffer, 
+		0, 
+		1,
+		&viewport
+	);
 
 	let scissor = 
 		VkRect2D{
@@ -93,7 +110,12 @@ pub unsafe fn record_command_buffer(vk_handle: &VkHandle, image_index: u32, mode
 			extent: vk_handle.swapchain_extent,
 		};
 
-	vkCmdSetScissor(current_command_buffer, 0, 1, &scissor);
+	vkCmdSetScissor(
+		current_command_buffer, 
+		0, 
+		1, 
+		&scissor
+	);
 
 	let vertex_buffers: Vec<VkBuffer> = 
 		vec![
@@ -138,6 +160,7 @@ pub unsafe fn record_command_buffer(vk_handle: &VkHandle, image_index: u32, mode
 		0
 	);
 	// vkCmdDraw(current_command_buffer, vk_handle.vertices.len() as u32, 1, 0, 0);
+	// vkCmdDraw(current_command_buffer, model.vertices.len() as u32, 1, 0, 0);
 
 	vkCmdEndRenderPass(current_command_buffer);
 

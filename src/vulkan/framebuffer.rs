@@ -15,17 +15,18 @@ pub unsafe fn create_framebuffer(vk_handle: &mut VkHandle)
 				vk_handle.depth_image_view,
 			];
 
-		let framebuffer_create_info = VkFramebufferCreateInfo{
-			sType: VkStructureType::VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
-			renderPass: vk_handle.render_pass,
-			attachmentCount: attachments.len() as _,
-			pAttachments: attachments.as_ptr(),
-			width: vk_handle.swapchain_extent.width,
-			height: vk_handle.swapchain_extent.height,
-			layers: 1,
-			flags: 0,	
-			pNext: nullptr(),
-		};
+		let framebuffer_create_info = 
+			VkFramebufferCreateInfo{
+				sType: VkStructureType::VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
+				renderPass: vk_handle.render_pass,
+				attachmentCount: attachments.len() as _,
+				pAttachments: attachments.as_ptr(),
+				width: vk_handle.swapchain_extent.width,
+				height: vk_handle.swapchain_extent.height,
+				layers: 1,
+				flags: 0,	
+				pNext: nullptr(),
+			};
 
 		match vkCreateFramebuffer(vk_handle.logical_device, &framebuffer_create_info, nullptr(), &mut vk_handle.swapchain_framebuffers[i])
 		{

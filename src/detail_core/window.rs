@@ -42,8 +42,7 @@ pub fn create_vulkan_surface(window: &mut WindowHandle, vk_handle: &mut VkHandle
 }
 
 #[cfg(target_os = "windows")]
-pub fn create_vulkan_surface(window: &mut WindowHandle) -> Option<VkSurfaceKHR_T>
+pub fn create_vulkan_surface(window: &mut WindowHandle) -> Result<*mut VkSurfaceKHR_T, String>
 {
-	return None;
-	
+	return Err("Win32 is not supported".to_owned());
 }

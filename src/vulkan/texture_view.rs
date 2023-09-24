@@ -2,7 +2,9 @@ use crate::vulkan::vk_bindgen::*;
 use crate::vulkan::handle::*;
 use std::ptr::null_mut as nullptr;
 
-pub unsafe fn create_texture_image_view(vk_handle: &mut VkHandle)
+pub unsafe fn create_texture_image_view(
+	vk_handle: &mut VkHandle
+)
 {
 	vk_handle.texture_image_view = 
 		create_image_view(
@@ -59,29 +61,30 @@ pub unsafe fn create_texture_sampler(
 	let mut physical_device_properties: VkPhysicalDeviceProperties = std::mem::zeroed();
 	vkGetPhysicalDeviceProperties(vk_handle.physical_device, &mut physical_device_properties);
 
-	let sampler_create_info = VkSamplerCreateInfo{
-		sType: VkStructureType::VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
-		magFilter: VkFilter::VK_FILTER_LINEAR,
-		minFilter: VkFilter::VK_FILTER_LINEAR,
-		// magFilter: VkFilter::VK_FILTER_NEAREST,
-		// minFilter: VkFilter::VK_FILTER_NEAREST,
-		addressModeU: VkSamplerAddressMode::VK_SAMPLER_ADDRESS_MODE_REPEAT,
-		addressModeV: VkSamplerAddressMode::VK_SAMPLER_ADDRESS_MODE_REPEAT,
-		addressModeW: VkSamplerAddressMode::VK_SAMPLER_ADDRESS_MODE_REPEAT,
-		// anisotropyEnable: VK_FALSE, // its not enabled yet ?
-		anisotropyEnable: VK_TRUE,
-		maxAnisotropy: physical_device_properties.limits.maxSamplerAnisotropy,
-		borderColor: VkBorderColor::VK_BORDER_COLOR_INT_OPAQUE_BLACK,
-		unnormalizedCoordinates: VK_FALSE,
-		compareOp: VkCompareOp::VK_COMPARE_OP_ALWAYS,
-		mipmapMode: VkSamplerMipmapMode::VK_SAMPLER_MIPMAP_MODE_LINEAR,
-		maxLod: 0f32,
-		minLod: 0f32,
-		mipLodBias: 0f32,
-		compareEnable: VK_FALSE,
-		flags: 0,	
-		pNext: nullptr(),
-	};
+	let sampler_create_info = 
+		VkSamplerCreateInfo{
+			sType: VkStructureType::VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+			magFilter: VkFilter::VK_FILTER_LINEAR,
+			minFilter: VkFilter::VK_FILTER_LINEAR,
+			// magFilter: VkFilter::VK_FILTER_NEAREST,
+			// minFilter: VkFilter::VK_FILTER_NEAREST,
+			addressModeU: VkSamplerAddressMode::VK_SAMPLER_ADDRESS_MODE_REPEAT,
+			addressModeV: VkSamplerAddressMode::VK_SAMPLER_ADDRESS_MODE_REPEAT,
+			addressModeW: VkSamplerAddressMode::VK_SAMPLER_ADDRESS_MODE_REPEAT,
+			// anisotropyEnable: VK_FALSE, // its not enabled yet ?
+			anisotropyEnable: VK_TRUE,
+			maxAnisotropy: physical_device_properties.limits.maxSamplerAnisotropy,
+			borderColor: VkBorderColor::VK_BORDER_COLOR_INT_OPAQUE_BLACK,
+			unnormalizedCoordinates: VK_FALSE,
+			compareOp: VkCompareOp::VK_COMPARE_OP_ALWAYS,
+			mipmapMode: VkSamplerMipmapMode::VK_SAMPLER_MIPMAP_MODE_LINEAR,
+			maxLod: 0f32,
+			minLod: 0f32,
+			mipLodBias: 0f32,
+			compareEnable: VK_FALSE,
+			flags: 0,	
+			pNext: nullptr(),
+		};
 
 	match vkCreateSampler(vk_handle.logical_device, &sampler_create_info, nullptr(), &mut vk_handle.texture_sampler)
 	{

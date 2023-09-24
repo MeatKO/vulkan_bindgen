@@ -1,7 +1,7 @@
 use crate::cotangens::mat4x4::Mat4x4;
 use crate::cotangens::vec2::Vec2;
 use crate::cotangens::vec3::Vec3;
-use crate::detail_core::camera::*;
+// use crate::detail_core::camera::*;
 use crate::vulkan::vk_bindgen::*;
 use crate::vulkan::handle::*;
 use crate::vulkan::vk_buffer::*;
@@ -11,7 +11,7 @@ use std::ptr::null_mut as nullptr;
 
 // don't remember if this should be commented out : EDIT - its *not* needed because inner structs have 16B alignment
 #[repr(C)]
-// #[repr(align(16))]
+#[repr(align(16))]
 pub struct UniformBufferObject
 {
 	pub foo: Vec2,
@@ -28,7 +28,7 @@ pub unsafe fn create_uniform_buffers(vk_handle: &mut VkHandle)
 	vk_handle.uniform_buffers_memory.resize(vk_handle.frames_in_flight, nullptr());
 	vk_handle.uniform_buffers_mapped.resize(vk_handle.frames_in_flight, nullptr());
 
-	for i in 0..vk_handle.frames_in_flight
+	for i in 0..vk_handle.uniform_buffers.len()
 	{
 		let (buffer, buffer_memory) = 
 			match create_buffer(
@@ -62,8 +62,8 @@ pub unsafe fn create_uniform_buffers(vk_handle: &mut VkHandle)
 
 pub unsafe fn update_uniform_buffer(vk_handle: &mut VkHandle) 
 {
-	// let time: f32 = std::time::Instant::now().duration_since(vk_handle.start_time).as_secs_f32();
-	let time: f32 = 0.0f32;
+	let time: f32 = std::time::Instant::now().duration_since(vk_handle.start_time).as_secs_f32();
+	// let time: f32 = 0.0f32;
 
 	let time = time / 2.0f32;
 
@@ -73,11 +73,11 @@ pub unsafe fn update_uniform_buffer(vk_handle: &mut VkHandle)
 			model: Mat4x4::new_identity(1.0f32)
 				.translate(Vec3 { x: 0.0f32, y: -0.5f32, z: 0.0f32 })
 				.rotate_x(-90.0f32.to_radians())
-				.rotate_z(-90.0f32.to_radians()),
+				.rotate_z(-90.0f32.to_radians())
 
 				// .rotate_x(time * 90.0f32.to_radians())
 				// .rotate_y(time * 90.0f32.to_radians())
-				// .rotate_z(time * 90.0f32.to_radians()),
+				.rotate_z(time * 90.0f32.to_radians()),
 			view: vk_handle.camera.get_view_matrix(),
 			// view: Mat4x4::new_lookat(vk_handle.camera.position.clone(), Vec3::new(0.0f32), Vec3 { x: 0.0f32, y: 1.0f32, z: 0.0f32 }),
 			proj: Mat4x4::new_perspective(

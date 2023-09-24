@@ -62,7 +62,7 @@ impl Mat4x4
 		out_mat.transpose()
 	}
 
-	pub fn new_lookat(eye: Vec3, center: Vec3, up: Vec3) -> Mat4x4
+	pub fn new_lookat(eye: &Vec3, center: &Vec3, up: &Vec3) -> Mat4x4
 	{
 		let mut z_axis = Vec3{
 			x: (center.x - eye.x),

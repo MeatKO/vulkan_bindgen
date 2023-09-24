@@ -12937,7 +12937,7 @@ extern "C" {
     ) -> VkResult;
 }
 pub type VkRenderingFlagsKHR = VkRenderingFlags;
-use std::ptr::NonNull;
+// use std::ptr::NonNull;
 
 pub use self::VkRenderingFlagBits as VkRenderingFlagBitsKHR;
 pub type VkRenderingInfoKHR = VkRenderingInfo;
