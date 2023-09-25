@@ -130,6 +130,7 @@ fn main()
 
 			// println!("window size : {:?}", window.get_size());
 			// println!("pointer loc : {:?}", window.get_pointer_location());
+
 		}
 
 		vkDeviceWaitIdle(vk_handle.logical_device);

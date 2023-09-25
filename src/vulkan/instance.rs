@@ -99,12 +99,14 @@ pub unsafe fn create_instance(vk_handle: &mut VkHandle)
 		}
 	}
 
-	let layer_names = layer_vec
+	let layer_names = 
+		layer_vec
 		.iter()
 		.filter(|layer| 
-				!disabled_layers.contains(&layer.get_layer_name())
+			!disabled_layers.contains(&layer.get_layer_name())
 		)
-		.map(|layer|  layer.layerName.as_ptr())
+		.map(|layer|  
+			layer.layerName.as_ptr())
 		.collect::<Vec<*const i8>>();
 
 	if vk_handle.enable_validation_layers

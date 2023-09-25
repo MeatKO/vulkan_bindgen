@@ -73,11 +73,11 @@ pub unsafe fn update_uniform_buffer(vk_handle: &mut VkHandle)
 			model: Mat4x4::new_identity(1.0f32)
 				.translate(Vec3 { x: 0.0f32, y: -0.5f32, z: 0.0f32 })
 				.rotate_x(-90.0f32.to_radians())
-				.rotate_z(-90.0f32.to_radians())
+				.rotate_z(-90.0f32.to_radians()),
 
 				// .rotate_x(time * 90.0f32.to_radians())
 				// .rotate_y(time * 90.0f32.to_radians())
-				.rotate_z(time * 90.0f32.to_radians()),
+				// .rotate_z(time * 90.0f32.to_radians()),
 			view: vk_handle.camera.get_view_matrix(),
 			// view: Mat4x4::new_lookat(vk_handle.camera.position.clone(), Vec3::new(0.0f32), Vec3 { x: 0.0f32, y: 1.0f32, z: 0.0f32 }),
 			proj: Mat4x4::new_perspective(

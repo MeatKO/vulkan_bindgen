@@ -88,32 +88,33 @@ pub unsafe fn create_descriptor_sets(vk_handle: &mut VkHandle)
 				sampler: vk_handle.texture_sampler
 			};
 		
-		let descriptor_writes = vec![
-			VkWriteDescriptorSet {
-				sType: VkStructureType::VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-				dstSet: vk_handle.descriptor_sets[i],
-				dstBinding: 0,
-				dstArrayElement: 0,
-				descriptorType: VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-				descriptorCount: 1,
-				pBufferInfo: &buffer_info,
-				pImageInfo: nullptr(),
-				pTexelBufferView: nullptr(),
-				pNext: nullptr()
-			},
-			VkWriteDescriptorSet {
-				sType: VkStructureType::VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-				dstSet: vk_handle.descriptor_sets[i],
-				dstBinding: 1,
-				dstArrayElement: 0,
-				descriptorType: VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-				descriptorCount: 1,
-				pBufferInfo: nullptr(),
-				pImageInfo: &image_info,
-				pTexelBufferView: nullptr(),
-				pNext: nullptr()
-			},
-		];
+		let descriptor_writes = 
+			vec![
+				VkWriteDescriptorSet {
+					sType: VkStructureType::VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+					dstSet: vk_handle.descriptor_sets[i],
+					dstBinding: 0,
+					dstArrayElement: 0,
+					descriptorType: VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+					descriptorCount: 1,
+					pBufferInfo: &buffer_info,
+					pImageInfo: nullptr(),
+					pTexelBufferView: nullptr(),
+					pNext: nullptr()
+				},
+				VkWriteDescriptorSet {
+					sType: VkStructureType::VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+					dstSet: vk_handle.descriptor_sets[i],
+					dstBinding: 1,
+					dstArrayElement: 0,
+					descriptorType: VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+					descriptorCount: 1,
+					pBufferInfo: nullptr(),
+					pImageInfo: &image_info,
+					pTexelBufferView: nullptr(),
+					pNext: nullptr()
+				},
+			];
 
 		vkUpdateDescriptorSets(vk_handle.logical_device, descriptor_writes.len() as _, descriptor_writes.as_ptr(), 0, nullptr());
 	}
