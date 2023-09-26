@@ -1,8 +1,12 @@
+use crate::exedra::model::Model;
 use crate::vulkan::vk_bindgen::*;
 use crate::vulkan::handle::*;
 use std::ptr::null_mut as nullptr;
 
-pub unsafe fn create_descriptor_pool(vk_handle: &mut VkHandle)
+pub unsafe fn create_descriptor_pool(
+	vk_handle: &mut VkHandle,
+	model: &mut Model
+)
 {
 	let pool_sizes = 
 		vec![
@@ -26,7 +30,7 @@ pub unsafe fn create_descriptor_pool(vk_handle: &mut VkHandle)
 			pNext: nullptr()
 		};
 	
-	match vkCreateDescriptorPool(vk_handle.logical_device, &pool_info, nullptr(), &mut vk_handle.descriptor_pool)
+	match vkCreateDescriptorPool(vk_handle.logical_device, &pool_info, nullptr(), &mut model.descriptor_pool)
 	{
 		VkResult::VK_SUCCESS => { println!("✔️ vkCreateDescriptorPool()"); }
 		err => { panic!("✗ vkCreateDescriptorPool() failed with code {:?}.", err); }

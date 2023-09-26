@@ -1,3 +1,4 @@
+use crate::exedra::model::Model;
 use crate::vulkan::vk_bindgen::*;
 use crate::vulkan::handle::*;
 use crate::vulkan::vk_buffer::*;
@@ -35,10 +36,15 @@ impl ImageLayoutTransition
     }
 }
 
-pub unsafe fn create_texture_image(vk_handle: &mut VkHandle)
+pub unsafe fn create_texture_image(
+	vk_handle: &mut VkHandle,
+	model: &mut Model,
+	tga_image_path: String
+)
 {
 	// let image = TGAImage::new("./detail/textures/test_marked.tga").unwrap();
-	let image = TGAImage::new("./detail/models/viking_room/viking_room.tga").unwrap();
+	// let image = TGAImage::new("./detail/models/viking_room/viking_room.tga").unwrap();
+	let image = TGAImage::new(tga_image_path).unwrap();
 
 	let (staging_buffer, staging_buffer_memory) = 
 		match create_buffer(
@@ -70,21 +76,21 @@ pub unsafe fn create_texture_image(vk_handle: &mut VkHandle)
 			VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT as u32
 		);
 	
-	vk_handle.texture_image = vk_image;
-	vk_handle.texture_image_memory = vk_image_memory;
+	model.texture_image = vk_image;
+	model.texture_image_memory = vk_image_memory;
 
 	transition_image_layout(
 		vk_handle, 
 		VkFormat::VK_FORMAT_R8G8B8A8_SRGB, 
-		vk_handle.texture_image, 
+		model.texture_image, 
 		VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED, 
 		VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
 	);
-	copy_buffer_to_image(vk_handle, staging_buffer, vk_handle.texture_image, image.header.width as u32, image.header.height as u32);
+	copy_buffer_to_image(vk_handle, staging_buffer, model.texture_image, image.header.width as u32, image.header.height as u32);
 	transition_image_layout(
 		vk_handle, 
 		VkFormat::VK_FORMAT_R8G8B8A8_SRGB, 
-		vk_handle.texture_image, 
+		model.texture_image, 
 		VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 
 		VkImageLayout::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
 	);

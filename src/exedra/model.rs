@@ -2,6 +2,7 @@ use crate::cotangens::{
 	vec2::*,
 	vec3::*,
 };
+use crate::vulkan::uniform_buffer::UniformBufferObject;
 use crate::vulkan::vertex::*;
 use crate::vulkan::handle::{
 	VkHandle,
@@ -11,6 +12,11 @@ use crate::vulkan::vk_bindgen::{
 	VkDeviceMemory,
 	vkDestroyBuffer,
 	vkFreeMemory,
+	VkImage,
+	VkSampler,
+	VkImageView, 
+	VkDescriptorPool, 
+	VkDescriptorSet, vkDestroySampler, vkDestroyImageView, vkDestroyImage, vkDestroyDescriptorPool, vkDestroyDescriptorSetLayout,
 };
 
 use std::collections::HashMap;
@@ -29,6 +35,18 @@ pub struct Model
 
 	pub index_buffer: VkBuffer,
 	pub index_buffer_memory: VkDeviceMemory,
+
+	pub texture_image: VkImage,
+	pub texture_image_memory: VkDeviceMemory,
+	pub texture_image_view: VkImageView,
+	pub texture_sampler: VkSampler,
+
+	pub uniform_buffers: Vec<VkBuffer>,
+	pub uniform_buffers_memory: Vec<VkDeviceMemory>,
+	pub uniform_buffers_mapped: Vec<*mut UniformBufferObject>,
+
+	pub descriptor_pool: VkDescriptorPool,
+	pub descriptor_sets: Vec<VkDescriptorSet>,
 }
 
 impl Model
@@ -42,6 +60,21 @@ impl Model
 		
 			vkDestroyBuffer(vk_handle.logical_device, self.index_buffer, nullptr());
 			vkFreeMemory(vk_handle.logical_device, self.index_buffer_memory, nullptr());
+
+			vkDestroySampler(vk_handle.logical_device, self.texture_sampler, nullptr());
+			vkDestroyImageView(vk_handle.logical_device, self.texture_image_view, nullptr());
+			
+			vkDestroyImage(vk_handle.logical_device, self.texture_image, nullptr());
+			vkFreeMemory(vk_handle.logical_device, self.texture_image_memory, nullptr());
+
+			for i in 0..vk_handle.frames_in_flight
+			{
+				vkDestroyBuffer(vk_handle.logical_device, self.uniform_buffers[i], nullptr());
+				vkFreeMemory(vk_handle.logical_device, self.uniform_buffers_memory[i], nullptr());
+			}
+
+			vkDestroyDescriptorPool(vk_handle.logical_device, self.descriptor_pool, nullptr());
+			// vkDestroyDescriptorSetLayout(vk_handle.logical_device, vk_handle.descriptor_set_layout, nullptr());
 		}
 	}
 
@@ -59,6 +92,15 @@ impl Model
 				vertex_buffer_memory: nullptr(),
 				index_buffer: nullptr(),
 				index_buffer_memory: nullptr(),
+				texture_image_view: nullptr(),
+				texture_image: nullptr(),
+				texture_image_memory: nullptr(),
+				texture_sampler: nullptr(),
+				uniform_buffers: vec![],
+				uniform_buffers_memory: vec![],
+				uniform_buffers_mapped: vec![],
+				descriptor_pool: nullptr(),
+				descriptor_sets: vec![],
 			};
 		
 		let obj_model_source = 

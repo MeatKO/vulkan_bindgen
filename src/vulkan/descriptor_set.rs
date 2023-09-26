@@ -1,3 +1,4 @@
+use crate::exedra::model::Model;
 use crate::vulkan::vk_bindgen::*;
 use crate::vulkan::handle::*;
 use crate::vulkan::uniform_buffer::*;
@@ -5,7 +6,10 @@ use crate::vulkan::uniform_buffer::*;
 use std::mem::size_of;
 use std::ptr::null_mut as nullptr;
 
-pub unsafe fn create_descriptor_set_layout(vk_handle: &mut VkHandle)
+pub unsafe fn create_descriptor_set_layout(
+	vk_handle: &mut VkHandle,
+	// model: &mut Model
+)
 {
 	let ubo_layout_binding = 
 		VkDescriptorSetLayoutBinding{
@@ -47,7 +51,10 @@ pub unsafe fn create_descriptor_set_layout(vk_handle: &mut VkHandle)
 	}
 }
 
-pub unsafe fn create_descriptor_sets(vk_handle: &mut VkHandle)
+pub unsafe fn create_descriptor_sets(
+	vk_handle: &mut VkHandle,
+	model: &mut Model
+)
 {
 	let layouts: Vec<VkDescriptorSetLayout> = 
 		vec![
@@ -58,25 +65,25 @@ pub unsafe fn create_descriptor_sets(vk_handle: &mut VkHandle)
 	let descriptor_set_allocate_info = 
 		VkDescriptorSetAllocateInfo {
 			sType: VkStructureType::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-			descriptorPool: vk_handle.descriptor_pool,
+			descriptorPool: model.descriptor_pool,
 			descriptorSetCount: vk_handle.frames_in_flight as u32,
 			pSetLayouts: layouts.as_ptr(),
 			pNext: nullptr()
 		};
 
-	vk_handle.descriptor_sets = vec![nullptr(); vk_handle.frames_in_flight];
+	model.descriptor_sets = vec![nullptr(); vk_handle.frames_in_flight];
 
-	match vkAllocateDescriptorSets(vk_handle.logical_device, &descriptor_set_allocate_info, vk_handle.descriptor_sets.as_mut_ptr())
+	match vkAllocateDescriptorSets(vk_handle.logical_device, &descriptor_set_allocate_info, model.descriptor_sets.as_mut_ptr())
 	{
 		VkResult::VK_SUCCESS => { println!("✔️ vkAllocateDescriptorSets()"); }
 		err => { panic!("✗ vkAllocateDescriptorSets() failed with code {:?}.", err); }
 	}
 
-	for i in 0..vk_handle.descriptor_sets.len()
+	for i in 0..model.descriptor_sets.len()
 	{
 		let buffer_info = 
 			VkDescriptorBufferInfo {
-				buffer: vk_handle.uniform_buffers[i],
+				buffer: model.uniform_buffers[i],
 				offset: 0,
 				range: size_of::<UniformBufferObject>() as u64
 			};
@@ -84,15 +91,15 @@ pub unsafe fn create_descriptor_sets(vk_handle: &mut VkHandle)
 		let image_info = 
 			VkDescriptorImageInfo {
 				imageLayout: VkImageLayout::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-				imageView: vk_handle.texture_image_view,
-				sampler: vk_handle.texture_sampler
+				imageView: model.texture_image_view,
+				sampler: model.texture_sampler
 			};
 		
 		let descriptor_writes = 
 			vec![
 				VkWriteDescriptorSet {
 					sType: VkStructureType::VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-					dstSet: vk_handle.descriptor_sets[i],
+					dstSet: model.descriptor_sets[i],
 					dstBinding: 0,
 					dstArrayElement: 0,
 					descriptorType: VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
@@ -104,7 +111,7 @@ pub unsafe fn create_descriptor_sets(vk_handle: &mut VkHandle)
 				},
 				VkWriteDescriptorSet {
 					sType: VkStructureType::VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-					dstSet: vk_handle.descriptor_sets[i],
+					dstSet: model.descriptor_sets[i],
 					dstBinding: 1,
 					dstArrayElement: 0,
 					descriptorType: VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
