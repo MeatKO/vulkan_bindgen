@@ -78,13 +78,17 @@ fn main()
 			vec![
 				exedra::model::Model::load("./detail/models/viking_room/viking_room.obj").unwrap(),
 				exedra::model::Model::load("./detail/models/viking_room/viking_room.obj").unwrap(),
+				exedra::model::Model::load("./detail/models/woag/woag.obj").unwrap(),
 			];
 
 		let texture_paths: Vec<String> = 
 			vec![
 				"./detail/models/viking_room/viking_room.tga".into(),
 				"./detail/textures/test.tga".into(),
+				"./detail/models/woag/woag.tga".into(),
 			];
+
+		create_descriptor_set_layout(&mut vk_handle);
 
 		for (model, texture_path) in models.iter_mut().zip(texture_paths)
 		{
@@ -101,10 +105,9 @@ fn main()
 				.unwrap();
 	
 			create_uniform_buffers(&mut vk_handle, model);
-	
-			create_descriptor_set_layout(&mut vk_handle);
-			create_descriptor_pool(&mut vk_handle, model);
-			create_descriptor_sets(&mut vk_handle, model);
+			
+			create_descriptor_pool(&vk_handle, model);
+			create_descriptor_sets(&vk_handle, model);
 		}
 
 		create_pipeline(&mut vk_handle);
@@ -142,7 +145,7 @@ fn main()
 
 			// println!("window size : {:?}", window.get_size());
 			// println!("pointer loc : {:?}", window.get_pointer_location());
-
+			// panic!()
 		}
 
 		vkDeviceWaitIdle(vk_handle.logical_device);

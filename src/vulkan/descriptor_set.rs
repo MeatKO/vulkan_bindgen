@@ -52,7 +52,7 @@ pub unsafe fn create_descriptor_set_layout(
 }
 
 pub unsafe fn create_descriptor_sets(
-	vk_handle: &mut VkHandle,
+	vk_handle: &VkHandle,
 	model: &mut Model
 )
 {

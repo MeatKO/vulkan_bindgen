@@ -8,7 +8,7 @@ use std::hash::{
 };
 
 #[repr(align(16))]
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Default)]
 pub struct Vec3
 {
 	pub x: f32,

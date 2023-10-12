@@ -4,7 +4,7 @@ use crate::vulkan::handle::*;
 use std::ptr::null_mut as nullptr;
 
 pub unsafe fn create_descriptor_pool(
-	vk_handle: &mut VkHandle,
+	vk_handle: &VkHandle,
 	model: &mut Model
 )
 {

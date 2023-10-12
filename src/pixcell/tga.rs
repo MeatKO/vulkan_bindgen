@@ -1,3 +1,4 @@
+use core::time;
 use std::array::TryFromSliceError;
 
 use crate::pixcell::format::ImageFormat;
@@ -33,6 +34,8 @@ impl TGAImage
 {
 	pub fn new<T: ToString>(tga_path: T) -> Result<TGAImage, String>
 	{
+		let start = std::time::Instant::now();
+
 		let file_bytes = std::fs::read(tga_path.to_string()).map_err(|err| err.to_string())?;
 
 		if file_bytes.len() < TGA_HEADER_SIZE
@@ -130,6 +133,9 @@ impl TGAImage
 			}
 		}
 
+		let end = std::time::Instant::now();
+
+		println!("Texture loading time : {:?}", end.duration_since(start));
 		println!("image dimensions w:{} h:{} bpp:{}", header.width, header.height, header.bits_per_pixel);
 		println!("original byte length {}", image_data.len());
 		println!("processed byte length {}", final_image.len());

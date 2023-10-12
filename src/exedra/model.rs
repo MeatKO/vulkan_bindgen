@@ -16,7 +16,12 @@ use crate::vulkan::vk_bindgen::{
 	VkSampler,
 	VkImageView, 
 	VkDescriptorPool, 
-	VkDescriptorSet, vkDestroySampler, vkDestroyImageView, vkDestroyImage, vkDestroyDescriptorPool, vkDestroyDescriptorSetLayout,
+	VkDescriptorSet, 
+	vkDestroySampler, 
+	vkDestroyImageView, 
+	vkDestroyImage,
+	vkDestroyDescriptorPool, 
+	vkDestroyDescriptorSetLayout,
 };
 
 use std::collections::HashMap;
@@ -108,6 +113,7 @@ impl Model
 
 		let mut v_vec = vec![];
 		let mut vt_vec = vec![];
+		let mut vn_vec = vec![];
 		let mut f_vec = vec![];
 
 		for line in obj_model_source.lines()
@@ -132,7 +138,7 @@ impl Model
 					}
 
 					let new_vertex_pos =
-						Vec3{
+						Vec3 {
 							x: tokens[1].parse().unwrap(),
 							y: tokens[2].parse().unwrap(),
 							z: tokens[3].parse().unwrap(),
@@ -148,12 +154,28 @@ impl Model
 					}
 
 					let new_vertex_uv =
-						Vec2{
+						Vec2 {
 							x: tokens[1].parse().unwrap(),
 							y: tokens[2].parse().unwrap(),
 						};
 
 					vt_vec.push(new_vertex_uv);
+				}
+				"vn" =>
+				{
+					if tokens.len() != 4
+					{
+						return Err(format!("expected 4 normal tokens, received {}", tokens.len()).to_owned())
+					}
+
+					let new_vertex_pos =
+						Vec3 {
+							x: tokens[1].parse().unwrap(),
+							y: tokens[2].parse().unwrap(),
+							z: tokens[3].parse().unwrap(),
+						};
+
+					vn_vec.push(new_vertex_pos);
 				}
 				"f" =>
 				{
@@ -169,7 +191,7 @@ impl Model
 						// println!("tok {:?}", tokens);
 
 						let new_face =
-							Vec3{
+							Vec3 {
 								x: tokens[0].parse::<u32>().unwrap() as _,
 								y: tokens[1].parse::<u32>().unwrap() as _,
 								z: tokens[2].parse::<u32>().unwrap() as _,
@@ -195,11 +217,12 @@ impl Model
 				Vertex {
 					pos: v_vec[face.x as usize - 1].clone(),
 					uv: vt_vec[face.y as usize - 1].clone(),
-					normal: Vec3 { 
-						x: 1.0f32, 
-						y: 1.0f32, 
-						z: 1.0f32, 
-					},
+					normal: vn_vec[face.z as usize - 1].clone(),
+					// normal: Vec3 { 
+					// 	x: 1.0f32, 
+					// 	y: 1.0f32, 
+					// 	z: 1.0f32, 
+					// },
 				};
 
 			// if vertex_duplication_map.contains_key(&new_vertex)
