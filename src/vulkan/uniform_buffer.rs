@@ -69,7 +69,10 @@ pub unsafe fn update_uniform_buffer(
 	vk_handle: &VkHandle,
 	// models: &mut Vec<Model>
 	mesh_data: &mut VulkanMeshData,
-	index: usize
+	index: usize,
+	scale: &Vec3,
+	translation: &Vec3,
+	rotation: &Vec3,
 ) 
 {
 	// for (index, model) in models.iter_mut().enumerate()
@@ -77,13 +80,24 @@ pub unsafe fn update_uniform_buffer(
 		let time: f32 = std::time::Instant::now().duration_since(vk_handle.start_time).as_secs_f32();
 		// let time: f32 = 0.0f32;
 	
-		let time = time / 2.0f32;
+		// let time = time * 0.01f32;
+		let time = time * 10.0f32;
 
 		let ubo = 
 			UniformBufferObject{
 				foo: Vec2 { x: 0.0f32, y: 0.0f32 },
 				model: Mat4x4::new_identity(1.0f32)
-					.scale(Vec3 { x: 0.1f32, y: 0.1f32, z: 0.1f32 }),
+					// .scale(Vec3 { x: 1.0f32, y: 1.0f32, z: 1.0f32})
+					.scale(scale.clone())
+					// .rotate_x(time),
+					.rotate_x(rotation.x)
+					.rotate_y(rotation.y - 90.0f32)
+					.rotate_z(rotation.z)
+					.translate(translation.clone()),
+					// .translate(Vec3::new(time)),
+					
+				// model: Mat4x4::new_identity(1.0f32)
+				// 	.scale(Vec3 { x: 0.1f32, y: 0.1f32, z: 0.1f32 }),
 					// .translate(Vec3 { x: 0.0f32, y: -0.5f32, z: 0.0f32 })
 					// .translate(Vec3 { x: 5.0f32 * index as f32, y: -0.5f32, z: 0.0f32 })
 					// .rotate_x(-90.0f32.to_radians())

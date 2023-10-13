@@ -116,9 +116,12 @@ pub unsafe fn create_pipeline(vk_handle: &mut VkHandle)
 	// Color blending
 	let color_blend_attachment_state = 
 		VkPipelineColorBlendAttachmentState{
-			blendEnable: VK_FALSE,
-			srcColorBlendFactor: VkBlendFactor::VK_BLEND_FACTOR_ONE,
-			dstColorBlendFactor: VkBlendFactor::VK_BLEND_FACTOR_ZERO,
+			// blendEnable: VK_FALSE,
+			blendEnable: VK_TRUE,
+			// srcColorBlendFactor: VkBlendFactor::VK_BLEND_FACTOR_ONE,
+			srcColorBlendFactor: VkBlendFactor::VK_BLEND_FACTOR_SRC_ALPHA,
+			// dstColorBlendFactor: VkBlendFactor::VK_BLEND_FACTOR_ZERO,
+			dstColorBlendFactor: VkBlendFactor::VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
 			colorBlendOp: VkBlendOp::VK_BLEND_OP_ADD,
 			srcAlphaBlendFactor: VkBlendFactor::VK_BLEND_FACTOR_ONE,
 			dstAlphaBlendFactor: VkBlendFactor::VK_BLEND_FACTOR_ZERO,

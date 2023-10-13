@@ -6,6 +6,7 @@ mod exedra;
 
 mod vulkan;
 
+use cotangens::mat4x4::Mat4x4;
 use vulkan::{
 	vk_bindgen::
 		vkDeviceWaitIdle, 
@@ -47,10 +48,28 @@ use detail_core::{
 
 use std::ptr::null_mut as nullptr;
 
-use crate::exedra::{model::Model, material::VulkanMaterialData, mesh::VulkanMeshData};
+use crate::{exedra::{model::Model, material::VulkanMaterialData, mesh::VulkanMeshData}, cotangens::{vec3::Vec3, mat4x4}};
 
 fn main() 
 {
+	let new_identity = Mat4x4::new_identity(16.0f32);
+
+	println!("identity mat : {:?}", new_identity);
+	println!("scaled mat : {:?}", new_identity.scale(Vec3::new(0.5f32)));
+	println!("translated mat : {:?}", new_identity.translate(Vec3::new(32.0f32)));
+	println!("rotated_x mat : {:?}", new_identity.rotate_x(3.0f32));
+	println!("rotated_y mat : {:?}", new_identity.rotate_y(3.0f32));
+	println!("rotated_z mat : {:?}", new_identity.rotate_z(3.0f32));
+
+	// let new_scale = 
+	// 	{
+	// 		let identity = Mat4x4::new_identity(1.0f32);
+
+	// 		let new_zero = Mat4x4
+	// 	};
+
+	// panic!();
+
 	unsafe
 	{
 		let mut window = 
@@ -80,7 +99,8 @@ fn main()
 			vec![
 				// exedra::model::Model::load("./detail/models/viking_room/viking_room.obj").unwrap(),
 				// exedra::model::Model::load("./detail/models/viking_room/viking_room.obj").unwrap(),
-				exedra::model::Model::load("./detail/models/woag/woag.obj").unwrap(),
+				// exedra::model::Model::load("./detail/models/woag/woag.obj").unwrap(),
+				exedra::model::Model::load("./detail/models/valkyrie/valkyrie.obj").unwrap(),
 				exedra::model::Model::load("./detail/models/de_inferno/de_inferno.obj").unwrap(),
 			];
 
@@ -198,7 +218,15 @@ fn main()
 		{
 			let start_time = std::time::Instant::now();
 			// let absolute_current_time_stamp_ms = start_time.duration_since(vk_handle.start_time).as_secs_f32() * 1000.0f32;
+
+			models[0].translation = &vk_handle.camera.get_position() + &(&vk_handle.camera.get_front() * &2.0f32);
+			models[0].scale = Vec3::new(0.1f32);// + &(&vk_handle.camera.get_front() * &10.0f32);
+			models[0].rotation = vk_handle.camera.get_rotation();// + &(&vk_handle.camera.get_front() * &10.0f32);
+
+			models[1].scale = Vec3::new(0.3f32);// + &(&vk_handle.camera.get_front() * &10.0f32);
 			
+			println!("Cam rot : {:?}", vk_handle.camera.get_rotation());
+
 			draw_frame(&mut vk_handle, &mut models);
 
 			// std::thread::sleep(std::time::Duration::from_millis(15));

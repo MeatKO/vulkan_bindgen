@@ -57,6 +57,28 @@ impl Camera
 		}
 	}
 
+	pub fn get_front(&self) -> Vec3
+	{
+		return self.front.clone()
+	}
+
+	pub fn get_position(&self) -> Vec3
+	{
+		return self.position.clone()
+	}
+
+	pub fn get_rotation(&self) -> Vec3
+	{
+		return Vec3 { 
+			// x: 0.0f32 / 360.0f32, 
+			x: self.pitch, 
+			// y: self.yaw, 
+			y: self.yaw, 
+			z: 0.0f32, 
+			// z: self.pitch, 
+		}
+	}
+
 	pub fn process_movement(&mut self, delta_time_ms: f32, input_buffer: &InputBuffer)
 	{
 		let velocity = self.movement_speed * delta_time_ms;

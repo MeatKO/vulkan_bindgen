@@ -183,7 +183,10 @@ where P : AsRef<Path>
 	let mut out_model = 
 		Model {
 			name: model_path.as_ref().file_name().and_then(|name| name.to_str()).unwrap_or("unnamed_model").to_string(),
-			meshes: mesh_vec
+			meshes: mesh_vec,
+			translation: Vec3::new(0.0f32),
+			scale: Vec3::new(1.0f32),
+			rotation: Vec3::new(0.0f32),
 		};
 
 	Ok(out_model)

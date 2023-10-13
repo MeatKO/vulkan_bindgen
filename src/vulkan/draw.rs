@@ -36,7 +36,7 @@ pub fn 	draw_frame(
 						None => continue
 					};
 
-				update_uniform_buffer(vk_handle, vulkan_data, index);
+				update_uniform_buffer(vk_handle, vulkan_data, index, &model.scale, &model.translation, &model.rotation);
 			}
 		}
 

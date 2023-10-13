@@ -34,7 +34,10 @@ use super::obj_loader::{ModelLoadError, load_obj};
 pub struct Model
 {
 	pub name: String,
-	pub meshes: Vec<Mesh>
+	pub meshes: Vec<Mesh>,
+	pub scale: Vec3,
+	pub translation: Vec3,
+	pub rotation: Vec3,
 }
 
 impl Model
