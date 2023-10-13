@@ -25,7 +25,20 @@ pub fn 	draw_frame(
 			e => { panic!("vkAcquireNextImageKHR() resulted in {:?}", e) }
 		}
 
-		update_uniform_buffer(vk_handle, models);
+		for (index, model) in models.iter_mut().enumerate()
+		{
+			for mesh in &mut model.meshes
+			{
+				let vulkan_data = 
+					match &mut mesh.vulkan_data
+					{
+						Some(vd) => vd,
+						None => continue
+					};
+
+				update_uniform_buffer(vk_handle, vulkan_data, index);
+			}
+		}
 
 		vkResetCommandBuffer(vk_handle.command_buffer_vec[vk_handle.current_frame], 0);
 		record_command_buffer(vk_handle, image_index, models);

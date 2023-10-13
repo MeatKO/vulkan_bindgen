@@ -1,3 +1,6 @@
+use crate::exedra::material::VulkanMaterialData;
+use crate::exedra::mesh::Mesh;
+use crate::exedra::mesh::VulkanMeshData;
 use crate::exedra::model::Model;
 use crate::vulkan::vk_bindgen::*;
 use crate::vulkan::handle::*;
@@ -53,9 +56,26 @@ pub unsafe fn create_descriptor_set_layout(
 
 pub unsafe fn create_descriptor_sets(
 	vk_handle: &VkHandle,
-	model: &mut Model
-)
+	// mesh: &mut Mesh,
+	mesh_data: &mut VulkanMeshData,
+	material_data: &mut VulkanMaterialData,
+	descriptor_pool: &VkDescriptorPool,
+) -> Result<(), String>
 {
+	// let material_vulkan_data = 
+	// 	match &mut mesh.material.vulkan_data
+	// 	{
+	// 		Some(vd) => vd,
+	// 		None => return Err(format!("Cannot execute create_descriptor_sets() for mesh '{}' with uninitialized material '{}'", mesh.name, mesh.material.name).to_owned())
+	// 	};
+
+	// let mesh_vulkan_data = 
+	// 	match &mut mesh.vulkan_data
+	// 	{
+	// 		Some(vd) => vd,
+	// 		None => return Err(format!("Cannot execute create_descriptor_sets() for uninitialized mesh '{}'", mesh.name).to_owned())
+	// 	};
+
 	let layouts: Vec<VkDescriptorSetLayout> = 
 		vec![
 			vk_handle.descriptor_set_layout; 
@@ -65,25 +85,25 @@ pub unsafe fn create_descriptor_sets(
 	let descriptor_set_allocate_info = 
 		VkDescriptorSetAllocateInfo {
 			sType: VkStructureType::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-			descriptorPool: model.descriptor_pool,
+			descriptorPool: *descriptor_pool,
 			descriptorSetCount: vk_handle.frames_in_flight as u32,
 			pSetLayouts: layouts.as_ptr(),
 			pNext: nullptr()
 		};
 
-	model.descriptor_sets = vec![nullptr(); vk_handle.frames_in_flight];
+	mesh_data.descriptor_sets = vec![nullptr(); vk_handle.frames_in_flight];
 
-	match vkAllocateDescriptorSets(vk_handle.logical_device, &descriptor_set_allocate_info, model.descriptor_sets.as_mut_ptr())
+	match vkAllocateDescriptorSets(vk_handle.logical_device, &descriptor_set_allocate_info, mesh_data.descriptor_sets.as_mut_ptr())
 	{
 		VkResult::VK_SUCCESS => { println!("✔️ vkAllocateDescriptorSets()"); }
 		err => { panic!("✗ vkAllocateDescriptorSets() failed with code {:?}.", err); }
 	}
 
-	for i in 0..model.descriptor_sets.len()
+	for i in 0..mesh_data.descriptor_sets.len()
 	{
 		let buffer_info = 
 			VkDescriptorBufferInfo {
-				buffer: model.uniform_buffers[i],
+				buffer: mesh_data.uniform_buffers[i],
 				offset: 0,
 				range: size_of::<UniformBufferObject>() as u64
 			};
@@ -91,15 +111,15 @@ pub unsafe fn create_descriptor_sets(
 		let image_info = 
 			VkDescriptorImageInfo {
 				imageLayout: VkImageLayout::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-				imageView: model.texture_image_view,
-				sampler: model.texture_sampler
+				imageView: material_data.texture_image_view,
+				sampler: material_data.texture_sampler
 			};
 		
 		let descriptor_writes = 
 			vec![
 				VkWriteDescriptorSet {
 					sType: VkStructureType::VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-					dstSet: model.descriptor_sets[i],
+					dstSet: mesh_data.descriptor_sets[i],
 					dstBinding: 0,
 					dstArrayElement: 0,
 					descriptorType: VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
@@ -111,7 +131,7 @@ pub unsafe fn create_descriptor_sets(
 				},
 				VkWriteDescriptorSet {
 					sType: VkStructureType::VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-					dstSet: model.descriptor_sets[i],
+					dstSet: mesh_data.descriptor_sets[i],
 					dstBinding: 1,
 					dstArrayElement: 0,
 					descriptorType: VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
@@ -125,4 +145,6 @@ pub unsafe fn create_descriptor_sets(
 
 		vkUpdateDescriptorSets(vk_handle.logical_device, descriptor_writes.len() as _, descriptor_writes.as_ptr(), 0, nullptr());
 	}
+
+	Ok(())
 }

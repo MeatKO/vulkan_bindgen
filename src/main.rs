@@ -45,7 +45,9 @@ use detail_core::{
 	window::create_vulkan_surface,
 };
 
-use crate::exedra::model::Model;
+use std::ptr::null_mut as nullptr;
+
+use crate::exedra::{model::Model, material::VulkanMaterialData, mesh::VulkanMeshData};
 
 fn main() 
 {
@@ -76,39 +78,107 @@ fn main()
 
 		let mut models: Vec<Model> =
 			vec![
-				exedra::model::Model::load("./detail/models/viking_room/viking_room.obj").unwrap(),
-				exedra::model::Model::load("./detail/models/viking_room/viking_room.obj").unwrap(),
+				// exedra::model::Model::load("./detail/models/viking_room/viking_room.obj").unwrap(),
+				// exedra::model::Model::load("./detail/models/viking_room/viking_room.obj").unwrap(),
 				exedra::model::Model::load("./detail/models/woag/woag.obj").unwrap(),
+				exedra::model::Model::load("./detail/models/de_inferno/de_inferno.obj").unwrap(),
 			];
 
-		let texture_paths: Vec<String> = 
-			vec![
-				"./detail/models/viking_room/viking_room.tga".into(),
-				"./detail/textures/test.tga".into(),
-				"./detail/models/woag/woag.tga".into(),
-			];
+		// println!("printing model {} with {} meshes", models[0].name, models[0].meshes.len());
+
+		// for mesh in &models[0].meshes
+		// {
+		// 	println!("printing mesh {}", mesh.name);
+		// 	println!("Vertex Len : {}", mesh.vertices.len());
+		// 	println!("Index Len : {}", mesh.indices.len());
+		// 	println!("Index Count : {}", mesh.index_count);
+		// 	println!("Using Materal : {}", mesh.material.name);
+		// 	println!("Material with map : {}", mesh.material.diffuse_map_rel_path);
+
+		// }
+
+		// panic!("aaadafjnhbgyhujkmnbvgyhujkmn");
+
+		// let texture_paths: Vec<String> = 
+		// 	vec![
+		// 		"./detail/models/viking_room/viking_room.tga".into(),
+		// 		"./detail/textures/test.tga".into(),
+		// 		"./detail/models/woag/woag.tga".into(),
+		// 	];
 
 		create_descriptor_set_layout(&mut vk_handle);
 
-		for (model, texture_path) in models.iter_mut().zip(texture_paths)
+		// create vertex, index, uniform buffers for the mesh
+		// create texture buffers for the material
+		for model in models.iter_mut()
 		{
-			create_texture_image(&mut vk_handle, model, texture_path);
-			create_texture_image_view(&mut vk_handle, model);
-			create_texture_sampler(&mut vk_handle, model);
-	
-			(model.vertex_buffer, model.vertex_buffer_memory) =
-				create_vertex_buffer(&mut vk_handle, &mut model.vertices)
-				.unwrap();
-	
-			(model.index_buffer, model.index_buffer_memory) =
-				create_index_buffer(&mut vk_handle, &mut model.indices)
-				.unwrap();
-	
-			create_uniform_buffers(&mut vk_handle, model);
-			
-			create_descriptor_pool(&vk_handle, model);
-			create_descriptor_sets(&vk_handle, model);
+			for mesh in model.meshes.iter_mut()
+			{
+				let (texture_image, texture_image_memory) = create_texture_image(&vk_handle, mesh.material.diffuse_map_rel_path.clone());
+				let texture_image_view = create_texture_image_view(&vk_handle, &texture_image);
+				let texture_sampler = create_texture_sampler(&vk_handle).unwrap();
+				mesh.material.vulkan_data = Some(
+					VulkanMaterialData{
+						texture_image: texture_image,
+						texture_image_memory: texture_image_memory,
+						texture_image_view: texture_image_view,
+						texture_sampler: texture_sampler,
+					}
+				);
+
+				let (vertex_buffer, vertex_buffer_memory) =
+					create_vertex_buffer(&vk_handle, &mut mesh.vertices)
+					.unwrap();
+		
+				let (index_buffer, index_buffer_memory) =
+					create_index_buffer(&vk_handle, &mut mesh.indices)
+					.unwrap();
+
+				mesh.vulkan_data = Some(
+					VulkanMeshData{
+						vertex_buffer: vertex_buffer,
+						vertex_buffer_memory: vertex_buffer_memory,
+						index_buffer: index_buffer,
+						index_buffer_memory: index_buffer_memory,
+						uniform_buffers: vec![],
+						uniform_buffers_memory: vec![],
+						uniform_buffers_mapped: vec![],
+						descriptor_pool: nullptr(),
+						descriptor_sets: vec![],
+					}
+				);
+
+				let vulkan_mesh_data = mesh.vulkan_data.as_mut().unwrap();
+				let vulkan_material_data = mesh.material.vulkan_data.as_mut().unwrap();
+
+				create_uniform_buffers(&vk_handle, vulkan_mesh_data);
+
+				let mut descriptor_pool = create_descriptor_pool(&vk_handle).unwrap();
+				create_descriptor_sets(&vk_handle, vulkan_mesh_data, vulkan_material_data, &descriptor_pool);
+				vulkan_mesh_data.descriptor_pool = create_descriptor_pool(&vk_handle).unwrap();
+			}
 		}
+
+		// for (model, texture_path) in models.iter_mut().zip(texture_paths)
+		// {
+		// 	let (texture_image, texture_image_memory) = create_texture_image(&vk_handle, texture_path);
+		// 	let texture_image_view = create_texture_image_view(&vk_handle, &texture_image);
+		// 	let texture_sampler = create_texture_sampler(&vk_handle);
+	
+		// 	(model.vertex_buffer, model.vertex_buffer_memory) =
+		// 		create_vertex_buffer(&vk_handle, &mut model.vertices)
+		// 		.unwrap();
+	
+		// 	(model.index_buffer, model.index_buffer_memory) =
+		// 		create_index_buffer(&vk_handle, &mut model.indices)
+		// 		.unwrap();
+	
+		// 	create_uniform_buffers(&vk_handle, model);
+			
+		// 	// create_descriptor_pool(&vk_handle, model);
+		// 	let descriptor_pool = create_descriptor_pool(&vk_handle).unwrap();
+		// 	create_descriptor_sets(&vk_handle, model, &descriptor_pool);
+		// }
 
 		create_pipeline(&mut vk_handle);
 		create_depth_buffer(&mut vk_handle);

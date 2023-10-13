@@ -14,7 +14,7 @@ use std::ptr::null_mut as nullptr;
 // pub unsafe fn create_index_buffer(vk_handle: &mut VkHandle)
 
 pub unsafe fn create_index_buffer<IndexSize>(
-	vk_handle: &mut VkHandle, 
+	vk_handle: &VkHandle, 
 	indices: &mut Vec<IndexSize>,
 ) -> Result<(VkBuffer, VkDeviceMemory), String>
 {

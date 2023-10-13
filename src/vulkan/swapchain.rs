@@ -118,7 +118,7 @@ pub unsafe fn create_swapchain_image_views(vk_handle: &mut VkHandle)
 		vk_handle.swapchain_image_views_vec[i] = 
 			create_image_view(
 				vk_handle, 
-				swapchain_images_vec[i],
+				&swapchain_images_vec[i],
 				vk_handle.surface_format.format, 
 				VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT as u32,
 			);

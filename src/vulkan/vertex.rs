@@ -58,7 +58,7 @@ impl Vertex
 }
 
 pub unsafe fn create_vertex_buffer(
-	vk_handle: &mut VkHandle, 
+	vk_handle: &VkHandle, 
 	vertices: &mut Vec<Vertex>,
 ) -> Result<(VkBuffer, VkDeviceMemory), String>
 {

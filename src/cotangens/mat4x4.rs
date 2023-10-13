@@ -90,14 +90,25 @@ impl Mat4x4
 {
 	pub fn translate(&self, translation: Vec3) -> Mat4x4
 	{
-		let mut rot_mat = Mat4x4::new_identity(1.0f32);
+		let mut trans_mat = Mat4x4::new_identity(1.0f32);
 
-		rot_mat.data[0][3] += translation.x;
-		rot_mat.data[1][3] += translation.y;
-		rot_mat.data[2][3] += translation.z;
+		trans_mat.data[0][3] += translation.x;
+		trans_mat.data[1][3] += translation.y;
+		trans_mat.data[2][3] += translation.z;
 
-		return *self + &rot_mat.transpose();
+		return *self + &trans_mat.transpose();
 		// return *self * &rot_mat;
+	}
+
+	pub fn scale(&self, scale: Vec3) -> Mat4x4
+	{
+		let mut scale_mat = Mat4x4::new_identity(1.0f32);
+
+		scale_mat.data[0][0] += scale.x;
+		scale_mat.data[1][1] += scale.y;
+		scale_mat.data[2][2] += scale.z;
+
+		return *self * &scale_mat;
 	}
 
 	pub fn rotate_x(&self, degrees: f32) -> Mat4x4

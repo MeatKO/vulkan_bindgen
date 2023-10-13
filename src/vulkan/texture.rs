@@ -37,13 +37,10 @@ impl ImageLayoutTransition
 }
 
 pub unsafe fn create_texture_image(
-	vk_handle: &mut VkHandle,
-	model: &mut Model,
+	vk_handle: &VkHandle,
 	tga_image_path: String
-)
+) -> (VkImage, VkDeviceMemory)
 {
-	// let image = TGAImage::new("./detail/textures/test_marked.tga").unwrap();
-	// let image = TGAImage::new("./detail/models/viking_room/viking_room.tga").unwrap();
 	let image = TGAImage::new(tga_image_path).unwrap();
 
 	let (staging_buffer, staging_buffer_memory) = 
@@ -76,31 +73,36 @@ pub unsafe fn create_texture_image(
 			VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT as u32
 		);
 	
-	model.texture_image = vk_image;
-	model.texture_image_memory = vk_image_memory;
+	// model.texture_image = vk_image;
+	// model.texture_image_memory = vk_image_memory;
 
 	transition_image_layout(
 		vk_handle, 
 		VkFormat::VK_FORMAT_R8G8B8A8_SRGB, 
-		model.texture_image, 
+		// model.texture_image, 
+		vk_image, 
 		VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED, 
 		VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
 	);
-	copy_buffer_to_image(vk_handle, staging_buffer, model.texture_image, image.header.width as u32, image.header.height as u32);
+	// copy_buffer_to_image(vk_handle, staging_buffer, model.texture_image, image.header.width as u32, image.header.height as u32);
+	copy_buffer_to_image(vk_handle, staging_buffer, vk_image, image.header.width as u32, image.header.height as u32);
 	transition_image_layout(
 		vk_handle, 
 		VkFormat::VK_FORMAT_R8G8B8A8_SRGB, 
-		model.texture_image, 
+		// model.texture_image, 
+		vk_image, 
 		VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 
 		VkImageLayout::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
 	);
 
 	vkDestroyBuffer(vk_handle.logical_device, staging_buffer, nullptr());
 	vkFreeMemory(vk_handle.logical_device, staging_buffer_memory, nullptr());
+
+	(vk_image, vk_image_memory)
 }
 
 pub unsafe fn create_image(
-	vk_handle: &mut VkHandle,
+	vk_handle: &VkHandle,
 	width: u32,
 	height: u32,
 	format: VkFormat,
@@ -274,7 +276,7 @@ pub unsafe fn transition_image_layout(
 }
 
 pub unsafe fn copy_buffer_to_image(
-	vk_handle: &mut VkHandle,
+	vk_handle: &VkHandle,
 	buffer: VkBuffer,
 	image: VkImage,
 	width: u32,
