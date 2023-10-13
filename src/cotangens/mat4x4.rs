@@ -104,9 +104,9 @@ impl Mat4x4
 	{
 		let mut scale_mat = Mat4x4::new_identity(1.0f32);
 
-		scale_mat.data[0][0] += scale.x;
-		scale_mat.data[1][1] += scale.y;
-		scale_mat.data[2][2] += scale.z;
+		scale_mat.data[0][0] = scale.x;
+		scale_mat.data[1][1] = scale.y;
+		scale_mat.data[2][2] = scale.z;
 
 		return *self * &scale_mat;
 	}
@@ -193,27 +193,36 @@ impl Mul<&Mat4x4> for Mat4x4
     fn mul(self, mat_in: &Mat4x4) -> Mat4x4 
 	{
         let mut out_mat: Mat4x4 = Mat4x4::new();
-		out_mat.data = [[1.0f32; 4]; 4];
+		out_mat.data = [[0.0f32; 4]; 4];
 
-		out_mat.data[0][0] = (self.data[0][0] * mat_in.data[0][0]) + (self.data[1][0] * mat_in.data[0][1]) + (self.data[2][0] * mat_in.data[0][2]) + (self.data[3][0] * mat_in.data[0][3]);
-		out_mat.data[0][1] = (self.data[0][1] * mat_in.data[0][0]) + (self.data[1][1] * mat_in.data[0][1]) + (self.data[2][1] * mat_in.data[0][2]) + (self.data[3][1] * mat_in.data[0][3]);
-		out_mat.data[0][2] = (self.data[0][2] * mat_in.data[0][0]) + (self.data[1][2] * mat_in.data[0][1]) + (self.data[2][2] * mat_in.data[0][2]) + (self.data[3][2] * mat_in.data[0][3]);
-		out_mat.data[0][3] = (self.data[0][3] * mat_in.data[0][0]) + (self.data[1][3] * mat_in.data[0][1]) + (self.data[2][3] * mat_in.data[0][2]) + (self.data[3][3] * mat_in.data[0][3]);
+		for i in 0..4 {
+            for j in 0..4 {
+                out_mat.data[i][j] = 0.0;
+                for k in 0..4 {
+                    out_mat.data[i][j] += self.data[i][k] * mat_in.data[k][j];
+                }
+            }
+        }
 
-		out_mat.data[1][0] = (self.data[0][0] * mat_in.data[1][0]) + (self.data[1][0] * mat_in.data[1][1]) + (self.data[2][0] * mat_in.data[1][2]) + (self.data[3][0] * mat_in.data[1][3]);
-		out_mat.data[1][1] = (self.data[0][1] * mat_in.data[1][0]) + (self.data[1][1] * mat_in.data[1][1]) + (self.data[2][1] * mat_in.data[1][2]) + (self.data[3][1] * mat_in.data[1][3]);
-		out_mat.data[1][2] = (self.data[0][2] * mat_in.data[1][0]) + (self.data[1][2] * mat_in.data[1][1]) + (self.data[2][2] * mat_in.data[1][2]) + (self.data[3][2] * mat_in.data[1][3]);
-		out_mat.data[1][3] = (self.data[0][3] * mat_in.data[1][0]) + (self.data[1][3] * mat_in.data[1][1]) + (self.data[2][3] * mat_in.data[1][2]) + (self.data[3][3] * mat_in.data[1][3]);
+		// out_mat.data[0][0] = (self.data[0][0] * mat_in.data[0][0]) + (self.data[1][0] * mat_in.data[0][1]) + (self.data[2][0] * mat_in.data[0][2]) + (self.data[3][0] * mat_in.data[0][3]);
+		// out_mat.data[0][1] = (self.data[0][1] * mat_in.data[0][0]) + (self.data[1][1] * mat_in.data[0][1]) + (self.data[2][1] * mat_in.data[0][2]) + (self.data[3][1] * mat_in.data[0][3]);
+		// out_mat.data[0][2] = (self.data[0][2] * mat_in.data[0][0]) + (self.data[1][2] * mat_in.data[0][1]) + (self.data[2][2] * mat_in.data[0][2]) + (self.data[3][2] * mat_in.data[0][3]);
+		// out_mat.data[0][3] = (self.data[0][3] * mat_in.data[0][0]) + (self.data[1][3] * mat_in.data[0][1]) + (self.data[2][3] * mat_in.data[0][2]) + (self.data[3][3] * mat_in.data[0][3]);
+
+		// out_mat.data[1][0] = (self.data[0][0] * mat_in.data[1][0]) + (self.data[1][0] * mat_in.data[1][1]) + (self.data[2][0] * mat_in.data[1][2]) + (self.data[3][0] * mat_in.data[1][3]);
+		// out_mat.data[1][1] = (self.data[0][1] * mat_in.data[1][0]) + (self.data[1][1] * mat_in.data[1][1]) + (self.data[2][1] * mat_in.data[1][2]) + (self.data[3][1] * mat_in.data[1][3]);
+		// out_mat.data[1][2] = (self.data[0][2] * mat_in.data[1][0]) + (self.data[1][2] * mat_in.data[1][1]) + (self.data[2][2] * mat_in.data[1][2]) + (self.data[3][2] * mat_in.data[1][3]);
+		// out_mat.data[1][3] = (self.data[0][3] * mat_in.data[1][0]) + (self.data[1][3] * mat_in.data[1][1]) + (self.data[2][3] * mat_in.data[1][2]) + (self.data[3][3] * mat_in.data[1][3]);
 		
-		out_mat.data[2][0] = (self.data[0][0] * mat_in.data[2][0]) + (self.data[1][0] * mat_in.data[2][1]) + (self.data[2][0] * mat_in.data[2][2]) + (self.data[3][0] * mat_in.data[2][3]);
-		out_mat.data[2][1] = (self.data[0][1] * mat_in.data[2][0]) + (self.data[1][1] * mat_in.data[2][1]) + (self.data[2][1] * mat_in.data[2][2]) + (self.data[3][1] * mat_in.data[2][3]);
-		out_mat.data[2][2] = (self.data[0][2] * mat_in.data[2][0]) + (self.data[1][2] * mat_in.data[2][1]) + (self.data[2][2] * mat_in.data[2][2]) + (self.data[3][2] * mat_in.data[2][3]);
-		out_mat.data[2][3] = (self.data[0][3] * mat_in.data[2][0]) + (self.data[1][3] * mat_in.data[2][1]) + (self.data[2][3] * mat_in.data[2][2]) + (self.data[3][3] * mat_in.data[2][3]);
+		// out_mat.data[2][0] = (self.data[0][0] * mat_in.data[2][0]) + (self.data[1][0] * mat_in.data[2][1]) + (self.data[2][0] * mat_in.data[2][2]) + (self.data[3][0] * mat_in.data[2][3]);
+		// out_mat.data[2][1] = (self.data[0][1] * mat_in.data[2][0]) + (self.data[1][1] * mat_in.data[2][1]) + (self.data[2][1] * mat_in.data[2][2]) + (self.data[3][1] * mat_in.data[2][3]);
+		// out_mat.data[2][2] = (self.data[0][2] * mat_in.data[2][0]) + (self.data[1][2] * mat_in.data[2][1]) + (self.data[2][2] * mat_in.data[2][2]) + (self.data[3][2] * mat_in.data[2][3]);
+		// out_mat.data[2][3] = (self.data[0][3] * mat_in.data[2][0]) + (self.data[1][3] * mat_in.data[2][1]) + (self.data[2][3] * mat_in.data[2][2]) + (self.data[3][3] * mat_in.data[2][3]);
 
-		out_mat.data[3][0] = (self.data[0][0] * mat_in.data[3][0]) + (self.data[1][0] * mat_in.data[3][1]) + (self.data[2][0] * mat_in.data[3][2]) + (self.data[3][0] * mat_in.data[3][3]);
-		out_mat.data[3][1] = (self.data[0][1] * mat_in.data[3][0]) + (self.data[1][1] * mat_in.data[3][1]) + (self.data[2][1] * mat_in.data[3][2]) + (self.data[3][1] * mat_in.data[3][3]);
-		out_mat.data[3][2] = (self.data[0][2] * mat_in.data[3][0]) + (self.data[1][2] * mat_in.data[3][1]) + (self.data[2][2] * mat_in.data[3][2]) + (self.data[3][2] * mat_in.data[3][3]);
-		out_mat.data[3][3] = (self.data[0][3] * mat_in.data[3][0]) + (self.data[1][3] * mat_in.data[3][1]) + (self.data[2][3] * mat_in.data[3][2]) + (self.data[3][3] * mat_in.data[3][3]);
+		// out_mat.data[3][0] = (self.data[0][0] * mat_in.data[3][0]) + (self.data[1][0] * mat_in.data[3][1]) + (self.data[2][0] * mat_in.data[3][2]) + (self.data[3][0] * mat_in.data[3][3]);
+		// out_mat.data[3][1] = (self.data[0][1] * mat_in.data[3][0]) + (self.data[1][1] * mat_in.data[3][1]) + (self.data[2][1] * mat_in.data[3][2]) + (self.data[3][1] * mat_in.data[3][3]);
+		// out_mat.data[3][2] = (self.data[0][2] * mat_in.data[3][0]) + (self.data[1][2] * mat_in.data[3][1]) + (self.data[2][2] * mat_in.data[3][2]) + (self.data[3][2] * mat_in.data[3][3]);
+		// out_mat.data[3][3] = (self.data[0][3] * mat_in.data[3][0]) + (self.data[1][3] * mat_in.data[3][1]) + (self.data[2][3] * mat_in.data[3][2]) + (self.data[3][3] * mat_in.data[3][3]);
 
 		out_mat
     }

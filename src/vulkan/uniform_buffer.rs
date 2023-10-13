@@ -78,14 +78,12 @@ pub unsafe fn update_uniform_buffer(
 		// let time: f32 = 0.0f32;
 	
 		let time = time / 2.0f32;
-	
+
 		let ubo = 
 			UniformBufferObject{
 				foo: Vec2 { x: 0.0f32, y: 0.0f32 },
 				model: Mat4x4::new_identity(1.0f32)
-					// .scale(Vec3 { x: 0.1f32, y: 0.1f32, z: 0.1f32 }),
-					// .scale(Vec3 { x: 0.001f32, y: 0.001f32, z: 0.001f32 }),
-					.scale(Vec3::new(0.00001f32)),
+					.scale(Vec3 { x: 0.1f32, y: 0.1f32, z: 0.1f32 }),
 					// .translate(Vec3 { x: 0.0f32, y: -0.5f32, z: 0.0f32 })
 					// .translate(Vec3 { x: 5.0f32 * index as f32, y: -0.5f32, z: 0.0f32 })
 					// .rotate_x(-90.0f32.to_radians())
