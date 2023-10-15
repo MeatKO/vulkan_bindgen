@@ -39,6 +39,14 @@ impl InputProcessor
 		{
 			match event
 			{
+				WindowEvent::MousePress(mouse_code, x, y) =>
+				{
+					vk_handle.mouse_input_buffer.set_key(mouse_code as u8, absolute_current_time_stamp_ms);
+				}
+				WindowEvent::MouseRelease(mouse_code, x, y) =>
+				{
+					vk_handle.mouse_input_buffer.unset_key(mouse_code as u8);
+				}
 				WindowEvent::KeyPress(key_code) => 
 				{
 					vk_handle.input_buffer.set_key(key_code as u8, absolute_current_time_stamp_ms);

@@ -45,7 +45,7 @@ impl Camera
 	{
 		return Camera{
 			position: in_position,
-			front: Vec3 { x: 0.0f32, y: 0.0f32, z: 1.0f32 },
+			front: Vec3 { x: 1.0f32, y: 0.0f32, z: 0.0f32 },
 			right: Vec3::new(0.0f32), // this will be calculated later
 			up: Vec3::new(0.0f32), // this will be calculated later
 			world_up: in_world_up,

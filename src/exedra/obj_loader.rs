@@ -180,7 +180,7 @@ where P : AsRef<Path>
 		mesh_vec.push(current_mesh);
 	}
 
-	let mut out_model = 
+	let out_model = 
 		Model {
 			name: model_path.as_ref().file_name().and_then(|name| name.to_str()).unwrap_or("unnamed_model").to_string(),
 			meshes: mesh_vec,
@@ -203,7 +203,7 @@ where P : AsRef<Path>
 	{
 		let current_material_path = model_path_no_filename.join(material_file_name.clone());
 
-		println!("using '{:?}' \nand '{:?}' \nwe arrived at '{:?}'", model_path.as_ref(), model_path_no_filename, current_material_path);
+		// println!("using '{:?}' \nand '{:?}' \nwe arrived at '{:?}'", model_path.as_ref(), model_path_no_filename, current_material_path);
 
 		let obj_material_source = 
 			std::fs::read_to_string(current_material_path.clone())

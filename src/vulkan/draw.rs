@@ -9,7 +9,7 @@ use std::ptr::null_mut as nullptr;
 // pub fn 	draw_frame(vk_handle: &mut VkHandle, model: &mut Model)
 pub fn 	draw_frame(
 	vk_handle: &mut VkHandle, 
-	models: &mut Vec<Model>
+	models: &mut Vec<Model>,
 )
 {
 	unsafe

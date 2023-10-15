@@ -52,32 +52,26 @@ impl Mat4x4
 		let f = 1.0f32 / (fov / 2.0f32).tan();
 		let range = near - far;
 
-		// out_mat.data[0][0] = f / aspect_ratio;
-		// out_mat.data[1][1] = f * -1.0f32; // building it for vk
-		// out_mat.data[2][2] = (near + far) / range;
-		// out_mat.data[2][3] = (1.0f32 * near * far) / range;
-		// out_mat.data[3][2] = -1.0f32;
-		// out_mat.data[3][3] = 0.0f32;
-
 		out_mat.data[0][0] = f / aspect_ratio;
-		out_mat.data[1][1] = f * -1.0f32; // building it for vk
-		out_mat.data[2][2] = (near + far) / range;
-		out_mat.data[3][2] = (1.0f32 * near * far) / range;
+		out_mat.data[1][1] = -f; // building it for vk
+		out_mat.data[2][2] = far / range;
+		out_mat.data[3][2] = (near * far) / range;
 		out_mat.data[2][3] = -1.0f32;
 		out_mat.data[3][3] = 0.0f32;
 
 
-		out_mat//.transpose()
+		out_mat
 	}
 
 	pub fn new_lookat(eye: &Vec3, center: &Vec3, up: &Vec3) -> Mat4x4
 	{
-		let mut z_axis = Vec3{
-			x: (center.x - eye.x),
-			y: (center.y - eye.y),
-			z: (center.z - eye.z)
-		}.normalize();
-		let x_axis = z_axis.cross(&up).normalize();
+		let mut z_axis = 
+			Vec3{
+				x: (center.x - eye.x),
+				y: (center.y - eye.y),
+				z: (center.z - eye.z)
+			}.normalize();
+		let x_axis = z_axis.cross(&up.normalize()).normalize();
 		let y_axis = x_axis.cross(&z_axis);
 
 		z_axis = z_axis.negate();
@@ -105,7 +99,8 @@ impl Mat4x4
 		trans_mat.data[3][1] = translation.y;
 		trans_mat.data[3][2] = translation.z;
 
-		return trans_mat + self;
+		// return trans_mat + self;
+		return *self + &trans_mat;
 	}
 
 	pub fn scale(&self, scale: Vec3) -> Mat4x4
@@ -116,7 +111,8 @@ impl Mat4x4
 		scale_mat.data[1][1] = scale.y;
 		scale_mat.data[2][2] = scale.z;
 
-		return scale_mat * self;
+		// return scale_mat * self;
+		return *self * &scale_mat;
 	}
 
 	pub fn rotate_x(&self, degrees: f32) -> Mat4x4
@@ -130,6 +126,7 @@ impl Mat4x4
 		rot_mat.data[2][2] = radians.cos();
 
 		return *self * &rot_mat;
+		// return rot_mat * self;
 	}
 
 	pub fn rotate_y(&self, degrees: f32) -> Mat4x4
@@ -143,6 +140,7 @@ impl Mat4x4
 		rot_mat.data[2][2] = radians.cos();
 
 		return *self * &rot_mat;
+		// return rot_mat * self;
 	}
 
 	pub fn rotate_z(&self, degrees: f32) -> Mat4x4
@@ -156,6 +154,7 @@ impl Mat4x4
 		rot_mat.data[1][1] = radians.cos();
 
 		return *self * &rot_mat;
+		// return rot_mat * self;
 	}
 
 	pub fn transpose(&self) -> Mat4x4

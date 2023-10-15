@@ -24,6 +24,7 @@ pub struct VkHandle
 {
 	pub camera: Camera,
 	pub input_buffer: InputBuffer,
+	pub mouse_input_buffer: InputBuffer,
 
 	pub instance: VkInstance,
 	pub physical_device: VkPhysicalDevice,
@@ -105,12 +106,14 @@ impl VkHandle
 	{
 		return  VkHandle {
 			camera: Camera::new(
-				Vec3{ x: 0.0f32, y: 0.0f32, z: 1.5f32 },
+				Vec3{ x: 0.0f32, y: 0.0f32, z: 0.0f32 },
 				Vec3{ x: 0.0f32, y: 1.0f32, z: 0.0f32 },
-				-90.0f32,
+				// -90.0f32,
+				0.0f32,
 				0.0f32
 			),
 			input_buffer: InputBuffer::new(250.0f32),
+			mouse_input_buffer: InputBuffer::new(250.0f32),
 			instance: nullptr(),
 			physical_device: nullptr(),
 			logical_device: nullptr(),
