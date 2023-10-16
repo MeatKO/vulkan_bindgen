@@ -1,5 +1,5 @@
 use std::ops::{
-	Mul, AddAssign, SubAssign, Add,
+	Mul, AddAssign, SubAssign, Add, Sub,
 };
 use std::cmp::Eq;
 use std::hash::{
@@ -38,6 +38,20 @@ impl Add<&Vec3> for &Vec3
 			x: self.x + rhs.x,
 			y: self.y + rhs.y,
 			z: self.z + rhs.z
+		}
+	}
+}
+
+impl Sub<&Vec3> for &Vec3 
+{
+    type Output = Vec3;
+
+    fn sub(self, rhs: &Vec3) -> Vec3 
+	{
+		return Vec3 {
+			x: self.x - rhs.x,
+			y: self.y - rhs.y,
+			z: self.z - rhs.z
 		}
 	}
 }

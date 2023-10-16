@@ -1,7 +1,6 @@
-use crate::exedra::material::VulkanMaterialData;
-use crate::exedra::mesh::Mesh;
-use crate::exedra::mesh::VulkanMeshData;
-use crate::exedra::model::Model;
+use crate::detail_core::model::mesh::VulkanMeshData;
+use crate::detail_core::texture::texture::Texture;
+use crate::detail_core::texture::texture::VulkanTexture;
 use crate::vulkan::vk_bindgen::*;
 use crate::vulkan::handle::*;
 use crate::vulkan::uniform_buffer::*;
@@ -23,7 +22,7 @@ pub unsafe fn create_descriptor_set_layout(
 			pImmutableSamplers: nullptr()
 		};
 
-	let sampler_layout_binding = 
+	let albedo_layout_binding = 
 		VkDescriptorSetLayoutBinding{
 			binding: 1,
 			descriptorType: VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
@@ -32,10 +31,21 @@ pub unsafe fn create_descriptor_set_layout(
 			pImmutableSamplers: nullptr()
 		};
 
+	let normal_layout_binding = 
+		VkDescriptorSetLayoutBinding{
+			binding: 2,
+			descriptorType: VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+			descriptorCount: 1,
+			stageFlags: VkShaderStageFlagBits::VK_SHADER_STAGE_FRAGMENT_BIT as u32,
+			pImmutableSamplers: nullptr()
+		};
+
+
 	let bindings = 
 		vec![
 			ubo_layout_binding, 
-			sampler_layout_binding
+			albedo_layout_binding,
+			normal_layout_binding
 		];
 
 	let descriptor_set_layout_create_info = 
@@ -58,7 +68,9 @@ pub unsafe fn create_descriptor_sets(
 	vk_handle: &VkHandle,
 	// mesh: &mut Mesh,
 	mesh_data: &mut VulkanMeshData,
-	material_data: &mut VulkanMaterialData,
+	albedo_map: &Texture<VulkanTexture>,
+	normal_map: &Texture<VulkanTexture>,
+	// material_data: &mut VulkanMaterialData,
 	descriptor_pool: &VkDescriptorPool,
 ) -> Result<(), String>
 {
@@ -108,11 +120,18 @@ pub unsafe fn create_descriptor_sets(
 				range: size_of::<UniformBufferObject>() as u64
 			};
 
-		let image_info = 
+		let albedo_image_info = 
 			VkDescriptorImageInfo {
 				imageLayout: VkImageLayout::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-				imageView: material_data.texture_image_view,
-				sampler: material_data.texture_sampler
+				imageView: albedo_map.texture_image_view,
+				sampler: albedo_map.texture_sampler
+			};
+
+		let normal_image_info = 
+			VkDescriptorImageInfo {
+				imageLayout: VkImageLayout::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+				imageView: normal_map.texture_image_view,
+				sampler: normal_map.texture_sampler
 			};
 		
 		let descriptor_writes = 
@@ -137,7 +156,19 @@ pub unsafe fn create_descriptor_sets(
 					descriptorType: VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
 					descriptorCount: 1,
 					pBufferInfo: nullptr(),
-					pImageInfo: &image_info,
+					pImageInfo: &albedo_image_info,
+					pTexelBufferView: nullptr(),
+					pNext: nullptr()
+				},
+				VkWriteDescriptorSet {
+					sType: VkStructureType::VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+					dstSet: mesh_data.descriptor_sets[i],
+					dstBinding: 2,
+					dstArrayElement: 0,
+					descriptorType: VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+					descriptorCount: 1,
+					pBufferInfo: nullptr(),
+					pImageInfo: &normal_image_info,
 					pTexelBufferView: nullptr(),
 					pNext: nullptr()
 				},

@@ -287,8 +287,11 @@ pub unsafe fn create_pipeline(vk_handle: &mut VkHandle)
 	// let vertex_shader_source = include_bytes!("../../shaders/textured/vert.spv");
 	// let fragment_shader_source = include_bytes!("../../shaders/textured/frag.spv");
 
-	let vertex_shader_source = include_bytes!("../../shaders/test/vert.spv");
-	let fragment_shader_source = include_bytes!("../../shaders/test/frag.spv");
+	// let vertex_shader_source = include_bytes!("../../shaders/test/vert.spv");
+	// let fragment_shader_source = include_bytes!("../../shaders/test/frag.spv");
+
+	let vertex_shader_source = include_bytes!("../../shaders/normal/vert.spv");
+	let fragment_shader_source = include_bytes!("../../shaders/normal/frag.spv");
 
 	vk_handle.vertex_shader_module = create_shader_module(&vk_handle, vertex_shader_source);
 	vk_handle.fragment_shader_module = create_shader_module(&vk_handle, fragment_shader_source);

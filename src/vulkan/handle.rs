@@ -7,14 +7,12 @@ use crate::vulkan::{
 	vk_bindgen::*, 
 	swapchain::*, 
 	queue::*,
-	debugger::*, 
-	// vertex::*, 
-	uniform_buffer::*,
+	debugger::*,
 };
 
 use crate::detail_core::{
 	camera::*,
-	input_buffer::*,
+	input::input_buffer::InputBuffer,
 };
 
 use std::ptr::null_mut as nullptr;

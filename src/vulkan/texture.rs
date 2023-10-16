@@ -1,11 +1,12 @@
-use crate::exedra::model::Model;
+use crate::exedra::model_descriptor::ModelDescriptor;
 use crate::vulkan::vk_bindgen::*;
 use crate::vulkan::handle::*;
 use crate::vulkan::vk_buffer::*;
 use crate::vulkan::depth_buffer::*;
 use crate::vulkan::vk_memory::find_memory_type;
 
-use crate::pixcell::tga::*;
+// use crate::pixcell::tga::*;
+use crate::pixcell::image::Image;
 
 use std::ptr::null_mut as nullptr;
 
@@ -38,15 +39,17 @@ impl ImageLayoutTransition
 
 pub unsafe fn create_texture_image(
 	vk_handle: &VkHandle,
-	tga_image_path: String
+	image: &Box<dyn Image>
 ) -> (VkImage, VkDeviceMemory)
+// where
+// 	I: Image
 {
-	let image = TGAImage::new(tga_image_path).unwrap();
+	// let tga_image = TGAImage::new(tga_image_path).unwrap();
 
 	let (staging_buffer, staging_buffer_memory) = 
 		match create_buffer(
 				vk_handle, 
-				image.data.len() as u64,
+				image.get_data_ref().len() as u64,
 				VkBufferUsageFlagBits::VK_BUFFER_USAGE_TRANSFER_SRC_BIT as u32,
 				VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT as u32 |
 				VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_HOST_COHERENT_BIT as u32
@@ -57,24 +60,21 @@ pub unsafe fn create_texture_image(
 		};
 
 	let mut data = nullptr();
-	vkMapMemory(vk_handle.logical_device, staging_buffer_memory, 0, image.data.len() as u64, 0, &mut data);
-	std::ptr::copy_nonoverlapping(image.data.as_ptr() as _, data as _, image.data.len());
+	vkMapMemory(vk_handle.logical_device, staging_buffer_memory, 0, image.get_data_ref().len() as u64, 0, &mut data);
+	std::ptr::copy_nonoverlapping(image.get_data_ref().as_ptr() as _, data as _, image.get_data_ref().len());
 	vkUnmapMemory(vk_handle.logical_device, staging_buffer_memory);
 
 	let (vk_image, vk_image_memory) = 
 		create_image(
 			vk_handle,
-			image.header.width as u32, 
-			image.header.height as u32, 
+			image.get_size().width,
+			image.get_size().height,
 			VkFormat::VK_FORMAT_R8G8B8A8_SRGB,
 			VkImageTiling::VK_IMAGE_TILING_OPTIMAL, 
 			VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_DST_BIT as u32 | 
 			VkImageUsageFlagBits::VK_IMAGE_USAGE_SAMPLED_BIT as u32, 
 			VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT as u32
 		);
-	
-	// model.texture_image = vk_image;
-	// model.texture_image_memory = vk_image_memory;
 
 	transition_image_layout(
 		vk_handle, 
@@ -84,12 +84,11 @@ pub unsafe fn create_texture_image(
 		VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED, 
 		VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
 	);
-	// copy_buffer_to_image(vk_handle, staging_buffer, model.texture_image, image.header.width as u32, image.header.height as u32);
-	copy_buffer_to_image(vk_handle, staging_buffer, vk_image, image.header.width as u32, image.header.height as u32);
+
+	copy_buffer_to_image(vk_handle, staging_buffer, vk_image, image.get_size().width as u32, image.get_size().height as u32);
 	transition_image_layout(
 		vk_handle, 
-		VkFormat::VK_FORMAT_R8G8B8A8_SRGB, 
-		// model.texture_image, 
+		VkFormat::VK_FORMAT_R8G8B8A8_SRGB,
 		vk_image, 
 		VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 
 		VkImageLayout::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL

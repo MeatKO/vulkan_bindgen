@@ -2,76 +2,21 @@ use crate::cotangens::{
 	vec2::*,
 	vec3::*,
 };
-use crate::vulkan::vertex::*;
-use crate::vulkan::handle::{
-	VkHandle,
-};
 
-use super::material::RenderingMaterial;
-use super::mesh::Mesh;
-use super::model::Model;
-use std::error::Error;
+use super::material_descriptor::MaterialDescriptor;
+use super::mesh_descriptor::MeshDescriptor;
+use super::model_descriptor::ModelDescriptor;
+use super::error::ModelLoadError;
+
 use std::collections::HashMap;
 use std::path::Path;
-use std::ptr::null_mut as nullptr;
-use std::fmt;
 
-#[derive(Debug)]
-pub enum ModelLoadError 
-{
-    IoError(std::io::Error),
-	UnsupportedFileType,
-    ParseError,
-    UnexpectedTokenCount,
-    UnknownToken,
-	MaterialFileNotFound(String, std::io::Error),
-	MaterialNotFound(String),
-	MaterialWithoutMaps(String),
-}
-
-impl fmt::Display for ModelLoadError 
-{
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result 
-	{
-        match self 
-		{
-            ModelLoadError::IoError(err) => { write!(f, "IO Error: {}", err) },
-            ModelLoadError::UnsupportedFileType => { write!(f, "Unsupported file type") },
-            ModelLoadError::ParseError => { write!(f, "Failed to parse a value") },
-            ModelLoadError::UnexpectedTokenCount => { write!(f, "Unexpected token count") },
-            ModelLoadError::UnknownToken => { write!(f, "Unknown token encountered") },
-            ModelLoadError::MaterialFileNotFound(mtl_name, err) => { write!(f, "Couldn't find material file '{}' : {}", mtl_name, err) },
-            ModelLoadError::MaterialNotFound(mtl_name) => { write!(f, "Couldn't find material '{}'", mtl_name) },
-            ModelLoadError::MaterialWithoutMaps(mtl_name) => { write!(f, "Couldn't parse material with no maps '{}'", mtl_name) },
-        }
-    }
-}
-
-impl Error for ModelLoadError {}
-
-impl From<std::io::Error> for ModelLoadError 
-{
-    fn from(err: std::io::Error) -> ModelLoadError 
-	{
-        ModelLoadError::IoError(err)
-    }
-}
-
-#[derive(Default)]
-struct MeshDescriptor
-{
-	pub mesh_name: String,
-	pub mtl_name: String,
-	pub smooth_shading: bool,
-	pub face_vec: Vec<Vec3>,
-}
-
-pub fn load_obj<P>(model_path: P) -> Result<Model, ModelLoadError>
+pub fn load_obj<P>(model_path: P) -> Result<ModelDescriptor, ModelLoadError>
 where P : AsRef<Path>
 {
-	let start = std::time::Instant::now();
+	// let start = std::time::Instant::now();
 	
-	let obj_model_source = std::fs::read_to_string(model_path.as_ref().clone())?;
+	let obj_model_source = std::fs::read_to_string(model_path.as_ref())?;
 
 	let mut global_v_vec = vec![];
 	let mut global_vt_vec = vec![];
@@ -102,32 +47,31 @@ where P : AsRef<Path>
 			{
 				if !current_mesh.face_vec.is_empty() && current_mesh.mtl_name != "".to_owned()
 				{
-					current_mesh.mesh_name = tail.to_owned();
+					current_mesh.name = tail.to_owned();
 					mesh_descriptor_vec.push(current_mesh);
 				}
 
 				current_mesh = MeshDescriptor { ..Default::default() };
 				current_mesh.mtl_name = tail.to_owned();
 			},
-			"s" => 
-			{
-				current_mesh.smooth_shading =
-					match tail
-					{
-						"1" | "on" => true,
-						_ => false,
-					}
-			}
+			// "s" => 
+			// {
+			// 	current_mesh.smooth_shading =
+			// 		match tail
+			// 		{
+			// 			"1" | "on" => true,
+			// 			_ => false,
+			// 		}
+			// }
 			"o" | "g" => 
 			{
 				let old_mtl_name = current_mesh.mtl_name.clone();
 				if !current_mesh.face_vec.is_empty()
 				{
-					current_mesh.mesh_name = tail.to_owned();
+					current_mesh.name = tail.to_owned();
 					mesh_descriptor_vec.push(current_mesh);
 				}
 
-				// let old_mtl_name = current_mesh.mtl_name.clone();
 				current_mesh = MeshDescriptor { ..Default::default() };
 				current_mesh.mtl_name = old_mtl_name;
 			}
@@ -140,76 +84,57 @@ where P : AsRef<Path>
 		mesh_descriptor_vec.push(current_mesh)
 	}
 
-	let material_map = load_all_mtls(model_path.as_ref().clone(), global_mtllib_vec)?;
+	let material_map = load_all_mtls(model_path.as_ref(), global_mtllib_vec)?;
 
-	let mut mesh_vec: Vec<Mesh> = vec![];
-
-	for mesh_descriptor in mesh_descriptor_vec
+	for mesh_descriptor in mesh_descriptor_vec.iter_mut()
 	{
-		let mut current_mesh = Mesh::new(mesh_descriptor.mesh_name.clone());
+		// for face in mesh_descriptor.face_vec
+		// {
+		// 	// let new_vertex = 
+		// 	// 	Vertex {
+		// 	// 		pos: global_v_vec[face.x as usize - 1].clone(),
+		// 	// 		uv: global_vt_vec[face.y as usize - 1].clone(),
+		// 	// 		normal: global_vn_vec[face.z as usize - 1].clone(),
+		// 	// 	};
 
-		println!("entire material map :");
+		// 	// current_mesh.vertices.push(new_vertex);
+		// 	// current_mesh.indices.push(current_mesh.indices.len() as _);
+		// }
 
-		for (key, value) in &material_map {
-			println!("'{}': '{}'", key, value.name);
-		}
-
-		println!("attempting to get material {}", mesh_descriptor.mtl_name);
-		println!("&  {}", current_mesh.material.name);
-		println!("&&  {:?}", material_map.get(&mesh_descriptor.mtl_name));
-		current_mesh.name = mesh_descriptor.mesh_name;
-		current_mesh.material = 
+		mesh_descriptor.material = 
 			material_map.get(&mesh_descriptor.mtl_name)
-			.ok_or(ModelLoadError::MaterialNotFound(mesh_descriptor.mtl_name))?
+			.ok_or(ModelLoadError::MaterialNotFound(mesh_descriptor.mtl_name.clone()))?
 			.clone();
-
-		for face in mesh_descriptor.face_vec
-		{
-			let new_vertex = 
-				Vertex {
-					pos: global_v_vec[face.x as usize - 1].clone(),
-					uv: global_vt_vec[face.y as usize - 1].clone(),
-					normal: global_vn_vec[face.z as usize - 1].clone(),
-				};
-
-			current_mesh.vertices.push(new_vertex);
-			current_mesh.indices.push(current_mesh.indices.len() as _);
-		}
-
-		current_mesh.index_count = current_mesh.indices.len() as u32;
-		mesh_vec.push(current_mesh);
 	}
 
 	let out_model = 
-		Model {
+		ModelDescriptor {
 			name: model_path.as_ref().file_name().and_then(|name| name.to_str()).unwrap_or("unnamed_model").to_string(),
-			meshes: mesh_vec,
-			translation: Vec3::new(0.0f32),
-			scale: Vec3::new(1.0f32),
-			rotation: Vec3::new(0.0f32),
+			meshes: mesh_descriptor_vec,
+			vertex_vec: global_v_vec,
+			uv_vec: global_vt_vec,
+			normal_vec: global_vn_vec,
 		};
 
 	Ok(out_model)
 }
 
-pub fn load_all_mtls<P>(model_path: P, material_file_names: Vec<String>) -> Result<HashMap<String, RenderingMaterial>, ModelLoadError>
+pub fn load_all_mtls<P>(model_path: P, material_file_names: Vec<String>) -> Result<HashMap<String, MaterialDescriptor>, ModelLoadError>
 where P : AsRef<Path>
 {
     let model_path_no_filename = model_path.as_ref().parent().unwrap_or(Path::new("./"));
 
-	let mut out_material_hashmap: HashMap<String, RenderingMaterial> = HashMap::new();
+	let mut out_material_hashmap: HashMap<String, MaterialDescriptor> = HashMap::new();
 
 	for material_file_name in material_file_names
 	{
 		let current_material_path = model_path_no_filename.join(material_file_name.clone());
 
-		// println!("using '{:?}' \nand '{:?}' \nwe arrived at '{:?}'", model_path.as_ref(), model_path_no_filename, current_material_path);
-
 		let obj_material_source = 
 			std::fs::read_to_string(current_material_path.clone())
 			.map_err(|err| ModelLoadError::MaterialFileNotFound(current_material_path.clone().to_str().unwrap_or("unparseable_file_path").to_owned(), err))?;
 
-		let mut current_material = RenderingMaterial::new("".to_owned());
+		let mut current_material = MaterialDescriptor::new("".to_owned());
 
 		for line in obj_material_source.lines()
 		{
@@ -224,13 +149,13 @@ where P : AsRef<Path>
 			match head.to_lowercase().as_str()
 			{
 				// add error handling here later
-				// "map_kd" => current_material.diffuse_map_rel_path = tail.to_owned(),
-				"map_kd" => current_material.diffuse_map_rel_path = model_path_no_filename.join(tail.to_owned()).to_str().unwrap_or("unparseable_file_path").to_owned(),
+				"kd" | "map_kd" => current_material.albedo_path = model_path_no_filename.join(tail.to_owned()).to_str().unwrap_or("unparseable_file_path").to_owned(),
+				"bump" | "map_bump" => current_material.normal_path = model_path_no_filename.join(tail.to_owned()).to_str().unwrap_or("unparseable_file_path").to_owned(),
 				"newmtl" => 
 				{
 					if current_material.name != "".to_owned()
 					{
-						if current_material.diffuse_map_rel_path.trim().is_empty()
+						if current_material.albedo_path.trim().is_empty()
 						{
 							return Err(ModelLoadError::MaterialWithoutMaps(current_material.name.clone()))
 						}
@@ -238,7 +163,7 @@ where P : AsRef<Path>
 						out_material_hashmap.insert(current_material.name.clone(), current_material.clone());
 					}
 
-					current_material = RenderingMaterial::new(tail.to_owned());
+					current_material = MaterialDescriptor::new(tail.to_owned());
 				}
 
 				_ => { continue }
@@ -249,7 +174,6 @@ where P : AsRef<Path>
 	}
 
 	Ok(out_material_hashmap)
-	// Err(ModelLoadError::ParseError)
 }
 
 fn parse_vec3_line(tail: &str) -> Result<Vec3, ModelLoadError>

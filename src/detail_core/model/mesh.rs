@@ -1,25 +1,11 @@
-use super::material::RenderingMaterial;
-use crate::vulkan::vertex::*;
+use super::material::Material;
 use crate::vulkan::uniform_buffer::UniformBufferObject;
 use crate::vulkan::vk_bindgen::{
 	VkBuffer, 
 	VkDeviceMemory,
-	vkDestroyBuffer,
-	vkFreeMemory,
-	VkImage,
-	VkSampler,
-	VkImageView, 
 	VkDescriptorPool, 
-	VkDescriptorSet, 
-	vkDestroySampler, 
-	vkDestroyImageView, 
-	vkDestroyImage,
-	vkDestroyDescriptorPool, 
-	vkDestroyDescriptorSetLayout,
+	VkDescriptorSet,
 };
-
-use std::ptr::null_mut as nullptr;
-use std::time;
 
 pub struct VulkanMeshData
 {
@@ -41,24 +27,7 @@ pub struct VulkanMeshData
 pub struct Mesh
 {
 	pub name: String,
-
-	pub material: RenderingMaterial,
-
-	pub vertices: Vec<Vertex>,
-	pub indices: Vec<u32>,
-
+	pub material: Material,
 	pub index_count: u32,
-
 	pub vulkan_data: Option<VulkanMeshData>,
-}
-
-impl Mesh
-{
-	pub fn new(mesh_name: String) -> Mesh
-	{
-		Mesh { 
-			name: mesh_name,
-			..Default::default()
-		}
-	}
 }

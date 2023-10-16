@@ -1,10 +1,10 @@
 #version 450
 
-layout(binding = 1) uniform sampler2D tex_sampler;
+layout(binding = 1) uniform sampler2D albedo_sampler;
+layout(binding = 2) uniform sampler2D normal_sampler;
 
 layout(location = 1) in vec2 frag_texcoord;
 layout(location = 2) in vec3 frag_normal;
-// layout(location = 3) in vec3 world_normal;
 
 layout(location = 4) in vec3 light_pos;
 layout(location = 5) in vec3 view_pos;
@@ -14,14 +14,20 @@ layout(location = 0) out vec4 out_color;
 
 void main() 
 {
-	vec4 tex_color = texture(tex_sampler, frag_texcoord);
+	vec4 tex_color = texture(albedo_sampler, frag_texcoord);
 	vec3 color = tex_color.rgb;
 
 	vec3 ambient = 0.05 * color;
 
     // diffuse
+	vec3 normal = normalize(frag_normal);
+	vec3 normal_color = texture(normal_sampler, frag_texcoord).rbg;
+	normal_color = normalize(normal_color * 2.0 - 1.0); 
+	normal_color = tbn * normal_color;
+
+	// normal = normalize(normal + normal_color);
+
     vec3 light_dir = normalize(light_pos - frag_pos);
-    vec3 normal = normalize(frag_normal);
     float diff = max(dot(light_dir, normal), 0.0);
     vec3 diffuse = diff * color;
 

@@ -15,6 +15,7 @@ pub struct Vertex
 	pub pos: Vec3,
 	pub uv: Vec2,
 	pub normal: Vec3,
+	pub tangent: Vec3,
 }
 
 impl Vertex

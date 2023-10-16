@@ -1,4 +1,3 @@
-use crate::exedra::model::Model;
 use crate::vulkan::vk_bindgen::*;
 use crate::vulkan::handle::*;
 use std::ptr::null_mut as nullptr;
@@ -8,13 +7,12 @@ pub unsafe fn create_texture_image_view(
 	texture_image: &VkImage,
 ) -> VkImageView
 {
-	// model.texture_image_view = 
-		create_image_view(
-			vk_handle, 
-			texture_image,
-			VkFormat::VK_FORMAT_R8G8B8A8_SRGB, 
-			VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT as u32
-		)
+	create_image_view(
+		vk_handle, 
+		texture_image,
+		VkFormat::VK_FORMAT_R8G8B8A8_SRGB, 
+		VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT as u32
+	)
 }
 
 pub unsafe fn create_image_view(

@@ -42,13 +42,13 @@ use vulkan::{
 
 mod detail_core;
 use detail_core::{
-	input_processor::InputProcessor, 
+	input::input_processor::InputProcessor, 
 	window::create_vulkan_surface,
 };
 
 use std::ptr::null_mut as nullptr;
 
-use crate::{exedra::{model::Model, material::VulkanMaterialData, mesh::VulkanMeshData}, cotangens::{vec3::Vec3, mat4x4}};
+use crate::{cotangens::{vec3::Vec3, mat4x4}, detail_core::model::model::{Model, VulkanModel}};
 use parmack::window::event::MouseCode;
 
 fn main() 
@@ -78,23 +78,20 @@ fn main()
 
 		create_command_pool(&mut vk_handle);
 
-		let mut models: Vec<Model> =
-			vec![
-				// exedra::model::Model::load("./detail/models/viking_room/viking_room.obj").unwrap(),
-				// exedra::model::Model::load("./detail/models/viking_room/viking_room.obj").unwrap(),
-				// exedra::model::Model::load("./detail/models/woag/woag.obj").unwrap(),
-				exedra::model::Model::load("./detail/models/valkyrie/valkyrie.obj").unwrap(),
-				exedra::model::Model::load("./detail/models/de_inferno/de_inferno.obj").unwrap(),
-			];
-
 		create_descriptor_set_layout(&mut vk_handle);
 
+		let mut models: Vec<Model<VulkanModel>> =
+			vec![
+				// Model::new("./detail/models/valkyrie/valkyrie.obj".into()).process_vk(&vk_handle),
+				Model::new("./detail/models/de_inferno/de_inferno.obj".into()).process_vk(&vk_handle),
+			];
+		
 		// create vertex, index, uniform buffers for the mesh
 		// create texture buffers for the material
-		for model in models.iter_mut()
-		{
-			model.process_meshes(&mut vk_handle);
-		}
+		// for model in models.iter_mut()
+		// {
+		// 	model.process_meshes(&mut vk_handle);
+		// }
 
 		create_pipeline(&mut vk_handle);
 		create_depth_buffer(&mut vk_handle);
@@ -153,10 +150,10 @@ fn main()
 		// Cleanup
 		println!("Destroying vk objects...");
 
-		for model in &mut models
-		{
-			model.destroy(&mut vk_handle);
-		}
+		// for model in &mut models
+		// {
+		// 	model.destroy(&mut vk_handle);
+		// }
 
 		vk_handle.destroy_vk_resources();
 	}

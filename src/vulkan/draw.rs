@@ -1,4 +1,5 @@
-use crate::exedra::model::Model;
+use crate::detail_core::model::model::Model;
+use crate::detail_core::model::model::VulkanModel;
 use crate::vulkan::vk_bindgen::*;
 use crate::vulkan::handle::*;
 use crate::vulkan::command_buffer::*;
@@ -6,10 +7,9 @@ use crate::vulkan::swapchain::*;
 use crate::vulkan::uniform_buffer::*;
 use std::ptr::null_mut as nullptr;
 
-// pub fn 	draw_frame(vk_handle: &mut VkHandle, model: &mut Model)
 pub fn 	draw_frame(
 	vk_handle: &mut VkHandle, 
-	models: &mut Vec<Model>,
+	models: &mut Vec<Model<VulkanModel>>,
 )
 {
 	unsafe
@@ -27,10 +27,10 @@ pub fn 	draw_frame(
 
 		for (index, model) in models.iter_mut().enumerate()
 		{
-			for mesh in &mut model.meshes
+			for mesh in &model.meshes
 			{
 				let vulkan_data = 
-					match &mut mesh.vulkan_data
+					match &mesh.vulkan_data
 					{
 						Some(vd) => vd,
 						None => continue

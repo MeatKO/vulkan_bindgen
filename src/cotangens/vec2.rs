@@ -3,6 +3,7 @@ use std::hash::{
 	Hash,
 	Hasher,
 };
+use std::ops::{Sub, Add};
 
 #[repr(align(8))]
 #[derive(Clone, Debug, PartialEq)]
@@ -22,3 +23,29 @@ impl Hash for Vec2
 }
 
 impl Eq for Vec2 {}
+
+impl Add<&Vec2> for &Vec2 
+{
+    type Output = Vec2;
+
+    fn add(self, rhs: &Vec2) -> Vec2
+	{
+		return Vec2 {
+			x: self.x + rhs.x,
+			y: self.y + rhs.y,
+		}
+	}
+}
+
+impl Sub<&Vec2> for &Vec2 
+{
+    type Output = Vec2;
+
+    fn sub(self, rhs: &Vec2) -> Vec2
+	{
+		return Vec2 {
+			x: self.x - rhs.x,
+			y: self.y - rhs.y,
+		}
+	}
+}

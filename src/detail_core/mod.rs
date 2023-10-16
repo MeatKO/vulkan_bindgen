@@ -1,4 +1,6 @@
 pub mod camera;
-pub mod input_processor;
-pub mod input_buffer;
 pub mod window;
+
+pub mod input;
+pub mod texture;
+pub mod model;

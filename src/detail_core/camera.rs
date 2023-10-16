@@ -3,9 +3,7 @@ use crate::cotangens::{
 	mat4x4::*,
 };
 
-use crate::detail_core::{
-	input_buffer::*,
-};
+use crate::detail_core::input::input_buffer::InputBuffer;
 
 use parmack::window::event::KeyCode;
 

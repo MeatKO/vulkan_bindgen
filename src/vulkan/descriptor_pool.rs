@@ -16,6 +16,10 @@ pub unsafe fn create_descriptor_pool(
 				type_: VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
 				descriptorCount: vk_handle.frames_in_flight as u32
 			},
+			VkDescriptorPoolSize {
+				type_: VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+				descriptorCount: vk_handle.frames_in_flight as u32
+			},
 		];
 		
 	let pool_info = 
