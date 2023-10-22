@@ -16,6 +16,7 @@ pub struct Vertex
 	pub uv: Vec2,
 	pub normal: Vec3,
 	pub tangent: Vec3,
+	pub bitangent: Vec3,
 }
 
 impl Vertex
@@ -52,6 +53,18 @@ impl Vertex
 					location: 2,
 					format: VkFormat::VK_FORMAT_R32G32B32_SFLOAT,
 					offset: offset_of!(Vertex, normal) as u32
+				},
+				VkVertexInputAttributeDescription{
+					binding: 0,
+					location: 3,
+					format: VkFormat::VK_FORMAT_R32G32B32_SFLOAT,
+					offset: offset_of!(Vertex, tangent) as u32
+				},
+				VkVertexInputAttributeDescription{
+					binding: 0,
+					location: 4,
+					format: VkFormat::VK_FORMAT_R32G32B32_SFLOAT,
+					offset: offset_of!(Vertex, bitangent) as u32
 				},
 			]	
 		}

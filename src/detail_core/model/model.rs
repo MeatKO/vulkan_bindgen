@@ -1,6 +1,6 @@
 use std::{ptr::null_mut as nullptr, ops::{Deref, DerefMut}, path::PathBuf};
 
-use crate::{cotangens::{vec3::*, vec2::Vec2}, exedra::{error::ModelLoadError, model_descriptor::ModelDescriptor}, detail_core::texture::texture::Texture, vulkan::{handle::VkHandle, vertex::{create_vertex_buffer, Vertex}, index::create_index_buffer, descriptor_set::create_descriptor_sets, descriptor_pool::create_descriptor_pool, uniform_buffer::create_uniform_buffers}};
+use crate::{cotangens::{vec3::*, vec2::Vec2}, exedra::{error::ModelLoadError, model_descriptor::ModelDescriptor}, detail_core::texture::texture::Texture, vulkan::{handle::VkHandle, vertex::{create_vertex_buffer, Vertex}, index::create_index_buffer, descriptor_set::create_descriptor_sets, descriptor_pool::create_descriptor_pool, uniform_buffer::create_uniform_buffers, vk_bindgen::VkFormat}};
 
 use super::{mesh::{Mesh, VulkanMeshData}, material::Material};
 
@@ -66,11 +66,13 @@ impl VulkanModel
 				rotation: Vec3::new(0.0f32),
 			};
 
+			// VkFormat::VK_FORMAT_R8G8B8A8_UNORM
 			let default_normal_map = 
-				Texture::new("./detail/textures/default_normal.tga".into())
+				// Texture::new("./detail/textures/default_normal.tga".into())
+				Texture::new("./detail/textures/smiley_normal.tga".into())
 				.load()
 				.unwrap()
-				.process_vk(vk_handle)
+				.process_vk(vk_handle, VkFormat::VK_FORMAT_R8G8B8A8_UNORM)
 				.unwrap();
 
 			for mesh_descriptor in model_descriptor.meshes.into_iter()
@@ -79,7 +81,7 @@ impl VulkanModel
 					Texture::new(mesh_descriptor.material.albedo_path.into())
 					.load()
 					.unwrap()
-					.process_vk(vk_handle)
+					.process_vk(vk_handle, VkFormat::VK_FORMAT_R8G8B8A8_SRGB)
 					.unwrap();
 
 				let mesh_material_normal_map = 
@@ -93,7 +95,7 @@ impl VulkanModel
 							Texture::new(mesh_descriptor.material.normal_path.into())
 							.load()
 							.unwrap()
-							.process_vk(vk_handle)
+							.process_vk(vk_handle, VkFormat::VK_FORMAT_R8G8B8A8_UNORM)
 							.unwrap()
 						}
 					};
@@ -109,6 +111,7 @@ impl VulkanModel
 							uv: model_descriptor.uv_vec[face.y as usize - 1].clone(),
 							normal: model_descriptor.normal_vec[face.z as usize - 1].clone(),
 							tangent: Vec3::new(1.0f32),
+							bitangent: Vec3::new(1.0f32),
 						};
 
 					vertex_vec.push(new_vertex);
@@ -125,7 +128,7 @@ impl VulkanModel
 					let edge_1: Vec3 = &triangle_points[1].pos - &triangle_points[0].pos;
 					let edge_2: Vec3 = &triangle_points[2].pos - &triangle_points[0].pos;
 
-					let delta_uv_1: Vec2 = &triangle_points[2].uv - &triangle_points[0].uv;
+					let delta_uv_1: Vec2 = &triangle_points[1].uv - &triangle_points[0].uv;
 					let delta_uv_2: Vec2 = &triangle_points[2].uv - &triangle_points[0].uv;
 
 					let f = 1.0f32 / (delta_uv_1.x * delta_uv_2.y - delta_uv_2.x * delta_uv_1.y);
@@ -134,10 +137,15 @@ impl VulkanModel
 					tangent.y = f * (delta_uv_2.y * edge_1.y - delta_uv_1.y * edge_2.y);
 					tangent.z = f * (delta_uv_2.y * edge_1.z - delta_uv_1.y * edge_2.z);
 
+					let mut bitangent = Vec3::new(0.0f32);
+					bitangent.x = f * (-delta_uv_2.x * edge_1.x + delta_uv_1.x * edge_2.x);
+					bitangent.y = f * (-delta_uv_2.x * edge_1.y + delta_uv_1.x * edge_2.y);
+					bitangent.z = f * (-delta_uv_2.x * edge_1.z + delta_uv_1.x * edge_2.z);
+
 					for point in triangle_points.iter_mut()
 					{
-						// point.tangent = tangent.clone();
-						point.tangent = Vec3{ x: 0.0f32, y: 1.0f32, z: 0.0f32 };
+						point.tangent = tangent.clone();
+						point.bitangent = bitangent.clone();
 					}
 				}
 

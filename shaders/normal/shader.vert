@@ -12,6 +12,7 @@ layout(location = 0) in vec3 in_position;
 layout(location = 1) in vec2 in_uv;
 layout(location = 2) in vec3 in_normal;
 layout(location = 3) in vec3 in_tangent;
+layout(location = 4) in vec3 in_bitangent;
 
 layout(location = 1) out vec2 out_uv;
 layout(location = 2) out vec3 out_normal;
@@ -25,14 +26,19 @@ void main()
 {
     gl_Position = ubo.proj * ubo.view * ubo.model * vec4(in_position, 1.0);
 	out_uv = in_uv;
-	out_normal = mat3(transpose(inverse(ubo.model))) * in_normal;  
+	// out_normal = mat3(transpose(inverse(ubo.model))) * in_normal;  
+	out_normal = in_normal;  
 	out_light_pos = ubo.light_pos;
 	out_view_pos = ubo.view_pos;
 	out_frag_pos = vec3(ubo.model *  vec4(in_position, 1.0));
 
 	vec3 N = normalize(mat3(ubo.model) * in_normal);
     vec3 T = normalize(mat3(ubo.model) * in_tangent);
-    vec3 B = cross(N, T);
+    vec3 B = normalize(mat3(ubo.model) * in_bitangent);
+
+	// this fixes something I dont understand, posted by Mike Romberg @ learnopengl.com comment section 7 years ago
+	if (dot(cross(N, T), B) < 0.0)
+        T = T * -1.0;
 
     tbn = mat3(T, B, N);
 }

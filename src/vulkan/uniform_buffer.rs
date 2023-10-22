@@ -70,6 +70,7 @@ pub unsafe fn update_uniform_buffer(
 	scale: &Vec3,
 	translation: &Vec3,
 	rotation: &Vec3,
+	light_pos: &Vec3,
 ) 
 {
 	let time: f32 = std::time::Instant::now().duration_since(vk_handle.start_time).as_secs_f32();
@@ -81,7 +82,8 @@ pub unsafe fn update_uniform_buffer(
 	let ubo = 
 		UniformBufferObject{
 			// light_pos: camera_position.clone(),
-			light_pos: Vec3 { x: 5.0f32, y: 5.0f32, z: 5.0f32 },
+			// light_pos: Vec3 { x: 5.0f32, y: 5.0f32, z: 5.0f32 },
+			light_pos: light_pos.clone(),
 			view_pos: camera_position,
 			model: Mat4x4::new_identity(1.0f32)
 				.scale(scale.clone())

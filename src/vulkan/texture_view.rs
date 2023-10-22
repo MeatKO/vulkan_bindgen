@@ -5,12 +5,14 @@ use std::ptr::null_mut as nullptr;
 pub unsafe fn create_texture_image_view(
 	vk_handle: &VkHandle,
 	texture_image: &VkImage,
+	vk_format: VkFormat,
 ) -> VkImageView
 {
 	create_image_view(
 		vk_handle, 
 		texture_image,
-		VkFormat::VK_FORMAT_R8G8B8A8_SRGB, 
+		// VkFormat::VK_FORMAT_R8G8B8A8_SRGB, 
+		vk_format,
 		VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT as u32
 	)
 }
