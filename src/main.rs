@@ -83,6 +83,9 @@ fn main()
 		let mut models: Vec<Model<VulkanModel>> =
 			vec![
 				// Model::new("./detail/models/valkyrie/valkyrie.obj".into()).process_vk(&vk_handle),
+				// Model::new("./detail/models/woag/woag.obj".into()).process_vk(&vk_handle),
+				// Model::new("./detail/models/earth_2/earth_2.obj".into()).process_vk(&vk_handle),
+				Model::new("./detail/models/brick_wall/brick_wall.obj".into()).process_vk(&vk_handle),
 				Model::new("./detail/models/de_inferno/de_inferno.obj".into()).process_vk(&vk_handle),
 			];
 		
@@ -107,10 +110,13 @@ fn main()
 		// window.center_pointer(true);
 		// window.show_pointer(false);
 
+		let mut light_pos = Vec3::new(10.0f32);
+
 		while !input_processor.should_quit() 
 		{
 			let start_time = std::time::Instant::now();
 			// let absolute_current_time_stamp_ms = start_time.duration_since(vk_handle.start_time).as_secs_f32() * 1000.0f32;
+			let absolute_current_time_stamp_s = start_time.duration_since(vk_handle.start_time).as_secs_f32();
 
 			if vk_handle.mouse_input_buffer.is_pressed(MouseCode::Left as u8)
 			{
@@ -119,14 +125,17 @@ fn main()
 
 			if vk_handle.mouse_input_buffer.is_pressed(MouseCode::Right as u8)
 			{
-				models[0].rotation = Vec3{ x: 0.0f32, y: vk_handle.camera.get_rotation().y - 90.0f32, z: 0.0f32};// + &(&vk_handle.camera.get_front() * &10.0f32);
+				light_pos = &vk_handle.camera.get_position() + &(&vk_handle.camera.get_front() * &4.0f32);
+				// models[0].rotation = Vec3{ x: 0.0f32, y: vk_handle.camera.get_rotation().y - 90.0f32, z: 0.0f32};// + &(&vk_handle.camera.get_front() * &10.0f32);
 			}
 
-			models[0].scale = Vec3::new(0.3f32);
+			models[0].rotation = Vec3{ x: 0.0f32, y: absolute_current_time_stamp_s * 10.0f32, z: 0.0f32};
+
+			models[0].scale = Vec3::new(1.5f32);
 
 			models[1].scale = Vec3::new(0.3f32);
 
-			draw_frame(&mut vk_handle, &mut models);
+			draw_frame(&mut vk_handle, &mut models, &light_pos.clone());
 
 			// std::thread::sleep(std::time::Duration::from_millis(15));
 

@@ -39,7 +39,8 @@ impl ImageLayoutTransition
 
 pub unsafe fn create_texture_image(
 	vk_handle: &VkHandle,
-	image: &Box<dyn Image>
+	image: &Box<dyn Image>,
+	vk_format: VkFormat,
 ) -> (VkImage, VkDeviceMemory)
 // where
 // 	I: Image
@@ -69,7 +70,8 @@ pub unsafe fn create_texture_image(
 			vk_handle,
 			image.get_size().width,
 			image.get_size().height,
-			VkFormat::VK_FORMAT_R8G8B8A8_SRGB,
+			// VkFormat::VK_FORMAT_R8G8B8A8_SRGB,
+			vk_format,
 			VkImageTiling::VK_IMAGE_TILING_OPTIMAL, 
 			VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_DST_BIT as u32 | 
 			VkImageUsageFlagBits::VK_IMAGE_USAGE_SAMPLED_BIT as u32, 
@@ -78,7 +80,8 @@ pub unsafe fn create_texture_image(
 
 	transition_image_layout(
 		vk_handle, 
-		VkFormat::VK_FORMAT_R8G8B8A8_SRGB, 
+		// VkFormat::VK_FORMAT_R8G8B8A8_SRGB, 
+		vk_format,
 		// model.texture_image, 
 		vk_image, 
 		VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED, 
@@ -88,7 +91,8 @@ pub unsafe fn create_texture_image(
 	copy_buffer_to_image(vk_handle, staging_buffer, vk_image, image.get_size().width as u32, image.get_size().height as u32);
 	transition_image_layout(
 		vk_handle, 
-		VkFormat::VK_FORMAT_R8G8B8A8_SRGB,
+		// VkFormat::VK_FORMAT_R8G8B8A8_SRGB,
+		vk_format,
 		vk_image, 
 		VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 
 		VkImageLayout::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL

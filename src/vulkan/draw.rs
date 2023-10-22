@@ -1,3 +1,4 @@
+use crate::cotangens::vec3::Vec3;
 use crate::detail_core::model::model::Model;
 use crate::detail_core::model::model::VulkanModel;
 use crate::vulkan::vk_bindgen::*;
@@ -10,6 +11,7 @@ use std::ptr::null_mut as nullptr;
 pub fn 	draw_frame(
 	vk_handle: &mut VkHandle, 
 	models: &mut Vec<Model<VulkanModel>>,
+	light_pos: &Vec3,
 )
 {
 	unsafe
@@ -36,7 +38,7 @@ pub fn 	draw_frame(
 						None => continue
 					};
 
-				update_uniform_buffer(vk_handle, vulkan_data, index, &model.scale, &model.translation, &model.rotation);
+				update_uniform_buffer(vk_handle, vulkan_data, index, &model.scale, &model.translation, &model.rotation, light_pos);
 			}
 		}
 
