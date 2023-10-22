@@ -6,6 +6,7 @@ mod exedra;
 
 mod vulkan;
 
+use cotangens::mat4x4::Mat4x4;
 use vulkan::{
 	vk_bindgen::
 		vkDeviceWaitIdle, 
@@ -41,14 +42,17 @@ use vulkan::{
 
 mod detail_core;
 use detail_core::{
-	input_processor::InputProcessor, 
+	input::input_processor::InputProcessor, 
 	window::create_vulkan_surface,
 };
 
+use std::ptr::null_mut as nullptr;
+
+use crate::{cotangens::{vec3::Vec3, mat4x4}, detail_core::model::model::{Model, VulkanModel}};
+use parmack::window::event::MouseCode;
+
 fn main() 
 {
-	let mut model = exedra::model::Model::load("./detail/models/viking_room/viking_room.obj").unwrap();
-
 	unsafe
 	{
 		let mut window = 
@@ -74,26 +78,20 @@ fn main()
 
 		create_command_pool(&mut vk_handle);
 
-		create_texture_image(&mut vk_handle);
-		create_texture_image_view(&mut vk_handle);
-		create_texture_sampler(&mut vk_handle);
-
-		(model.vertex_buffer, model.vertex_buffer_memory) =
-			create_vertex_buffer(&mut vk_handle, &mut model.vertices)
-			.unwrap();
-
-		(model.index_buffer, model.index_buffer_memory) =
-			create_index_buffer(&mut vk_handle, &mut model.indices)
-			.unwrap();
-
-		// model.vertices = vec![];
-		// model.indices = vec![];
-
-		create_uniform_buffers(&mut vk_handle);
-
 		create_descriptor_set_layout(&mut vk_handle);
-		create_descriptor_pool(&mut vk_handle);
-		create_descriptor_sets(&mut vk_handle);
+
+		let mut models: Vec<Model<VulkanModel>> =
+			vec![
+				// Model::new("./detail/models/valkyrie/valkyrie.obj".into()).process_vk(&vk_handle),
+				Model::new("./detail/models/de_inferno/de_inferno.obj".into()).process_vk(&vk_handle),
+			];
+		
+		// create vertex, index, uniform buffers for the mesh
+		// create texture buffers for the material
+		// for model in models.iter_mut()
+		// {
+		// 	model.process_meshes(&mut vk_handle);
+		// }
 
 		create_pipeline(&mut vk_handle);
 		create_depth_buffer(&mut vk_handle);
@@ -113,8 +111,22 @@ fn main()
 		{
 			let start_time = std::time::Instant::now();
 			// let absolute_current_time_stamp_ms = start_time.duration_since(vk_handle.start_time).as_secs_f32() * 1000.0f32;
-			
-			draw_frame(&mut vk_handle, &model);
+
+			if vk_handle.mouse_input_buffer.is_pressed(MouseCode::Left as u8)
+			{
+				models[0].translation = &vk_handle.camera.get_position() + &(&vk_handle.camera.get_front() * &4.0f32);
+			}
+
+			if vk_handle.mouse_input_buffer.is_pressed(MouseCode::Right as u8)
+			{
+				models[0].rotation = Vec3{ x: 0.0f32, y: vk_handle.camera.get_rotation().y - 90.0f32, z: 0.0f32};// + &(&vk_handle.camera.get_front() * &10.0f32);
+			}
+
+			models[0].scale = Vec3::new(0.3f32);
+
+			models[1].scale = Vec3::new(0.3f32);
+
+			draw_frame(&mut vk_handle, &mut models);
 
 			// std::thread::sleep(std::time::Duration::from_millis(15));
 
@@ -130,7 +142,7 @@ fn main()
 
 			// println!("window size : {:?}", window.get_size());
 			// println!("pointer loc : {:?}", window.get_pointer_location());
-
+			// panic!()
 		}
 
 		vkDeviceWaitIdle(vk_handle.logical_device);
@@ -138,7 +150,11 @@ fn main()
 		// Cleanup
 		println!("Destroying vk objects...");
 
-		model.destroy(&mut vk_handle);
+		// for model in &mut models
+		// {
+		// 	model.destroy(&mut vk_handle);
+		// }
+
 		vk_handle.destroy_vk_resources();
 	}
 }

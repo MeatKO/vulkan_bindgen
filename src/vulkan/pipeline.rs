@@ -116,9 +116,12 @@ pub unsafe fn create_pipeline(vk_handle: &mut VkHandle)
 	// Color blending
 	let color_blend_attachment_state = 
 		VkPipelineColorBlendAttachmentState{
-			blendEnable: VK_FALSE,
-			srcColorBlendFactor: VkBlendFactor::VK_BLEND_FACTOR_ONE,
-			dstColorBlendFactor: VkBlendFactor::VK_BLEND_FACTOR_ZERO,
+			// blendEnable: VK_FALSE,
+			blendEnable: VK_TRUE,
+			// srcColorBlendFactor: VkBlendFactor::VK_BLEND_FACTOR_ONE,
+			srcColorBlendFactor: VkBlendFactor::VK_BLEND_FACTOR_SRC_ALPHA,
+			// dstColorBlendFactor: VkBlendFactor::VK_BLEND_FACTOR_ZERO,
+			dstColorBlendFactor: VkBlendFactor::VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
 			colorBlendOp: VkBlendOp::VK_BLEND_OP_ADD,
 			srcAlphaBlendFactor: VkBlendFactor::VK_BLEND_FACTOR_ONE,
 			dstAlphaBlendFactor: VkBlendFactor::VK_BLEND_FACTOR_ZERO,
@@ -284,8 +287,11 @@ pub unsafe fn create_pipeline(vk_handle: &mut VkHandle)
 	// let vertex_shader_source = include_bytes!("../../shaders/textured/vert.spv");
 	// let fragment_shader_source = include_bytes!("../../shaders/textured/frag.spv");
 
-	let vertex_shader_source = include_bytes!("../../shaders/test/vert.spv");
-	let fragment_shader_source = include_bytes!("../../shaders/test/frag.spv");
+	// let vertex_shader_source = include_bytes!("../../shaders/test/vert.spv");
+	// let fragment_shader_source = include_bytes!("../../shaders/test/frag.spv");
+
+	let vertex_shader_source = include_bytes!("../../shaders/normal/vert.spv");
+	let fragment_shader_source = include_bytes!("../../shaders/normal/frag.spv");
 
 	vk_handle.vertex_shader_module = create_shader_module(&vk_handle, vertex_shader_source);
 	vk_handle.fragment_shader_module = create_shader_module(&vk_handle, fragment_shader_source);

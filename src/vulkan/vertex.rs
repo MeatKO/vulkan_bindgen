@@ -15,6 +15,7 @@ pub struct Vertex
 	pub pos: Vec3,
 	pub uv: Vec2,
 	pub normal: Vec3,
+	pub tangent: Vec3,
 }
 
 impl Vertex
@@ -58,7 +59,7 @@ impl Vertex
 }
 
 pub unsafe fn create_vertex_buffer(
-	vk_handle: &mut VkHandle, 
+	vk_handle: &VkHandle, 
 	vertices: &mut Vec<Vertex>,
 ) -> Result<(VkBuffer, VkDeviceMemory), String>
 {

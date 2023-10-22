@@ -3,9 +3,7 @@ use crate::cotangens::{
 	mat4x4::*,
 };
 
-use crate::detail_core::{
-	input_buffer::*,
-};
+use crate::detail_core::input::input_buffer::InputBuffer;
 
 use parmack::window::event::KeyCode;
 
@@ -45,7 +43,7 @@ impl Camera
 	{
 		return Camera{
 			position: in_position,
-			front: Vec3 { x: 0.0f32, y: 0.0f32, z: 1.0f32 },
+			front: Vec3 { x: 1.0f32, y: 0.0f32, z: 0.0f32 },
 			right: Vec3::new(0.0f32), // this will be calculated later
 			up: Vec3::new(0.0f32), // this will be calculated later
 			world_up: in_world_up,
@@ -54,6 +52,28 @@ impl Camera
 			movement_speed: 0.005f32,
 			mouse_sensitivity: 0.001f32,
 			zoom: 1.0f32,
+		}
+	}
+
+	pub fn get_front(&self) -> Vec3
+	{
+		return self.front.clone()
+	}
+
+	pub fn get_position(&self) -> Vec3
+	{
+		return self.position.clone()
+	}
+
+	pub fn get_rotation(&self) -> Vec3
+	{
+		return Vec3 { 
+			// x: 0.0f32 / 360.0f32, 
+			x: self.pitch, 
+			// y: self.yaw, 
+			y: self.yaw, 
+			z: 0.0f32, 
+			// z: self.pitch, 
 		}
 	}
 

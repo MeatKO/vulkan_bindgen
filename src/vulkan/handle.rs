@@ -7,14 +7,12 @@ use crate::vulkan::{
 	vk_bindgen::*, 
 	swapchain::*, 
 	queue::*,
-	debugger::*, 
-	// vertex::*, 
-	uniform_buffer::*,
+	debugger::*,
 };
 
 use crate::detail_core::{
 	camera::*,
-	input_buffer::*,
+	input::input_buffer::InputBuffer,
 };
 
 use std::ptr::null_mut as nullptr;
@@ -24,6 +22,7 @@ pub struct VkHandle
 {
 	pub camera: Camera,
 	pub input_buffer: InputBuffer,
+	pub mouse_input_buffer: InputBuffer,
 
 	pub instance: VkInstance,
 	pub physical_device: VkPhysicalDevice,
@@ -80,18 +79,19 @@ pub struct VkHandle
 	// pub index_buffer: VkBuffer,
 	// pub index_buffer_memory: VkDeviceMemory,
 
-	pub uniform_buffers: Vec<VkBuffer>,
-	pub uniform_buffers_memory: Vec<VkDeviceMemory>,
-	pub uniform_buffers_mapped: Vec<*mut UniformBufferObject>,
+	// pub uniform_buffers: Vec<VkBuffer>,
+	// pub uniform_buffers_memory: Vec<VkDeviceMemory>,
+	// pub uniform_buffers_mapped: Vec<*mut UniformBufferObject>,
 
-	pub descriptor_pool: VkDescriptorPool,
-	pub descriptor_sets: Vec<VkDescriptorSet>,
+	// pub descriptor_pool: VkDescriptorPool,
+	// pub descriptor_sets: Vec<VkDescriptorSet>,
+
 	pub start_time: std::time::Instant,
 
-	pub texture_image: VkImage,
-	pub texture_image_memory: VkDeviceMemory,
-	pub texture_image_view: VkImageView,
-	pub texture_sampler: VkSampler,
+	// pub texture_image: VkImage,
+	// pub texture_image_memory: VkDeviceMemory,
+	// pub texture_image_view: VkImageView,
+	// pub texture_sampler: VkSampler,
 
 	pub depth_image: VkImage,
 	pub depth_image_memory: VkDeviceMemory,
@@ -104,12 +104,14 @@ impl VkHandle
 	{
 		return  VkHandle {
 			camera: Camera::new(
-				Vec3{ x: 0.0f32, y: 0.0f32, z: 1.5f32 },
+				Vec3{ x: 0.0f32, y: 0.0f32, z: 0.0f32 },
 				Vec3{ x: 0.0f32, y: 1.0f32, z: 0.0f32 },
-				-90.0f32,
+				// -90.0f32,
+				0.0f32,
 				0.0f32
 			),
 			input_buffer: InputBuffer::new(250.0f32),
+			mouse_input_buffer: InputBuffer::new(250.0f32),
 			instance: nullptr(),
 			physical_device: nullptr(),
 			logical_device: nullptr(),
@@ -177,18 +179,18 @@ impl VkHandle
 			// index_buffer: nullptr(),
 			// index_buffer_memory: nullptr(),
 
-			uniform_buffers: vec![],
-			uniform_buffers_memory: vec![],
-			uniform_buffers_mapped: vec![],
-			descriptor_pool: nullptr(),
-			descriptor_sets: vec![],
+			// uniform_buffers: vec![],
+			// uniform_buffers_memory: vec![],
+			// uniform_buffers_mapped: vec![],
+			// descriptor_pool: nullptr(),
+			// descriptor_sets: vec![],
 			
 			start_time: std::time::Instant::now(),
 
-			texture_image: nullptr(),
-			texture_image_memory: nullptr(),
-			texture_image_view: nullptr(),
-			texture_sampler: nullptr(),
+			// texture_image: nullptr(),
+			// texture_image_memory: nullptr(),
+			// texture_image_view: nullptr(),
+			// texture_sampler: nullptr(),
 
 			depth_image: nullptr(),
 			depth_image_memory: nullptr(),
@@ -206,19 +208,19 @@ impl VkHandle
 
 		cleanup_swapchain(self);
 
-		vkDestroySampler(self.logical_device, self.texture_sampler, nullptr());
-		vkDestroyImageView(self.logical_device, self.texture_image_view, nullptr());
+		// vkDestroySampler(self.logical_device, self.texture_sampler, nullptr());
+		// vkDestroyImageView(self.logical_device, self.texture_image_view, nullptr());
 		
-		vkDestroyImage(self.logical_device, self.texture_image, nullptr());
-    	vkFreeMemory(self.logical_device, self.texture_image_memory, nullptr());
+		// vkDestroyImage(self.logical_device, self.texture_image, nullptr());
+    	// vkFreeMemory(self.logical_device, self.texture_image_memory, nullptr());
 
-		for i in 0..self.frames_in_flight
-		{
-			vkDestroyBuffer(self.logical_device, self.uniform_buffers[i], nullptr());
-			vkFreeMemory(self.logical_device, self.uniform_buffers_memory[i], nullptr());
-		}
+		// for i in 0..self.frames_in_flight
+		// {
+		// 	vkDestroyBuffer(self.logical_device, self.uniform_buffers[i], nullptr());
+		// 	vkFreeMemory(self.logical_device, self.uniform_buffers_memory[i], nullptr());
+		// }
 
-		vkDestroyDescriptorPool(self.logical_device, self.descriptor_pool, nullptr());
+		// vkDestroyDescriptorPool(self.logical_device, self.descriptor_pool, nullptr());
 		vkDestroyDescriptorSetLayout(self.logical_device, self.descriptor_set_layout, nullptr());
 
 		for i in 0..self.frames_in_flight

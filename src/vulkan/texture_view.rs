@@ -3,46 +3,47 @@ use crate::vulkan::handle::*;
 use std::ptr::null_mut as nullptr;
 
 pub unsafe fn create_texture_image_view(
-	vk_handle: &mut VkHandle
-)
+	vk_handle: &VkHandle,
+	texture_image: &VkImage,
+) -> VkImageView
 {
-	vk_handle.texture_image_view = 
-		create_image_view(
-			vk_handle, 
-			vk_handle.texture_image,
-			VkFormat::VK_FORMAT_R8G8B8A8_SRGB, 
-			VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT as u32
-		);
+	create_image_view(
+		vk_handle, 
+		texture_image,
+		VkFormat::VK_FORMAT_R8G8B8A8_SRGB, 
+		VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT as u32
+	)
 }
 
 pub unsafe fn create_image_view(
-	vk_handle: &mut VkHandle,
-	image: VkImage,
+	vk_handle: &VkHandle,
+	image: &VkImage,
 	format: VkFormat,
 	aspect_flags: VkImageAspectFlags,
 ) -> VkImageView
 {
-	let image_view_create_info = VkImageViewCreateInfo{
-		sType: VkStructureType::VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-		image: image,
-		viewType: VkImageViewType::VK_IMAGE_VIEW_TYPE_2D,
-		format: format,
-		subresourceRange: VkImageSubresourceRange { 
-			aspectMask: aspect_flags as u32, 
-			baseMipLevel: 0, 
-			levelCount: 1, 
-			baseArrayLayer: 0, 
-			layerCount: 1 
-		},
-		components: VkComponentMapping { 
-			r: VkComponentSwizzle::VK_COMPONENT_SWIZZLE_IDENTITY,
-			g: VkComponentSwizzle::VK_COMPONENT_SWIZZLE_IDENTITY, 
-			b: VkComponentSwizzle::VK_COMPONENT_SWIZZLE_IDENTITY, 
-			a: VkComponentSwizzle::VK_COMPONENT_SWIZZLE_IDENTITY 
-		},
-		flags: 0,	
-		pNext: nullptr(),
-	};
+	let image_view_create_info = 
+		VkImageViewCreateInfo {
+			sType: VkStructureType::VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+			image: *image,
+			viewType: VkImageViewType::VK_IMAGE_VIEW_TYPE_2D,
+			format: format,
+			subresourceRange: VkImageSubresourceRange { 
+				aspectMask: aspect_flags as u32, 
+				baseMipLevel: 0, 
+				levelCount: 1, 
+				baseArrayLayer: 0, 
+				layerCount: 1 
+			},
+			components: VkComponentMapping { 
+				r: VkComponentSwizzle::VK_COMPONENT_SWIZZLE_IDENTITY,
+				g: VkComponentSwizzle::VK_COMPONENT_SWIZZLE_IDENTITY, 
+				b: VkComponentSwizzle::VK_COMPONENT_SWIZZLE_IDENTITY, 
+				a: VkComponentSwizzle::VK_COMPONENT_SWIZZLE_IDENTITY 
+			},
+			flags: 0,	
+			pNext: nullptr(),
+		};
 
 	let mut image_view: VkImageView = nullptr();
 	match vkCreateImageView(vk_handle.logical_device, &image_view_create_info, nullptr(), &mut image_view)
@@ -55,14 +56,15 @@ pub unsafe fn create_image_view(
 }
 
 pub unsafe fn create_texture_sampler(
-	vk_handle: &mut VkHandle
-)
+	vk_handle: &VkHandle,
+	// model: &mut Model
+) -> Result<VkSampler, String>
 {
 	let mut physical_device_properties: VkPhysicalDeviceProperties = std::mem::zeroed();
 	vkGetPhysicalDeviceProperties(vk_handle.physical_device, &mut physical_device_properties);
 
 	let sampler_create_info = 
-		VkSamplerCreateInfo{
+		VkSamplerCreateInfo {
 			sType: VkStructureType::VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
 			magFilter: VkFilter::VK_FILTER_LINEAR,
 			minFilter: VkFilter::VK_FILTER_LINEAR,
@@ -86,10 +88,19 @@ pub unsafe fn create_texture_sampler(
 			pNext: nullptr(),
 		};
 
-	match vkCreateSampler(vk_handle.logical_device, &sampler_create_info, nullptr(), &mut vk_handle.texture_sampler)
+	let mut texture_sampler = nullptr();
+	match vkCreateSampler(vk_handle.logical_device, &sampler_create_info, nullptr(), &mut texture_sampler)
 	{
-		VkResult::VK_SUCCESS => { println!("✔️ vkCreateSampler()"); }
-		err => { panic!("✗ vkCreateSampler() failed with code {:?}.", err); }
+		VkResult::VK_SUCCESS => 
+		{
+			Ok(texture_sampler)
+		}
+		error_code => 
+		{ 
+			Err(
+				format!("vkCreateSampler Failed With Code '{:?}'. logical_device_pointer:{:p} sampler_create_info_pointer:{:p}", 
+				error_code, vk_handle.logical_device, &sampler_create_info).to_owned()
+			)
+		}
 	}	
-
 }

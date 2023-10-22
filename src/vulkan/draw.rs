@@ -1,4 +1,5 @@
-use crate::exedra::model::Model;
+use crate::detail_core::model::model::Model;
+use crate::detail_core::model::model::VulkanModel;
 use crate::vulkan::vk_bindgen::*;
 use crate::vulkan::handle::*;
 use crate::vulkan::command_buffer::*;
@@ -6,7 +7,10 @@ use crate::vulkan::swapchain::*;
 use crate::vulkan::uniform_buffer::*;
 use std::ptr::null_mut as nullptr;
 
-pub fn 	draw_frame(vk_handle: &mut VkHandle, model: &Model)
+pub fn 	draw_frame(
+	vk_handle: &mut VkHandle, 
+	models: &mut Vec<Model<VulkanModel>>,
+)
 {
 	unsafe
 	{
@@ -21,10 +25,23 @@ pub fn 	draw_frame(vk_handle: &mut VkHandle, model: &Model)
 			e => { panic!("vkAcquireNextImageKHR() resulted in {:?}", e) }
 		}
 
-		update_uniform_buffer(vk_handle);
+		for (index, model) in models.iter_mut().enumerate()
+		{
+			for mesh in &model.meshes
+			{
+				let vulkan_data = 
+					match &mesh.vulkan_data
+					{
+						Some(vd) => vd,
+						None => continue
+					};
+
+				update_uniform_buffer(vk_handle, vulkan_data, index, &model.scale, &model.translation, &model.rotation);
+			}
+		}
 
 		vkResetCommandBuffer(vk_handle.command_buffer_vec[vk_handle.current_frame], 0);
-		record_command_buffer(vk_handle, image_index, model);
+		record_command_buffer(vk_handle, image_index, models);
 
 		let wait_semaphore_vec = vec![vk_handle.image_available_semaphore_vec[vk_handle.current_frame]];
 		let wait_stages_vec : Vec<VkPipelineStageFlags> = vec![VkPipelineStageFlagBits::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT as u32];

@@ -1,4 +1,5 @@
-use crate::exedra::model::Model;
+use crate::detail_core::model::model::Model;
+use crate::detail_core::model::model::VulkanModel;
 use crate::vulkan::vk_bindgen::*;
 use crate::vulkan::handle::*;
 use std::ptr::null_mut as nullptr;
@@ -8,7 +9,7 @@ pub unsafe fn create_command_buffers(vk_handle: &mut VkHandle)
 	let command_buffer_count = vk_handle.frames_in_flight;
 
 	let command_buffer_create_info = 
-		VkCommandBufferAllocateInfo{
+		VkCommandBufferAllocateInfo {
 			sType: VkStructureType::VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
 			commandPool: vk_handle.command_pool,
 			level: VkCommandBufferLevel::VK_COMMAND_BUFFER_LEVEL_PRIMARY,
@@ -24,7 +25,11 @@ pub unsafe fn create_command_buffers(vk_handle: &mut VkHandle)
 	}
 }
 
-pub unsafe fn record_command_buffer(vk_handle: &VkHandle, image_index: u32, model: &Model)
+pub unsafe fn record_command_buffer(
+	vk_handle: &VkHandle, 
+	image_index: u32, 
+	models: &mut Vec<Model<VulkanModel>>
+)
 {
 	let current_command_buffer = vk_handle.command_buffer_vec[vk_handle.current_frame];
 
@@ -117,48 +122,62 @@ pub unsafe fn record_command_buffer(vk_handle: &VkHandle, image_index: u32, mode
 		&scissor
 	);
 
-	let vertex_buffers: Vec<VkBuffer> = 
-		vec![
-			model.vertex_buffer,
-		];
+	for model in models.iter()
+	{
+		for mesh in model.meshes.iter()
+		{
+			let vulkan_data = 
+				match &mesh.vulkan_data
+				{
+					Some(vd) => vd,
+					None => continue
+				};
 
-	let offsets = vec![0];
-
-	vkCmdBindVertexBuffers(
-		current_command_buffer, 
-		0, 
-		1, 
-		vertex_buffers.as_ptr(), 
-		offsets.as_ptr()
-	);
+			let vertex_buffers: Vec<VkBuffer> = 
+			vec![
+				vulkan_data.vertex_buffer,
+			];
 	
-	// add a type constraint on the index buffer later, it must be equal to the type of the buffer !
-	vkCmdBindIndexBuffer(
-		current_command_buffer,
-		model.index_buffer, 
-		0,
-		VkIndexType::VK_INDEX_TYPE_UINT32,
-	);
-
-	vkCmdBindDescriptorSets(
-		current_command_buffer, 
-		VkPipelineBindPoint::VK_PIPELINE_BIND_POINT_GRAPHICS, 
-		vk_handle.pipeline_layout, 
-		0, 
-		1, 
-		&vk_handle.descriptor_sets[vk_handle.current_frame],
-		0, 
-		nullptr()
-	);
-
-	vkCmdDrawIndexed(
-		current_command_buffer,
-		model.index_count,
-		1, 
-		0, 
-		0, 
-		0
-	);
+			let offsets = vec![0];
+	
+			vkCmdBindVertexBuffers(
+				current_command_buffer, 
+				0, 
+				1, 
+				vertex_buffers.as_ptr(), 
+				offsets.as_ptr()
+			);
+			
+			// add a type constraint on the index buffer later, it must be equal to the type of the buffer !
+			vkCmdBindIndexBuffer(
+				current_command_buffer,
+				vulkan_data.index_buffer, 
+				0,
+				VkIndexType::VK_INDEX_TYPE_UINT32,
+			);
+	
+			vkCmdBindDescriptorSets(
+				current_command_buffer, 
+				VkPipelineBindPoint::VK_PIPELINE_BIND_POINT_GRAPHICS, 
+				vk_handle.pipeline_layout, 
+				0, 
+				1, 
+				&vulkan_data.descriptor_sets[vk_handle.current_frame],
+				0, 
+				nullptr()
+			);
+	
+			vkCmdDrawIndexed(
+				current_command_buffer,
+				mesh.index_count,
+				1, 
+				0, 
+				0, 
+				0
+			);
+		}
+	}
+	
 	// vkCmdDraw(current_command_buffer, vk_handle.vertices.len() as u32, 1, 0, 0);
 	// vkCmdDraw(current_command_buffer, model.vertices.len() as u32, 1, 0, 0);
 

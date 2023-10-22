@@ -23,7 +23,7 @@ pub unsafe fn create_depth_buffer(vk_handle: &mut VkHandle)
 	vk_handle.depth_image_view = 
 		create_image_view(
 			vk_handle, 
-			vk_handle.depth_image,
+			&vk_handle.depth_image,
 			depth_format, 
 			VkImageAspectFlagBits::VK_IMAGE_ASPECT_DEPTH_BIT as u32
 		);
