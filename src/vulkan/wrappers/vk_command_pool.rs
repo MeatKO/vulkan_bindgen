@@ -1,4 +1,4 @@
-use crate::vulkan::vk_bindgen::{VkCommandPoolCreateInfo, VkStructureType, VkCommandPoolCreateFlagBits, VkDevice, vkCreateCommandPool, VkResult, VkCommandPool, VkCommandBuffer, vkDestroyCommandPool};
+use crate::vulkan::{vk_bindgen::{VkCommandPoolCreateInfo, VkStructureType, VkCommandPoolCreateFlagBits, VkDevice, vkCreateCommandPool, VkResult, VkCommandPool, VkCommandBuffer, vkDestroyCommandPool}, command_buffer};
 
 use std::ptr::null_mut as nullptr;
 
@@ -36,7 +36,7 @@ impl CommandPoolCreateInfo
 		self
 	}
 
-	pub fn build<'a>(mut self, logical_device: &'a VkDevice) -> Result<CommandPool, String>
+	pub fn build<'a>(self, logical_device: &VkDevice) -> Result<CommandPool<'a>, String>
 	{
 		unsafe 
 		{
@@ -73,8 +73,4 @@ impl<'a> CommandPool<'a>
 	{
 		self.command_pool_ptr
 	}
-	// pub fn allocate_command_buffer(&mut self) -> CommandBuffer<'a>
-	// {
-
-	// }
 }

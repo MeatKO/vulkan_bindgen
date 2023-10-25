@@ -83,7 +83,7 @@ pub unsafe fn update_uniform_buffer_hud(
 			// 	-1.0f32, 1.0f32,
 			// 	-1.0f32, 1.0f32,
 			// ),
-			proj: Mat4x4::new_orthographic(0.0f32, 800.0f32, 0.0f32, 600.0f32, -1.0f32, 1.0f32),
+			proj: Mat4x4::new_orthographic(0.0f32, vk_handle.swapchain_extent.width as f32, 0.0f32, vk_handle.swapchain_extent.height as f32, -1.0f32, 1.0f32),
 			light_pos: Vec3::new(0.0f32),
 			view_pos: Vec3::new(0.0f32),
 		};

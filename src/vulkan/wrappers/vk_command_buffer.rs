@@ -31,7 +31,7 @@ impl<'a> CommandBufferAllocateInfo<'a>
 		}
 	}
 
-	pub fn with_command_pool(mut self, in_command_pool: &'a CommandPool) -> CommandBufferAllocateInfo<'a>
+	pub fn with_command_pool(mut self, in_command_pool: &CommandPool) -> CommandBufferAllocateInfo<'a>
 	{
 		self.allocate_info.commandPool = in_command_pool.get_command_pool_ptr();
 		self
@@ -49,7 +49,7 @@ impl<'a> CommandBufferAllocateInfo<'a>
 		self
 	}
 
-	pub fn build<'b>(mut self, logical_device: &'b VkDevice) -> Result<Vec<CommandBuffer>, String>
+	pub fn build<'b>(self, logical_device: &VkDevice) -> Result<Vec<CommandBuffer<'b>>, String>
 	{
 		unsafe
 		{
@@ -97,5 +97,13 @@ pub struct CommandBuffer<'a>
 
 impl<'a> CommandBuffer<'a>
 {
+	pub fn get_command_buffer_ptr(&self) -> VkCommandBuffer
+	{
+		self.command_buffer_ptr
+	}
 
+	pub fn reset(&mut self)
+	{
+
+	}
 }

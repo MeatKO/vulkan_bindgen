@@ -344,7 +344,7 @@ pub unsafe fn end_single_time_commands(
 	vkQueueSubmit(vk_handle.graphics_queue, 1, &submit_info, nullptr());
 	vkQueueWaitIdle(vk_handle.graphics_queue);
 
-	vkFreeCommandBuffers(vk_handle.logical_device, vk_handle.command_pool, 1, &command_buffer);	
+	vkFreeCommandBuffers(vk_handle.logical_device, vk_handle.command_pool.as_ref().unwrap().get_command_pool_ptr(), 1, &command_buffer);	
 }
 
 pub unsafe fn begin_single_time_commands(
@@ -355,7 +355,7 @@ pub unsafe fn begin_single_time_commands(
 		VkCommandBufferAllocateInfo{
 			sType: VkStructureType::VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
 			level: VkCommandBufferLevel::VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-			commandPool: vk_handle.command_pool,
+			commandPool: vk_handle.command_pool.as_ref().unwrap().get_command_pool_ptr(),
 			commandBufferCount: 1,
 			pNext: nullptr(),
 		};

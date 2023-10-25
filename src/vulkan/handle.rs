@@ -18,7 +18,10 @@ use crate::detail_core::{
 use std::ptr::null_mut as nullptr;
 use std::vec;
 
-pub struct VkHandle
+use super::wrappers::vk_command_buffer::CommandBuffer;
+use super::wrappers::vk_command_pool::CommandPool;
+
+pub struct VkHandle<'a>
 {
 	pub camera: Camera,
 	pub input_buffer: InputBuffer,
@@ -50,11 +53,10 @@ pub struct VkHandle
 	pub graphics_queue: VkQueue,
 	pub presentation_queue: VkQueue,
 
-	pub command_pool: VkCommandPool,
-	// pub command_pool_hud: VkCommandPool,
+	pub command_pool: Option<CommandPool<'a>>,
+	pub command_buffer_vec: Vec<CommandBuffer<'a>>,
+	pub command_buffer_hud_vec: Vec<CommandBuffer<'a>>,
 
-	pub command_buffer_vec: Vec<VkCommandBuffer>,
-	pub command_buffer_hud_vec: Vec<VkCommandBuffer>,
 	pub image_available_semaphore_vec: Vec<VkSemaphore>,
 	pub rendering_finished_semaphore_vec: Vec<VkSemaphore>,
 	pub in_flight_fence_vec: Vec<VkFence>,
@@ -100,9 +102,9 @@ pub struct VkHandle
 	pub depth_image_view: VkImageView,
 }
 
-impl VkHandle
+impl<'a> VkHandle<'a>
 {
-	pub fn new_empty() -> VkHandle
+	pub fn new_empty() -> VkHandle<'a>
 	{
 		return  VkHandle {
 			camera: Camera::new(
@@ -135,7 +137,7 @@ impl VkHandle
 			queue_family_indices: vec![],
 			graphics_queue: nullptr(),
 			presentation_queue: nullptr(),
-			command_pool: nullptr(),
+			command_pool: None,
 			// command_pool_hud: nullptr(),
 			command_buffer_vec: vec![],
 			command_buffer_hud_vec: vec![],

@@ -9,9 +9,8 @@ use std::mem::size_of;
 use std::ptr::null_mut as nullptr;
 
 pub unsafe fn create_descriptor_set_layout(
-	vk_handle: &mut VkHandle,
-	// model: &mut Model
-)
+	logical_device: &VkDevice
+) -> Result<VkDescriptorSetLayout, ()>
 {
 	let ubo_layout_binding = 
 		VkDescriptorSetLayoutBinding{
@@ -57,11 +56,14 @@ pub unsafe fn create_descriptor_set_layout(
 			pNext: nullptr(),
 		};
 
-	match vkCreateDescriptorSetLayout(vk_handle.logical_device, &descriptor_set_layout_create_info, nullptr(), &mut vk_handle.descriptor_set_layout)
+	let mut descriptor_set_layout = nullptr();
+	match vkCreateDescriptorSetLayout(*logical_device, &descriptor_set_layout_create_info, nullptr(), &mut descriptor_set_layout)
 	{
 		VkResult::VK_SUCCESS => { println!("✔️ vkCreateDescriptorSetLayout()"); }
 		err => { panic!("✗ vkCreateDescriptorSetLayout() failed with code {:?}.", err); }
 	}
+
+	Ok(descriptor_set_layout)
 }
 
 pub unsafe fn create_descriptor_sets(

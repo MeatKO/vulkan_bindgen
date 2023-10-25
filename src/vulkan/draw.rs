@@ -58,7 +58,9 @@ pub fn 	draw_frame(
 			update_uniform_buffer_hud(vk_handle, &vulkan_data);
 		}
 
-		vkResetCommandBuffer(vk_handle.command_buffer_vec[vk_handle.current_frame], 0);
+		// vkResetCommandBuffer(vk_handle.command_buffer_vec[vk_handle.current_frame], 0);
+		vk_handle.command_buffer_vec[vk_handle.current_frame].reset();
+
 		record_command_buffer(vk_handle, image_index, models);
 		record_command_buffer_hud(vk_handle, image_index, hud_elements);
 
@@ -68,8 +70,8 @@ pub fn 	draw_frame(
 
 		let command_buffers = 
 			vec![
-				vk_handle.command_buffer_vec[vk_handle.current_frame],
-				vk_handle.command_buffer_hud_vec[vk_handle.current_frame],
+				vk_handle.command_buffer_vec[vk_handle.current_frame].get_command_buffer_ptr(),
+				vk_handle.command_buffer_hud_vec[vk_handle.current_frame].get_command_buffer_ptr(),
 			];
 
 		let submit_info = 

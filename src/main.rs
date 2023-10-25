@@ -26,8 +26,6 @@ use vulkan::{
 	handle::VkHandle,
 	draw::draw_frame, 
 	framebuffer::create_framebuffer, 
-	command_pool::create_command_pool, 
-	command_buffer::create_command_buffers,
 	pipeline::create_pipeline, 
 	instance::create_instance, 
 	physical_device::create_physical_device, 
@@ -44,7 +42,7 @@ use detail_core::{
 
 use std::ptr::null_mut as nullptr;
 
-use crate::{cotangens::{vec3::Vec3, mat4x4}, detail_core::{model::model::{Model, VulkanModel}, ui::traits::HUDElement, texture::texture::{Texture, VulkanTexture}}, vulkan::{vk_bindgen::{VkFormat, VkCommandPoolCreateFlagBits}, command_buffer_hud::create_command_buffers_hud, wrappers::vk_command_pool::{CommandPool, CommandPoolCreateInfo}}};
+use crate::{cotangens::{vec3::Vec3, mat4x4}, detail_core::{model::model::{Model, VulkanModel}, ui::traits::HUDElement, texture::texture::{Texture, VulkanTexture}}, vulkan::{vk_bindgen::{VkFormat, VkCommandPoolCreateFlagBits}, wrappers::{vk_command_pool::{CommandPool, CommandPoolCreateInfo}, vk_command_buffer::{CommandBuffer, CommandBufferAllocateInfo}}}};
 use parmack::{window::event::MouseCode, handle::Handle};
 
 fn main() 
@@ -72,23 +70,15 @@ fn main()
 		create_swapchain(&mut vk_handle);
 		create_swapchain_image_views(&mut vk_handle);
 
-		/*
-		sType: VkStructureType::VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
-			queueFamilyIndex: vk_handle.queue_family_indices[0],
-			flags: VkCommandPoolCreateFlagBits::VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT as u32,	
-			pNext: nullptr(),
-		 */
-		// create_command_pool(&mut vk_handle);
 		let command_pool = 
 			CommandPoolCreateInfo::new()
 			.with_flag(VkCommandPoolCreateFlagBits::VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT)
 			.with_queue_family_index(vk_handle.queue_family_indices[0])
 			.build(&vk_handle.logical_device)
 			.unwrap();
+		vk_handle.command_pool = Some(command_pool);
 
-		vk_handle.command_pool = command_pool.get_command_pool_ptr();
-
-		create_descriptor_set_layout(&mut vk_handle);
+		vk_handle.descriptor_set_layout = create_descriptor_set_layout(&vk_handle.logical_device).unwrap();
 
 		let mut models: Vec<Model<VulkanModel>> =
 			vec![
@@ -98,13 +88,6 @@ fn main()
 				Model::new("./detail/models/brick_wall/brick_wall.obj".into()).process_vk(&vk_handle),
 				Model::new("./detail/models/de_inferno/de_inferno.obj".into()).process_vk(&vk_handle),
 			];
-		
-		// create vertex, index, uniform buffers for the mesh
-		// create texture buffers for the material
-		// for model in models.iter_mut()
-		// {
-		// 	model.process_meshes(&mut vk_handle);
-		// }
 
 		create_pipeline(&mut vk_handle);
 		create_depth_buffer(&mut vk_handle);
@@ -112,16 +95,23 @@ fn main()
 
 		create_synchronization_structures(&mut vk_handle);
 
-		create_command_buffers(&mut vk_handle);
-		create_command_buffers_hud(&mut vk_handle);
+		let command_buffer_count = vk_handle.frames_in_flight as u32;
 
-		let mut last_delta_time_ms : f64;
-		
-		// window.confine_pointer(true);
-		// window.center_pointer(true);
-		// window.show_pointer(false);
+		let command_buffer_graphics =
+			CommandBufferAllocateInfo::new()
+			.with_command_pool(&vk_handle.command_pool.as_ref().unwrap())
+			.with_count(command_buffer_count)
+			.build(&vk_handle.logical_device)
+			.unwrap();
+		vk_handle.command_buffer_vec = command_buffer_graphics;
 
-		// window.confine_pointer(true);
+		let command_buffer_hud =
+			CommandBufferAllocateInfo::new()
+			.with_command_pool(&vk_handle.command_pool.as_ref().unwrap())
+			.with_count(command_buffer_count)
+			.build(&vk_handle.logical_device)
+			.unwrap();
+		vk_handle.command_buffer_hud_vec = command_buffer_hud;
 
 		let default_normal_map: Texture<VulkanTexture> = 
 			// Texture::new("./detail/textures/default_normal.tga".into())
@@ -141,6 +131,7 @@ fn main()
 
 		let mut light_pos = Vec3::new(10.0f32);
 
+		let mut last_delta_time_ms : f64;
 		while !input_processor.should_quit() 
 		{
 			let start_time = std::time::Instant::now();
