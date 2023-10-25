@@ -34,3 +34,5 @@ pub mod vk_memory;
 pub mod uniform_buffer_hud;
 pub mod command_buffer_hud;
 pub mod descriptor_set_hud;
+
+pub mod vertex_hud;

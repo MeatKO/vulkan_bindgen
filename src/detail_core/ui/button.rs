@@ -91,9 +91,10 @@ impl UIButton
 		{
 			let vertex_vec = self.get_vertices();
 			let index_vec = self.get_indices();
+			
 			let (vertex_buffer, vertex_buffer_memory) =
-			create_vertex_buffer(&vk_handle, &vertex_vec)
-			.unwrap();
+				create_vertex_buffer(&vk_handle, &vertex_vec)
+				.unwrap();
 
 			let (index_buffer, index_buffer_memory) =
 				create_index_buffer(&vk_handle, &index_vec)

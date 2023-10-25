@@ -66,7 +66,8 @@ pub unsafe fn record_command_buffer_hud(
 	let render_pass_begin_info = 
 		VkRenderPassBeginInfo{
 			sType: VkStructureType::VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-			renderPass: vk_handle.render_pass,
+			// renderPass: vk_handle.render_pass,
+			renderPass: vk_handle.render_pass_hud,
 			framebuffer: vk_handle.swapchain_framebuffers[image_index as usize],
 			renderArea: VkRect2D { 
 					offset: VkOffset2D { x: 0, y: 0 }, 
@@ -86,7 +87,8 @@ pub unsafe fn record_command_buffer_hud(
 	vkCmdBindPipeline(
 		current_command_buffer, 
 		VkPipelineBindPoint::VK_PIPELINE_BIND_POINT_GRAPHICS, 
-		vk_handle.graphics_pipeline
+		// vk_handle.graphics_pipeline
+		vk_handle.graphics_pipeline_hud
 	);
 
 	let viewport = 
@@ -157,7 +159,8 @@ pub unsafe fn record_command_buffer_hud(
 		vkCmdBindDescriptorSets(
 			current_command_buffer, 
 			VkPipelineBindPoint::VK_PIPELINE_BIND_POINT_GRAPHICS, 
-			vk_handle.pipeline_layout, 
+			// vk_handle.pipeline_layout, 
+			vk_handle.pipeline_layout_hud, 
 			0, 
 			1, 
 			&vulkan_data.descriptor_sets[vk_handle.current_frame],

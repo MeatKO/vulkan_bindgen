@@ -6,10 +6,17 @@ use crate::vulkan::depth_buffer::*;
 use crate::ffi::strings::*;
 use std::ptr::null_mut as nullptr;
 
-pub unsafe fn create_pipeline(vk_handle: &mut VkHandle)
+pub unsafe fn create_pipeline(
+	vk_handle: &mut VkHandle,
+	vertex_shader_module: VkShaderModule,
+	fragment_shader_module: VkShaderModule,
+	binding_description: VkVertexInputBindingDescription,
+	attribute_descriptions_vec: Vec<VkVertexInputAttributeDescription>,
+	first_pass: bool, 
+) -> (VkPipelineLayout, VkRenderPass, VkPipeline)
 {
-	let binding_description = Vertex::get_binding_description();
-	let attribute_descriptions_vec = Vertex::get_attribute_descriptions();
+	// let binding_description = Vertex::get_binding_description();
+	// let attribute_descriptions_vec = Vertex::get_attribute_descriptions();
 
 	// Vertex input
 	let vertex_input_create_info = 
@@ -43,30 +50,12 @@ pub unsafe fn create_pipeline(vk_handle: &mut VkHandle)
 			minDepth: 0.0f32,
 			maxDepth: 1.0f32,
 		};
-
 	// Scissor
 	let scissor = 
 		VkRect2D{
 			offset: VkOffset2D { x: 0, y: 0 },
 			extent: vk_handle.swapchain_extent
 		};
-
-	// Dynamic states
-	let dynamic_states_vec =
-		vec![
-			VkDynamicState::VK_DYNAMIC_STATE_VIEWPORT,
-			VkDynamicState::VK_DYNAMIC_STATE_SCISSOR
-		];
-
-	let dynamic_state_create_info = 
-		VkPipelineDynamicStateCreateInfo{
-			sType: VkStructureType::VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
-			dynamicStateCount: dynamic_states_vec.len() as u32,
-			pDynamicStates: dynamic_states_vec.as_ptr(),
-			flags: 0,	
-			pNext: nullptr(),
-		};
-
 	// Viewport state
 	let viewport_state_create_info = 
 		VkPipelineViewportStateCreateInfo{
@@ -78,6 +67,21 @@ pub unsafe fn create_pipeline(vk_handle: &mut VkHandle)
 			flags: 0,	
 			pNext: nullptr(),
 		};
+
+	// Dynamic states
+	let dynamic_states_vec =
+		vec![
+			VkDynamicState::VK_DYNAMIC_STATE_VIEWPORT,
+			VkDynamicState::VK_DYNAMIC_STATE_SCISSOR
+		];
+	let dynamic_state_create_info = 
+		VkPipelineDynamicStateCreateInfo{
+			sType: VkStructureType::VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+			dynamicStateCount: dynamic_states_vec.len() as u32,
+			pDynamicStates: dynamic_states_vec.as_ptr(),
+			flags: 0,	
+			pNext: nullptr(),
+		};	
 
 	// Rasterizer
 	let rasterizer_create_info = 
@@ -158,24 +162,38 @@ pub unsafe fn create_pipeline(vk_handle: &mut VkHandle)
 			pNext: nullptr(),
 		};
 
-	match vkCreatePipelineLayout(vk_handle.logical_device, &pipeline_layout_create_info, nullptr(), &mut vk_handle.pipeline_layout)
-	{
-		VkResult::VK_SUCCESS => { println!("✔️ vkCreatePipelineLayout()"); }
-		err => { panic!("✗ vkCreatePipelineLayout() failed with code {:?}.", err); }
-	}		
 
 	//// Render pass creation
 	let color_attachment_descriptor = 
-		VkAttachmentDescription{
-			format: vk_handle.surface_format.format,
-			samples: VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT,
-			loadOp: VkAttachmentLoadOp::VK_ATTACHMENT_LOAD_OP_LOAD,
-			storeOp: VkAttachmentStoreOp::VK_ATTACHMENT_STORE_OP_STORE,
-			stencilLoadOp: VkAttachmentLoadOp::VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-			stencilStoreOp: VkAttachmentStoreOp::VK_ATTACHMENT_STORE_OP_DONT_CARE,
-			initialLayout: VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED,
-			finalLayout: VkImageLayout::VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-			flags: 0
+		{
+			if first_pass
+			{
+				VkAttachmentDescription{
+					format: vk_handle.surface_format.format,
+					samples: VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT,
+					loadOp: VkAttachmentLoadOp::VK_ATTACHMENT_LOAD_OP_CLEAR,
+					storeOp: VkAttachmentStoreOp::VK_ATTACHMENT_STORE_OP_STORE,
+					stencilLoadOp: VkAttachmentLoadOp::VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+					stencilStoreOp: VkAttachmentStoreOp::VK_ATTACHMENT_STORE_OP_DONT_CARE,
+					initialLayout: VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED,
+					finalLayout: VkImageLayout::VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+					flags: 0
+				}
+			}
+			else 
+			{
+				VkAttachmentDescription{
+					format: vk_handle.surface_format.format,
+					samples: VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT,
+					loadOp: VkAttachmentLoadOp::VK_ATTACHMENT_LOAD_OP_LOAD,
+					storeOp: VkAttachmentStoreOp::VK_ATTACHMENT_STORE_OP_STORE,
+					stencilLoadOp: VkAttachmentLoadOp::VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+					stencilStoreOp: VkAttachmentStoreOp::VK_ATTACHMENT_STORE_OP_DONT_CARE,
+					initialLayout: VkImageLayout::VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+					finalLayout: VkImageLayout::VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+					flags: 0
+				}
+			}
 		};
 
 	let depth_attachment_descriptor = 
@@ -254,12 +272,6 @@ pub unsafe fn create_pipeline(vk_handle: &mut VkHandle)
 			pNext: nullptr(),
 		};
 
-	match vkCreateRenderPass(vk_handle.logical_device, &render_pass_create_info, nullptr(), &mut vk_handle.render_pass)
-	{
-		VkResult::VK_SUCCESS => { println!("✔️ vkCreateRenderPass()"); }
-		err => { panic!("✗ vkCreateRenderPass() failed with code {:?}.", err); }
-	}		
-
 	let depth_stencil_create_info = 
 		VkPipelineDepthStencilStateCreateInfo{
 			sType: VkStructureType::VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
@@ -276,32 +288,13 @@ pub unsafe fn create_pipeline(vk_handle: &mut VkHandle)
 			pNext: nullptr(),
 		};
 
-
-	// Shader creation
-	// let vertex_shader_source = include_bytes!("../../shaders/basic_triangle/vert.spv");
-	// let fragment_shader_source = include_bytes!("../../shaders/basic_triangle/frag.spv");
-
-	// let vertex_shader_source = include_bytes!("../../shaders/uniform_buffer/vert.spv");
-	// let fragment_shader_source = include_bytes!("../../shaders/uniform_buffer/frag.spv");
-
-	// let vertex_shader_source = include_bytes!("../../shaders/textured/vert.spv");
-	// let fragment_shader_source = include_bytes!("../../shaders/textured/frag.spv");
-
-	// let vertex_shader_source = include_bytes!("../../shaders/test/vert.spv");
-	// let fragment_shader_source = include_bytes!("../../shaders/test/frag.spv");
-
-	let vertex_shader_source = include_bytes!("../../shaders/normal/vert.spv");
-	let fragment_shader_source = include_bytes!("../../shaders/normal/frag.spv");
-
-	vk_handle.vertex_shader_module = create_shader_module(&vk_handle, vertex_shader_source);
-	vk_handle.fragment_shader_module = create_shader_module(&vk_handle, fragment_shader_source);
-
 	let shader_stages_create_info_vec = 
 		vec![
 			VkPipelineShaderStageCreateInfo{
 				sType: VkStructureType::VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
 				stage: VkShaderStageFlagBits::VK_SHADER_STAGE_VERTEX_BIT,
-				module: vk_handle.vertex_shader_module,
+				// module: vk_handle.vertex_shader_module,
+				module: vertex_shader_module,
 				pName: to_c_string("main"),
 				pSpecializationInfo: nullptr(),
 				flags: 0,	
@@ -310,7 +303,8 @@ pub unsafe fn create_pipeline(vk_handle: &mut VkHandle)
 			VkPipelineShaderStageCreateInfo{
 				sType: VkStructureType::VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
 				stage: VkShaderStageFlagBits::VK_SHADER_STAGE_FRAGMENT_BIT,
-				module: vk_handle.fragment_shader_module,
+				// module: vk_handle.fragment_shader_module,
+				module: fragment_shader_module,
 				pName: to_c_string("main"),
 				pSpecializationInfo: nullptr(),
 				flags: 0,	
@@ -318,11 +312,29 @@ pub unsafe fn create_pipeline(vk_handle: &mut VkHandle)
 			}
 		];
 
+	let mut pipeline_layout: VkPipelineLayout = nullptr();
+	let mut render_pass: VkRenderPass = nullptr();
+	let mut pipeline: VkPipeline = nullptr();
+
+	match vkCreatePipelineLayout(vk_handle.logical_device, &pipeline_layout_create_info, nullptr(), &mut pipeline_layout)
+	// match vkCreatePipelineLayout(vk_handle.logical_device, &pipeline_layout_create_info, nullptr(), &mut vk_handle.pipeline_layout)
+	{
+		VkResult::VK_SUCCESS => { println!("✔️ vkCreatePipelineLayout()"); }
+		err => { panic!("✗ vkCreatePipelineLayout() failed with code {:?}.", err); }
+	}	
+
+	match vkCreateRenderPass(vk_handle.logical_device, &render_pass_create_info, nullptr(), &mut render_pass)
+	// match vkCreateRenderPass(vk_handle.logical_device, &render_pass_create_info, nullptr(), &mut vk_handle.render_pass)
+	{
+		VkResult::VK_SUCCESS => { println!("✔️ vkCreateRenderPass()"); }
+		err => { panic!("✗ vkCreateRenderPass() failed with code {:?}.", err); }
+	}
+
 	//// Pipeline creation
 	let pipeline_create_info = 
 		VkGraphicsPipelineCreateInfo{
 			sType: VkStructureType::VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
-			stageCount: 2,
+			stageCount: shader_stages_create_info_vec.len() as _,
 			pStages: shader_stages_create_info_vec.as_ptr(),
 			pVertexInputState: &vertex_input_create_info,
 			pInputAssemblyState: &input_assembly_state_create_info,
@@ -330,11 +342,13 @@ pub unsafe fn create_pipeline(vk_handle: &mut VkHandle)
 			pRasterizationState: &rasterizer_create_info,
 			pMultisampleState: &multisampling_create_info,
 			pDepthStencilState: &depth_stencil_create_info,
-			// pDepthStencilState:  nullptr(),
+			// pDepthStencilState: nullptr(),
 			pColorBlendState: &color_blend_create_info,
 			pDynamicState: &dynamic_state_create_info,
-			layout: vk_handle.pipeline_layout,
-			renderPass: vk_handle.render_pass,
+			// layout: vk_handle.pipeline_layout,
+			layout: pipeline_layout,
+			// renderPass: vk_handle.render_pass,
+			renderPass: render_pass,
 			subpass: 0,
 			basePipelineHandle: nullptr(),
 			basePipelineIndex: -1,
@@ -343,9 +357,12 @@ pub unsafe fn create_pipeline(vk_handle: &mut VkHandle)
 			pNext: nullptr(),
 		};
 
-	match vkCreateGraphicsPipelines(vk_handle.logical_device, nullptr(), 1, &pipeline_create_info, nullptr(), &mut vk_handle.graphics_pipeline)
+	match vkCreateGraphicsPipelines(vk_handle.logical_device, nullptr(), 1, &pipeline_create_info, nullptr(), &mut pipeline)
+	// match vkCreateGraphicsPipelines(vk_handle.logical_device, nullptr(), 1, &pipeline_create_info, nullptr(), &mut vk_handle.graphics_pipeline)
 	{
 		VkResult::VK_SUCCESS => { println!("✔️ vkCreateGraphicsPipelines()"); }
 		err => { panic!("✗ vkCreateGraphicsPipelines() failed with code {:?}.", err); }
 	}	
+
+	return (pipeline_layout, render_pass, pipeline)
 }

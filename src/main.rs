@@ -42,7 +42,7 @@ use detail_core::{
 
 use std::ptr::null_mut as nullptr;
 
-use crate::{cotangens::{vec3::Vec3, mat4x4}, detail_core::{model::model::{Model, VulkanModel}, ui::traits::HUDElement, texture::texture::{Texture, VulkanTexture}}, vulkan::{vk_bindgen::{VkFormat, VkCommandPoolCreateFlagBits}, wrappers::{vk_command_pool::{CommandPool, CommandPoolCreateInfo}, vk_command_buffer::{CommandBuffer, CommandBufferAllocateInfo}}}};
+use crate::{cotangens::{vec3::Vec3, mat4x4}, detail_core::{model::model::{Model, VulkanModel}, ui::traits::HUDElement, texture::texture::{Texture, VulkanTexture}}, vulkan::{vk_bindgen::{VkFormat, VkCommandPoolCreateFlagBits}, wrappers::{vk_command_pool::{CommandPool, CommandPoolBuilder}, vk_command_buffer::{CommandBuffer, CommandBufferBuilder}}, shader::create_shader_module, vertex::Vertex}};
 use parmack::{window::event::MouseCode, handle::Handle};
 
 fn main() 
@@ -71,7 +71,7 @@ fn main()
 		create_swapchain_image_views(&mut vk_handle);
 
 		let command_pool = 
-			CommandPoolCreateInfo::new()
+			CommandPoolBuilder::new()
 			.with_flag(VkCommandPoolCreateFlagBits::VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT)
 			.with_queue_family_index(vk_handle.queue_family_indices[0])
 			.build(&vk_handle.logical_device)
@@ -89,7 +89,54 @@ fn main()
 				Model::new("./detail/models/de_inferno/de_inferno.obj".into()).process_vk(&vk_handle),
 			];
 
-		create_pipeline(&mut vk_handle);
+		//
+		let vertex_shader_source = include_bytes!("../detail/shaders/normal/vert.spv");
+		let fragment_shader_source = include_bytes!("../detail/shaders/normal/frag.spv");
+		//
+		let vertex_shader_module = create_shader_module(&vk_handle, vertex_shader_source);
+		let fragment_shader_module = create_shader_module(&vk_handle, fragment_shader_source);
+		//
+		let binding_description = Vertex::get_binding_description();
+		let attribute_descriptions_vec = Vertex::get_attribute_descriptions();
+		//
+		let (pipeline_layout, render_pass, pipeline) = 
+			create_pipeline(
+				&mut vk_handle, 
+				vertex_shader_module, 
+				fragment_shader_module, 
+				binding_description, 
+				attribute_descriptions_vec, 
+				true
+			);
+		//
+		vk_handle.pipeline_layout = pipeline_layout;
+		vk_handle.render_pass = render_pass;
+		vk_handle.graphics_pipeline = pipeline;
+
+		//
+		let vertex_shader_source = include_bytes!("../detail/shaders/hud/vert.spv");
+		let fragment_shader_source = include_bytes!("../detail/shaders/hud/frag.spv");
+		//
+		let vertex_shader_module = create_shader_module(&vk_handle, vertex_shader_source);
+		let fragment_shader_module = create_shader_module(&vk_handle, fragment_shader_source);
+		//
+		let binding_description = Vertex::get_binding_description();
+		let attribute_descriptions_vec = Vertex::get_attribute_descriptions();
+		//
+		let (pipeline_layout_hud, render_pass_hud, pipeline_hud) = 
+			create_pipeline(
+				&mut vk_handle, 
+				vertex_shader_module, 
+				fragment_shader_module, 
+				binding_description, 
+				attribute_descriptions_vec, 
+				false
+			);
+		//
+		vk_handle.pipeline_layout_hud = pipeline_layout_hud;
+		vk_handle.render_pass_hud = render_pass_hud;
+		vk_handle.graphics_pipeline_hud = pipeline_hud;
+
 		create_depth_buffer(&mut vk_handle);
 		create_framebuffer(&mut vk_handle);
 
@@ -98,7 +145,7 @@ fn main()
 		let command_buffer_count = vk_handle.frames_in_flight as u32;
 
 		let command_buffer_graphics =
-			CommandBufferAllocateInfo::new()
+			CommandBufferBuilder::new()
 			.with_command_pool(&vk_handle.command_pool.as_ref().unwrap())
 			.with_count(command_buffer_count)
 			.build(&vk_handle.logical_device)
@@ -106,7 +153,7 @@ fn main()
 		vk_handle.command_buffer_vec = command_buffer_graphics;
 
 		let command_buffer_hud =
-			CommandBufferAllocateInfo::new()
+			CommandBufferBuilder::new()
 			.with_command_pool(&vk_handle.command_pool.as_ref().unwrap())
 			.with_count(command_buffer_count)
 			.build(&vk_handle.logical_device)
@@ -172,24 +219,24 @@ fn main()
 			pointer_pos = window.get_pointer_location();
 			println!("pointer loc : {:?}", pointer_pos);
 
-			if hud_elements[0].is_inside(pointer_pos.0, pointer_pos.1) 
-			{
-				println!("is inside");
+			// if hud_elements[0].is_inside(pointer_pos.0, pointer_pos.1) 
+			// {
+			// 	println!("is inside");
 
-				if vk_handle.mouse_input_buffer.is_pressed(MouseCode::Left as u8)
-				{
-					models[0].translation = &models[0].translation - &Vec3{ x: 0.0f32, y: 0.1f32, z: 0.0f32}
-				}
-			}
-			else
-			{
-				println!("is outside");
+			// 	if vk_handle.mouse_input_buffer.is_pressed(MouseCode::Left as u8)
+			// 	{
+			// 		models[0].translation = &models[0].translation - &Vec3{ x: 0.0f32, y: 0.1f32, z: 0.0f32}
+			// 	}
+			// }
+			// else
+			// {
+			// 	println!("is outside");
 
-				if vk_handle.mouse_input_buffer.is_pressed(MouseCode::Left as u8)
-				{
-					models[0].translation = &models[0].translation - &Vec3{ x: 0.0f32, y: -0.1f32, z: 0.0f32}
-				}
-			}
+			// 	if vk_handle.mouse_input_buffer.is_pressed(MouseCode::Left as u8)
+			// 	{
+			// 		models[0].translation = &models[0].translation - &Vec3{ x: 0.0f32, y: -0.1f32, z: 0.0f32}
+			// 	}
+			// }
 
 
 			// panic!()

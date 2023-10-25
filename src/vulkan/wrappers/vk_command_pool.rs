@@ -2,18 +2,18 @@ use crate::vulkan::{vk_bindgen::{VkCommandPoolCreateInfo, VkStructureType, VkCom
 
 use std::ptr::null_mut as nullptr;
 
-use super::vk_command_buffer::{CommandBuffer, CommandBufferAllocateInfo};
+use super::vk_command_buffer::CommandBuffer;
 
-pub struct CommandPoolCreateInfo
+pub struct CommandPoolBuilder
 {
 	create_info: VkCommandPoolCreateInfo,
 }
 
-impl CommandPoolCreateInfo
+impl CommandPoolBuilder
 {
-	pub fn new() -> CommandPoolCreateInfo
+	pub fn new() -> CommandPoolBuilder
 	{
-		CommandPoolCreateInfo { 
+		CommandPoolBuilder { 
 			create_info: 
 				VkCommandPoolCreateInfo{
 					sType: VkStructureType::VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
@@ -24,19 +24,19 @@ impl CommandPoolCreateInfo
 		}
 	}
 
-	pub fn with_queue_family_index(mut self, in_queue_family_index: u32) -> CommandPoolCreateInfo
+	pub fn with_queue_family_index(mut self, in_queue_family_index: u32) -> CommandPoolBuilder
 	{
 		self.create_info.queueFamilyIndex = in_queue_family_index;
 		self
 	}
 
-	pub fn with_flag(mut self, in_flag: VkCommandPoolCreateFlagBits) -> CommandPoolCreateInfo
+	pub fn with_flag(mut self, in_flag: VkCommandPoolCreateFlagBits) -> CommandPoolBuilder
 	{
 		self.create_info.flags |= in_flag as u32;
 		self
 	}
 
-	pub fn build<'a>(self, logical_device: &VkDevice) -> Result<CommandPool<'a>, String>
+	pub fn build(self, logical_device: &VkDevice) -> Result<CommandPool, String>
 	{
 		unsafe 
 		{
@@ -48,7 +48,6 @@ impl CommandPoolCreateInfo
 					Ok(
 						CommandPool { 
 							command_pool_ptr: command_pool_ptr,
-							command_buffer_vec: vec![],
 						}
 					)
 				}
@@ -61,13 +60,12 @@ impl CommandPoolCreateInfo
 	}
 }
 
-pub struct CommandPool<'a>
+pub struct CommandPool
 {
 	command_pool_ptr: VkCommandPool,
-	command_buffer_vec: Vec<CommandBuffer<'a>>,
 }
 
-impl<'a> CommandPool<'a>
+impl CommandPool
 {
 	pub fn get_command_pool_ptr(&self) -> VkCommandPool
 	{

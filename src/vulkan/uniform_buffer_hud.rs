@@ -25,7 +25,8 @@ pub unsafe fn create_uniform_buffers_hud(
 	hud_element_data: &mut VulkanButtonData,
 ) 
 {
-	let buffer_size = size_of::<UniformBufferObjectHUD>() as u64;
+	// let buffer_size = size_of::<UniformBufferObjectHUD>() as u64;
+	let buffer_size = size_of::<UniformBufferObject>() as u64;
 
 	hud_element_data.uniform_buffers.resize(vk_handle.frames_in_flight, nullptr());
 	hud_element_data.uniform_buffers_memory.resize(vk_handle.frames_in_flight, nullptr());

@@ -1,24 +1,24 @@
 use std::marker::PhantomData;
 
 use crate::vulkan::vk_bindgen::{
-	VkCommandBuffer, VkCommandBufferAllocateInfo, VkStructureType, VkCommandBufferLevel, vkAllocateCommandBuffers, VkDevice, VkResult,
+	VkCommandBuffer, VkCommandBufferAllocateInfo, VkStructureType, VkCommandBufferLevel, vkAllocateCommandBuffers, VkDevice, VkResult, vkResetCommandBuffer, VkCommandBufferResetFlagBits,
 };
 
 use std::ptr::null_mut as nullptr;
 
 use super::vk_command_pool::CommandPool;
 
-pub struct CommandBufferAllocateInfo<'a>
+pub struct CommandBufferBuilder<'a>
 {
 	allocate_info: VkCommandBufferAllocateInfo,
 	_lifetime_marker: PhantomData<&'a ()>
 }
 
-impl<'a> CommandBufferAllocateInfo<'a>
+impl<'a> CommandBufferBuilder<'a>
 {
-	pub fn new() -> CommandBufferAllocateInfo<'a>
+	pub fn new() -> CommandBufferBuilder<'a>
 	{
-		CommandBufferAllocateInfo { 
+		CommandBufferBuilder { 
 			allocate_info: 
 				VkCommandBufferAllocateInfo{
 					sType: VkStructureType::VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
@@ -31,19 +31,19 @@ impl<'a> CommandBufferAllocateInfo<'a>
 		}
 	}
 
-	pub fn with_command_pool(mut self, in_command_pool: &CommandPool) -> CommandBufferAllocateInfo<'a>
+	pub fn with_command_pool(mut self, in_command_pool: &CommandPool) -> CommandBufferBuilder<'a>
 	{
 		self.allocate_info.commandPool = in_command_pool.get_command_pool_ptr();
 		self
 	}
 
-	pub fn with_level(mut self, in_level: VkCommandBufferLevel) -> CommandBufferAllocateInfo<'a>
+	pub fn with_level(mut self, in_level: VkCommandBufferLevel) -> CommandBufferBuilder<'a>
 	{
 		self.allocate_info.level = in_level;
 		self
 	}
 
-	pub fn with_count(mut self, in_command_buffer_count: u32) -> CommandBufferAllocateInfo<'a>
+	pub fn with_count(mut self, in_command_buffer_count: u32) -> CommandBufferBuilder<'a>
 	{
 		self.allocate_info.commandBufferCount = in_command_buffer_count;
 		self
@@ -102,8 +102,9 @@ impl<'a> CommandBuffer<'a>
 		self.command_buffer_ptr
 	}
 
-	pub fn reset(&mut self)
+	pub fn reset(&mut self, in_flag: Option<VkCommandBufferResetFlagBits>)
 	{
-
+		let flag_value = if let Some(flag) = in_flag { flag as u32 } else { 0u32 };
+		unsafe { vkResetCommandBuffer(self.get_command_buffer_ptr(), flag_value); }
 	}
 }

@@ -59,7 +59,7 @@ pub fn 	draw_frame(
 		}
 
 		// vkResetCommandBuffer(vk_handle.command_buffer_vec[vk_handle.current_frame], 0);
-		vk_handle.command_buffer_vec[vk_handle.current_frame].reset();
+		vk_handle.command_buffer_vec[vk_handle.current_frame].reset(None);
 
 		record_command_buffer(vk_handle, image_index, models);
 		record_command_buffer_hud(vk_handle, image_index, hud_elements);

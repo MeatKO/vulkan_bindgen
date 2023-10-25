@@ -37,10 +37,15 @@ pub struct VkHandle<'a>
 	pub present_mode: VkPresentModeKHR,
 	pub swapchain_extent: VkExtent2D,
 	pub swapchain_framebuffers: Vec<VkFramebuffer>,
+	pub descriptor_set_layout: VkDescriptorSetLayout,
+
 	pub render_pass: VkRenderPass,
 	pub graphics_pipeline: VkPipeline,
-	pub descriptor_set_layout: VkDescriptorSetLayout,
 	pub pipeline_layout: VkPipelineLayout,
+
+	pub render_pass_hud: VkRenderPass,
+	pub graphics_pipeline_hud: VkPipeline,
+	pub pipeline_layout_hud: VkPipelineLayout,
 
 	pub queue_handle: QueueHandle,
 
@@ -53,7 +58,8 @@ pub struct VkHandle<'a>
 	pub graphics_queue: VkQueue,
 	pub presentation_queue: VkQueue,
 
-	pub command_pool: Option<CommandPool<'a>>,
+	pub command_pool: Option<CommandPool>,
+	// pub command_pool: CommandPool<'a>,
 	pub command_buffer_vec: Vec<CommandBuffer<'a>>,
 	pub command_buffer_hud_vec: Vec<CommandBuffer<'a>>,
 
@@ -129,14 +135,18 @@ impl<'a> VkHandle<'a>
 			present_mode: VkPresentModeKHR::VK_PRESENT_MODE_FIFO_KHR,
 			swapchain_extent: VkExtent2D { width: 0, height: 0 },
 			swapchain_framebuffers: vec![],
-			render_pass: nullptr(),
 			queue_handle: QueueHandle::default(),
-			graphics_pipeline: nullptr(),
 			descriptor_set_layout: nullptr(),
+			render_pass: nullptr(),
+			graphics_pipeline: nullptr(),
 			pipeline_layout: nullptr(),
+			render_pass_hud: nullptr(),
+			graphics_pipeline_hud: nullptr(),
+			pipeline_layout_hud: nullptr(),
 			queue_family_indices: vec![],
 			graphics_queue: nullptr(),
 			presentation_queue: nullptr(),
+			// command_pool: unsafe { std::mem::MaybeUninit::zeroed },
 			command_pool: None,
 			// command_pool_hud: nullptr(),
 			command_buffer_vec: vec![],

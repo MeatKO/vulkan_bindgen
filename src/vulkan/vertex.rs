@@ -71,12 +71,12 @@ impl Vertex
 	}
 }
 
-pub unsafe fn create_vertex_buffer(
+pub unsafe fn create_vertex_buffer<V>(
 	vk_handle: &VkHandle, 
-	vertices: &Vec<Vertex>,
+	vertices: &Vec<V>,
 ) -> Result<(VkBuffer, VkDeviceMemory), String>
 {
-	let buffer_size = size_of::<Vertex>() * vertices.len();
+	let buffer_size = size_of::<V>() * vertices.len();
 
 	let (staging_buffer, staging_buffer_memory) = 
 		match create_buffer(
