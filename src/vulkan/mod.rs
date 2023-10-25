@@ -1,3 +1,5 @@
+pub mod wrappers;
+
 pub mod vk_bindgen;
 pub mod c_macros;
 pub mod extension;
@@ -27,3 +29,8 @@ pub mod depth_buffer;
 
 pub mod vk_buffer;
 pub mod vk_memory;
+
+
+pub mod uniform_buffer_hud;
+pub mod command_buffer_hud;
+pub mod descriptor_set_hud;

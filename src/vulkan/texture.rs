@@ -1,4 +1,3 @@
-use crate::exedra::model_descriptor::ModelDescriptor;
 use crate::vulkan::vk_bindgen::*;
 use crate::vulkan::handle::*;
 use crate::vulkan::vk_buffer::*;

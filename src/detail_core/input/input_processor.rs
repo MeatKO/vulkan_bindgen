@@ -30,7 +30,13 @@ impl InputProcessor
 	}
 
 	// pub fn process_window_events(&mut self, delta_time_ms: f32, window: &Window, camera: &mut Camera)
-	pub fn process_window_events(&mut self, delta_time_ms: f32, window: &mut WindowHandle, vk_handle: &mut VkHandle)
+	pub fn process_window_events(
+		&mut self, 
+		window: &mut WindowHandle, 
+		vk_handle: &mut VkHandle,
+		focus_on_gui: &mut bool,
+		delta_time_ms: f32, 
+	)
 	{
 		let process_start_time = std::time::Instant::now();
 		let absolute_current_time_stamp_ms = process_start_time.duration_since(vk_handle.start_time).as_secs_f32() * 1000.0f32;
@@ -53,7 +59,8 @@ impl InputProcessor
 
 					match key_code 
 					{
-						KeyCode::ESC => { self.should_quit = true; }
+						KeyCode::Escape => { self.should_quit = true; }
+						KeyCode::ShiftLeft => { *focus_on_gui = !*focus_on_gui; }
 						_ => {}
 					}
 				}
@@ -95,16 +102,18 @@ impl InputProcessor
 
 							// if window.is_focused &&
 							if
-							delta_x != 0 ||
-							delta_y != 0
+							!*focus_on_gui && 
+							(delta_x != 0 ||
+							delta_y != 0)
 							{
 								window.center_pointer(true);
+								vk_handle.camera.process_mouse_movement(delta_x as f32 * 10.0f32, delta_y as f32 * 10.0f32);
 							}
 
 							// println!("delta x {} delta y {}", delta_x, delta_y);
 
 							// vk_handle.camera.process_mouse_movement(delta_x as f32 * delta_time_ms, delta_y as f32 * delta_time_ms);
-							vk_handle.camera.process_mouse_movement(delta_x as f32 * 10.0f32, delta_y as f32 * 10.0f32);
+							// vk_handle.camera.process_mouse_movement(delta_x as f32 * 10.0f32, delta_y as f32 * 10.0f32);
 						}
 						_ => {}
 					}

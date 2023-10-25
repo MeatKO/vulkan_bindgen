@@ -73,7 +73,7 @@ impl Vertex
 
 pub unsafe fn create_vertex_buffer(
 	vk_handle: &VkHandle, 
-	vertices: &mut Vec<Vertex>,
+	vertices: &Vec<Vertex>,
 ) -> Result<(VkBuffer, VkDeviceMemory), String>
 {
 	let buffer_size = size_of::<Vertex>() * vertices.len();

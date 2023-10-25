@@ -1,6 +1,6 @@
 use std::{ptr::null_mut as nullptr, ops::{Deref, DerefMut}, path::PathBuf};
 
-use crate::{cotangens::{vec3::*, vec2::Vec2}, exedra::{error::ModelLoadError, model_descriptor::ModelDescriptor}, detail_core::texture::texture::Texture, vulkan::{handle::VkHandle, vertex::{create_vertex_buffer, Vertex}, index::create_index_buffer, descriptor_set::create_descriptor_sets, descriptor_pool::create_descriptor_pool, uniform_buffer::create_uniform_buffers, vk_bindgen::VkFormat}};
+use crate::{cotangens::{vec3::*, vec2::Vec2}, exedra::{error::ModelLoadError, model_descriptor::ModelDescriptor}, detail_core::texture::texture::{Texture, VulkanTexture}, vulkan::{handle::VkHandle, vertex::{create_vertex_buffer, Vertex}, index::create_index_buffer, descriptor_set::create_descriptor_sets, descriptor_pool::create_descriptor_pool, uniform_buffer::create_uniform_buffers, vk_bindgen::VkFormat}};
 
 use super::{mesh::{Mesh, VulkanMeshData}, material::Material};
 
@@ -67,7 +67,7 @@ impl VulkanModel
 			};
 
 			// VkFormat::VK_FORMAT_R8G8B8A8_UNORM
-			let default_normal_map = 
+			let default_normal_map: Texture<VulkanTexture> = 
 				// Texture::new("./detail/textures/default_normal.tga".into())
 				Texture::new("./detail/textures/smiley_normal.tga".into())
 				.load()

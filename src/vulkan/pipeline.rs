@@ -169,7 +169,7 @@ pub unsafe fn create_pipeline(vk_handle: &mut VkHandle)
 		VkAttachmentDescription{
 			format: vk_handle.surface_format.format,
 			samples: VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT,
-			loadOp: VkAttachmentLoadOp::VK_ATTACHMENT_LOAD_OP_CLEAR,
+			loadOp: VkAttachmentLoadOp::VK_ATTACHMENT_LOAD_OP_LOAD,
 			storeOp: VkAttachmentStoreOp::VK_ATTACHMENT_STORE_OP_STORE,
 			stencilLoadOp: VkAttachmentLoadOp::VK_ATTACHMENT_LOAD_OP_DONT_CARE,
 			stencilStoreOp: VkAttachmentStoreOp::VK_ATTACHMENT_STORE_OP_DONT_CARE,

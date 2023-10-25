@@ -51,8 +51,10 @@ pub struct VkHandle
 	pub presentation_queue: VkQueue,
 
 	pub command_pool: VkCommandPool,
+	// pub command_pool_hud: VkCommandPool,
 
 	pub command_buffer_vec: Vec<VkCommandBuffer>,
+	pub command_buffer_hud_vec: Vec<VkCommandBuffer>,
 	pub image_available_semaphore_vec: Vec<VkSemaphore>,
 	pub rendering_finished_semaphore_vec: Vec<VkSemaphore>,
 	pub in_flight_fence_vec: Vec<VkFence>,
@@ -134,7 +136,9 @@ impl VkHandle
 			graphics_queue: nullptr(),
 			presentation_queue: nullptr(),
 			command_pool: nullptr(),
+			// command_pool_hud: nullptr(),
 			command_buffer_vec: vec![],
+			command_buffer_hud_vec: vec![],
 			image_available_semaphore_vec: vec![],
 			rendering_finished_semaphore_vec: vec![],
 			in_flight_fence_vec: vec![],
@@ -229,7 +233,7 @@ impl VkHandle
 			vkDestroySemaphore(self.logical_device, self.rendering_finished_semaphore_vec[i], nullptr());
 			vkDestroySemaphore(self.logical_device, self.image_available_semaphore_vec[i], nullptr());
 		}
-		vkDestroyCommandPool(self.logical_device, self.command_pool, nullptr());
+		// vkDestroyCommandPool(self.logical_device, self.command_pool, nullptr());
 		// for framebuffer in self.swapchain_framebuffers.iter()
 		// {
 		// 	vkDestroyFramebuffer(self.logical_device, *framebuffer, nullptr());
