@@ -16,7 +16,7 @@ pub unsafe fn create_depth_buffer(vk_handle: &mut VkHandle)
 			VkImageTiling::VK_IMAGE_TILING_OPTIMAL, 
 			VkImageUsageFlagBits::VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT as u32, 
 			VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT as u32,
-		);
+		).unwrap();
 
 	vk_handle.depth_image = image;
 	vk_handle.depth_image_memory = image_memory;

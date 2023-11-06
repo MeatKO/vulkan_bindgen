@@ -33,10 +33,10 @@ impl Model<ModelDescriptor>
 		)
 	}
 
-	pub fn process_vk(self, vk_handle: &VkHandle) -> Model<VulkanModel>
+	pub fn process_meshes(self, vk_handle: &VkHandle, material_defaults: Material) -> Model<VulkanModel>
 	{
 		Model(
-			VulkanModel::new(vk_handle, self.0).unwrap()
+			VulkanModel::new(vk_handle, self.0, material_defaults).unwrap()
 		)
 	}
 }
@@ -52,8 +52,69 @@ pub struct VulkanModel
 
 impl VulkanModel
 {
+	pub fn process_textures(&mut self, vk_handle: &VkHandle) -> Result<(), String>
+	{
+		unsafe 
+		{
+			let mut total_bytes_loaded = 0usize;
+
+			for mesh in self.meshes.iter_mut()
+			{
+				let mesh_material_albedo_map = 
+					match Texture::new(mesh.material.albedo_path.clone().into()).load()
+					{
+						Ok(loaded_texture) =>
+						{
+							loaded_texture
+							// .downscale(0.1f32)
+							.process_vk(
+								vk_handle, 
+								VkFormat::VK_FORMAT_R8G8B8A8_SRGB
+							)
+							?
+						}
+						Err(_) => { mesh.material.albedo_map.as_ref().unwrap().clone() }
+					};
+
+				total_bytes_loaded += mesh_material_albedo_map.byte_size;
+	
+				println!("loading texture {}", mesh.material.normal_path.clone());
+				let mesh_material_normal_map = 
+					match Texture::new(mesh.material.normal_path.clone().into()).load()
+					{
+						Ok(loaded_texture) => 
+						// { mesh.material.normal_map.as_ref().unwrap().clone() }
+						{
+							loaded_texture
+							.process_vk(
+								vk_handle, 
+								VkFormat::VK_FORMAT_R8G8B8A8_UNORM
+							)
+							?
+						}
+						Err(_) => { mesh.material.normal_map.as_ref().unwrap().clone() }
+					};
+	
+				mesh.material.albedo_map = Some(mesh_material_albedo_map.clone());
+				mesh.material.normal_map = Some(mesh_material_normal_map.clone());
+	
+				create_uniform_buffers(&vk_handle, &mut mesh.vulkan_data.as_mut().unwrap());
+	
+				let descriptor_pool = create_descriptor_pool(&vk_handle).unwrap();
+				create_descriptor_sets(&vk_handle, &mut mesh.vulkan_data.as_mut().unwrap(), &mesh_material_albedo_map, &mesh_material_normal_map, &descriptor_pool).unwrap();
+				mesh.vulkan_data.as_mut().unwrap().descriptor_pool = descriptor_pool;
+
+				println!("Total texture size for model {} : {} bytes", self.name, total_bytes_loaded);
+			}
+
+			// println!("Total texture size for model {} : {} bytes", self.name, total_bytes_loaded);
+	
+			Ok(())
+		}
+	}
+
 	// currently not returning any errors, its an unwrap and non-handling shitfest but its cozy
-	pub fn new(vk_handle: &VkHandle, model_descriptor: ModelDescriptor) -> Result<VulkanModel, ModelLoadError>
+	fn new(vk_handle: &VkHandle, model_descriptor: ModelDescriptor, material_defaults: Material) -> Result<VulkanModel, ModelLoadError>
 	{
 		unsafe
 		{
@@ -66,39 +127,55 @@ impl VulkanModel
 				rotation: Vec3::new(0.0f32),
 			};
 
-			// VkFormat::VK_FORMAT_R8G8B8A8_UNORM
-			let default_normal_map: Texture<VulkanTexture> = 
-				// Texture::new("./detail/textures/default_normal.tga".into())
-				Texture::new("./detail/textures/smiley_normal.tga".into())
-				.load()
-				.unwrap()
-				.process_vk(vk_handle, VkFormat::VK_FORMAT_R8G8B8A8_UNORM)
-				.unwrap();
-
 			for mesh_descriptor in model_descriptor.meshes.into_iter()
 			{
-				let mesh_material_albedo_map = 
-					Texture::new(mesh_descriptor.material.albedo_path.into())
-					.load()
-					.unwrap()
-					.process_vk(vk_handle, VkFormat::VK_FORMAT_R8G8B8A8_SRGB)
-					.unwrap();
+				// let mesh_material_albedo_map = 
+				// 	match Texture::new(mesh_descriptor.material.albedo_path.clone().into()).load()
+				// 	{
+				// 		Ok(loaded_texture) =>
+				// 		{
+				// 			loaded_texture
+				// 			.process_vk(vk_handle, VkFormat::VK_FORMAT_R8G8B8A8_SRGB)
+				// 			.map_err(
+				// 				|string_error| 
+				// 				ModelLoadError::TextureLoadingError(
+				// 					mesh_descriptor.material.albedo_path.clone().into(), 
+				// 					string_error
+				// 				)
+				// 			)?
+				// 		}
+				// 		Err(_) =>
+				// 		{
+				// 			println!("Couldn't load normal map, using default");
+				// 			material_defaults.albedo_map.as_ref().unwrap().clone()
+				// 		}
+				// 	};
 
-				let mesh_material_normal_map = 
-					{
-						if mesh_descriptor.material.normal_path.is_empty()
-						{
-							default_normal_map.clone()
-						}
-						else
-						{
-							Texture::new(mesh_descriptor.material.normal_path.into())
-							.load()
-							.unwrap()
-							.process_vk(vk_handle, VkFormat::VK_FORMAT_R8G8B8A8_UNORM)
-							.unwrap()
-						}
-					};
+				// let mesh_material_normal_map = 
+				// 	match Texture::new(mesh_descriptor.material.normal_path.clone().into()).load()
+				// 	{
+				// 		Ok(loaded_texture) =>
+				// 		{
+				// 			loaded_texture
+				// 			.process_vk(vk_handle, VkFormat::VK_FORMAT_R8G8B8A8_UNORM)
+				// 			.map_err(
+				// 				|string_error| 
+				// 				ModelLoadError::TextureLoadingError(
+				// 					mesh_descriptor.material.albedo_path.clone().into(), 
+				// 					string_error
+				// 				)
+				// 			)?
+				// 		}
+				// 		Err(_) =>
+				// 		{
+				// 			println!("Couldn't load normal map, using default");
+				// 			material_defaults.normal_map.as_ref().unwrap().clone()
+				// 		}
+				// 	};
+
+				let mesh_material_albedo_map = material_defaults.albedo_map.as_ref().unwrap().clone();
+
+				let mesh_material_normal_map = material_defaults.normal_map.as_ref().unwrap().clone();
 
 				let mut vertex_vec: Vec<Vertex> = vec![];
 				let mut index_vec: Vec<u32> = vec![];
@@ -181,8 +258,10 @@ impl VulkanModel
 						name: mesh_descriptor.name,
 						material: Material {
 							name: mesh_descriptor.mtl_name, 
+							albedo_path: mesh_descriptor.material.albedo_path,
+							normal_path: mesh_descriptor.material.normal_path,
 							albedo_map: Some(mesh_material_albedo_map),
-							normal_map: None,
+							normal_map: Some(mesh_material_normal_map),
 						},
 						index_count: index_vec.len() as u32,
 						vulkan_data: Some(mesh_data)

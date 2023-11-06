@@ -2,8 +2,10 @@ use std::ops::{Deref, DerefMut};
 use std::path::PathBuf;
 use crate::pixcell::error::*;
 
-use crate::pixcell::image::Image;
+// use crate::pixcell::image::Image;
 
+use crate::pixcell::format::ImageFormat;
+use crate::pixcell::image::{GenericImage, ImageDimensions};
 use crate::pixcell::tga::TGAImage;
 use crate::vulkan::handle::VkHandle;
 use crate::vulkan::texture::create_texture_image;
@@ -14,6 +16,26 @@ use crate::vulkan::vk_bindgen::{
 };
 
 pub struct Texture<T>(T);
+
+pub struct TexturePath
+{
+	file_path: PathBuf
+}
+pub struct LoadedTexture
+{
+	image: GenericImage
+}
+
+#[derive(Clone)]
+pub struct VulkanTexture
+{
+	pub texture_image: VkImage,
+	pub texture_image_memory: VkDeviceMemory,
+	pub texture_image_view: VkImageView,
+	pub texture_sampler: VkSampler,
+
+	pub byte_size: usize,
+}
 
 impl<T> Deref for Texture<T> 
 {
@@ -41,24 +63,6 @@ impl<T: Clone> Clone for Texture<T>
     }
 }
 
-pub struct TexturePath
-{
-	file_path: PathBuf
-}
-pub struct LoadedTexture
-{
-	image: Box<dyn Image>
-}
-
-#[derive(Clone)]
-pub struct VulkanTexture
-{
-	pub texture_image: VkImage,
-	pub texture_image_memory: VkDeviceMemory,
-	pub texture_image_view: VkImageView,
-	pub texture_sampler: VkSampler,
-}
-
 impl Texture<TexturePath>
 {
 	pub fn new(in_file_path: PathBuf) -> Self
@@ -74,11 +78,13 @@ impl Texture<TexturePath>
 		{
 			Some("tga") => 
 			{
-				Ok(Texture (
-					LoadedTexture { 
-						image: Box::new(TGAImage::new(self.file_path.clone())?) 
-					}
-				))
+				Ok(
+					Texture (
+						LoadedTexture { 
+							image: TGAImage::new(self.file_path.clone())?.to_generic()
+						}
+					)
+				)
 			},
 			_ => return Err(TextureLoadError::UnsupportedFileType("None".to_owned())),
 		}
@@ -90,11 +96,12 @@ impl Texture<LoadedTexture>
 	// add a TextureProcessingError later (in this crate ?)
 	// Change this to later incorporate additional RGB & RGBA checks, not all input images are equal...
 	// None of this is error-handled btw ?
-	pub fn process_vk(self, vk_handle: &VkHandle, vk_format: VkFormat) -> Result<Texture<VulkanTexture>, ()>
+	// pub fn process_vk(self, vk_handle: &VkHandle, in_vk_format: VkFormat) -> Result<Texture<VulkanTexture>, String>
+	pub fn process_vk(self, vk_handle: &VkHandle, vk_format: VkFormat) -> Result<Texture<VulkanTexture>, String>
 	{
 		unsafe
 		{
-			let (texture_image, texture_image_memory) = create_texture_image(&vk_handle, &self.image, vk_format);
+			let (texture_image, texture_image_memory) = create_texture_image(&vk_handle, &self.image, vk_format)?;
 			let texture_image_view = create_texture_image_view(&vk_handle, &texture_image, vk_format);
 			let texture_sampler = create_texture_sampler(&vk_handle).unwrap();
 
@@ -104,10 +111,42 @@ impl Texture<LoadedTexture>
 						texture_image: texture_image, 
 						texture_image_memory: texture_image_memory, 
 						texture_image_view: texture_image_view, 
-						texture_sampler: texture_sampler
+						texture_sampler: texture_sampler,
+						byte_size: self.image.get_byte_size(),
 					}
 				)
 			)
 		}
-	}	
+	}
+
+	// pub fn downscale(mut self, factor: f32) -> Self
+	// {
+	// 	let old_image_data = self.image.get_data_u32_ref();
+	// 	let old_image_dimensions = self.image.get_dimensions();
+
+	// 	let (mut old_width, mut old_height) = 
+	// 		(old_image_dimensions.width,
+	// 		old_image_dimensions.height);
+
+	// 	let (mut new_width, mut new_height) = 
+	// 		((old_image_dimensions.width as f32 * factor) as usize, 
+	// 		(old_image_dimensions.height as f32 * factor) as usize);
+
+	// 	let mut new_image_data: Vec<u32> = vec![0u32; (new_width * new_height) as usize];
+		
+	// 	for x in 0..new_width
+	// 	{
+	// 		for y in 0..new_height
+	// 		{
+	// 			let new_sample_index = (x * new_width) + y;
+	// 			let old_sample_index = (((x as f32 / factor) as u32 * old_width) + (y as f32 / factor) as u32) as usize;
+	// 			new_image_data[new_sample_index] = old_image_data[old_sample_index];
+	// 		}
+	// 	}
+
+	// 	self.image.set_data_u32(new_image_data);
+	// 	self.image.set_dimensions(ImageDimensions{ width: new_width as _, height: new_height as _});
+
+	// 	self
+	// }
 }

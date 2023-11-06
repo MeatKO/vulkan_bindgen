@@ -2,10 +2,10 @@ use crate::vulkan::vk_bindgen::*;
 use crate::vulkan::handle::*;
 use std::ptr::null_mut as nullptr;
 
-pub unsafe fn create_framebuffer(vk_handle: &mut VkHandle)
+pub unsafe fn create_framebuffers(vk_handle: &mut VkHandle)
 {
 	// Framebuffers
-	vk_handle.swapchain_framebuffers = vec![std::mem::zeroed();  vk_handle.swapchain_image_views_vec.len()];
+	vk_handle.swapchain_framebuffers = vec![nullptr();  vk_handle.swapchain_image_views_vec.len()];
 
 	for i in 0.. vk_handle.swapchain_image_views_vec.len()
 	{
@@ -18,7 +18,7 @@ pub unsafe fn create_framebuffer(vk_handle: &mut VkHandle)
 		let framebuffer_create_info = 
 			VkFramebufferCreateInfo{
 				sType: VkStructureType::VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
-				renderPass: vk_handle.render_pass,
+				renderPass: vk_handle.render_pass, // I have no fucking idea why this is here and there is a debate @ https://github.com/KhronosGroup/Vulkan-Docs/issues/1147
 				attachmentCount: attachments.len() as _,
 				pAttachments: attachments.as_ptr(),
 				width: vk_handle.swapchain_extent.width,

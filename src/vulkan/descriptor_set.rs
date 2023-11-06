@@ -76,20 +76,6 @@ pub unsafe fn create_descriptor_sets(
 	descriptor_pool: &VkDescriptorPool,
 ) -> Result<(), String>
 {
-	// let material_vulkan_data = 
-	// 	match &mut mesh.material.vulkan_data
-	// 	{
-	// 		Some(vd) => vd,
-	// 		None => return Err(format!("Cannot execute create_descriptor_sets() for mesh '{}' with uninitialized material '{}'", mesh.name, mesh.material.name).to_owned())
-	// 	};
-
-	// let mesh_vulkan_data = 
-	// 	match &mut mesh.vulkan_data
-	// 	{
-	// 		Some(vd) => vd,
-	// 		None => return Err(format!("Cannot execute create_descriptor_sets() for uninitialized mesh '{}'", mesh.name).to_owned())
-	// 	};
-
 	let layouts: Vec<VkDescriptorSetLayout> = 
 		vec![
 			vk_handle.descriptor_set_layout; 

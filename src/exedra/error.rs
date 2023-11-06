@@ -11,6 +11,7 @@ pub enum ModelLoadError
 	MaterialFileNotFound(String, std::io::Error),
 	MaterialNotFound(String),
 	MaterialWithoutMaps(String),
+	TextureLoadingError(String, String),
 }
 
 impl fmt::Display for ModelLoadError 
@@ -27,6 +28,7 @@ impl fmt::Display for ModelLoadError
             ModelLoadError::MaterialFileNotFound(mtl_name, err) => { write!(f, "Couldn't find material file '{}' : {}", mtl_name, err) },
             ModelLoadError::MaterialNotFound(mtl_name) => { write!(f, "Couldn't find material '{}'", mtl_name) },
             ModelLoadError::MaterialWithoutMaps(mtl_name) => { write!(f, "Couldn't parse material with no maps '{}'", mtl_name) },
+			ModelLoadError::TextureLoadingError(texture_name, texture_error) => { write!(f, "Couldn't load texture '{}' err : '{}'", texture_name, texture_error) },
         }
     }
 }

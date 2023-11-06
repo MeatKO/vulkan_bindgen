@@ -25,7 +25,7 @@ use vulkan::{
 	device::create_logical_device,
 	handle::VkHandle,
 	draw::draw_frame, 
-	framebuffer::create_framebuffer, 
+	framebuffer::create_framebuffers, 
 	pipeline::create_pipeline, 
 	instance::create_instance, 
 	physical_device::create_physical_device, 
@@ -40,9 +40,10 @@ use detail_core::{
 	ui::button::UIButton,
 };
 
-use std::ptr::null_mut as nullptr;
+use core::panic;
+use std::{ptr::{null_mut as nullptr}, fs, path::{Path, PathBuf}};
 
-use crate::{cotangens::{vec3::Vec3, mat4x4}, detail_core::{model::model::{Model, VulkanModel}, ui::traits::HUDElement, texture::texture::{Texture, VulkanTexture}}, vulkan::{vk_bindgen::{VkFormat, VkCommandPoolCreateFlagBits}, wrappers::{vk_command_pool::{CommandPool, CommandPoolBuilder}, vk_command_buffer::{CommandBuffer, CommandBufferBuilder}}, shader::create_shader_module, vertex::Vertex}};
+use crate::{cotangens::{vec3::Vec3, mat4x4}, detail_core::{model::{model::{Model, VulkanModel}, material::Material}, ui::traits::HUDElement, texture::texture::{Texture, VulkanTexture}}, vulkan::{vk_bindgen::{VkFormat, VkCommandPoolCreateFlagBits}, wrappers::{vk_command_pool::{CommandPool, CommandPoolBuilder}, vk_command_buffer::{CommandBuffer, CommandBufferBuilder}}, shader::create_shader_module, vertex::Vertex}};
 use parmack::{window::event::MouseCode, handle::Handle};
 
 fn main() 
@@ -79,15 +80,6 @@ fn main()
 		vk_handle.command_pool = Some(command_pool);
 
 		vk_handle.descriptor_set_layout = create_descriptor_set_layout(&vk_handle.logical_device).unwrap();
-
-		let mut models: Vec<Model<VulkanModel>> =
-			vec![
-				// Model::new("./detail/models/valkyrie/valkyrie.obj".into()).process_vk(&vk_handle),
-				// Model::new("./detail/models/woag/woag.obj".into()).process_vk(&vk_handle),
-				// Model::new("./detail/models/earth_2/earth_2.obj".into()).process_vk(&vk_handle),
-				Model::new("./detail/models/brick_wall/brick_wall.obj".into()).process_vk(&vk_handle),
-				Model::new("./detail/models/de_inferno/de_inferno.obj".into()).process_vk(&vk_handle),
-			];
 
 		//
 		let vertex_shader_source = include_bytes!("../detail/shaders/normal/vert.spv");
@@ -138,7 +130,7 @@ fn main()
 		vk_handle.graphics_pipeline_hud = pipeline_hud;
 
 		create_depth_buffer(&mut vk_handle);
-		create_framebuffer(&mut vk_handle);
+		create_framebuffers(&mut vk_handle);
 
 		create_synchronization_structures(&mut vk_handle);
 
@@ -161,17 +153,58 @@ fn main()
 		vk_handle.command_buffer_hud_vec = command_buffer_hud;
 
 		let default_normal_map: Texture<VulkanTexture> = 
-			// Texture::new("./detail/textures/default_normal.tga".into())
 			Texture::new("./detail/textures/smiley_normal.tga".into())
 			.load()
 			.unwrap()
-			.process_vk(&vk_handle, VkFormat::VK_FORMAT_R8G8B8A8_UNORM)
+			.process_vk(
+				&vk_handle, 
+				VkFormat::VK_FORMAT_R8G8B8A8_UNORM
+			)
 			.unwrap();
 
+		let default_albedo_map: Texture<VulkanTexture> = 
+			Texture::new("./detail/textures/test.tga".into())
+			.load()
+			.unwrap()
+			.process_vk(
+				&vk_handle, 
+				VkFormat::VK_FORMAT_R8G8B8A8_SRGB
+			)
+			.unwrap();
+
+		let material_defaults =
+			Material {
+				name: "default".into(),
+				albedo_path: "unused".to_string(),
+				normal_path: "unused".to_string(),
+				albedo_map: Some(default_albedo_map.clone()),
+				normal_map: Some(default_normal_map.clone()),
+			};
+
+		let mut models: Vec<Model<VulkanModel>> =
+			vec![
+				// Model::new("./detail/models/valkyrie/valkyrie.obj".into()).process_meshes(&vk_handle, material_defaults.clone()),
+				// Model::new("./detail/models/woag/woag.obj".into()).process_meshes(&vk_handle, material_defaults.clone()),
+				// Model::new("./detail/models/earth_2/earth_2.obj".into()).process_meshes(&vk_handle, material_defaults.clone()),
+				Model::new("./detail/models/brick_wall/brick_wall.obj".into()).process_meshes(&vk_handle, material_defaults.clone()),
+				Model::new("./detail/models/de_inferno/de_inferno.obj".into()).process_meshes(&vk_handle, material_defaults.clone()),
+				// Model::new("/home/gate/Documents/Models/sponza/Main.1_Sponza/sponza.obj".into()).process_meshes(&vk_handle, material_defaults.clone()),
+				// Model::new("/home/gate/Documents/Models/sponza/Main.1_Sponza/sponza2.obj".into()).process_meshes(&vk_handle, material_defaults.clone()),
+			];
+			
 		let hud_elements: Vec<Box<dyn HUDElement>> =
 			vec![
 				Box::new(UIButton::new(50, 50, 200, 200).process_vulkan(&vk_handle, default_normal_map).unwrap())
 			];
+
+		for model in models.iter_mut()
+		{
+			match model.process_textures(&vk_handle)
+			{
+				Ok(()) => {},
+				Err(err) => { println!("couldn't parse textures for model '{}' err : '{}'", model.name, err) }
+			}
+		}
 
 		let mut pointer_pos = (0i32, 0i32);
 		let mut focus_on_gui = false;
@@ -217,7 +250,7 @@ fn main()
 
 			// println!("window size : {:?}", window.get_size());
 			pointer_pos = window.get_pointer_location();
-			println!("pointer loc : {:?}", pointer_pos);
+			// println!("pointer loc : {:?}", pointer_pos);
 
 			// if hud_elements[0].is_inside(pointer_pos.0, pointer_pos.1) 
 			// {

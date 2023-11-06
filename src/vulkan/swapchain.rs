@@ -22,7 +22,7 @@ pub unsafe fn recreate_swapchain(vk_handle: &mut VkHandle)
 	create_swapchain(vk_handle);
 	create_swapchain_image_views(vk_handle);
 	create_depth_buffer(vk_handle);
-	create_framebuffer(vk_handle);
+	create_framebuffers(vk_handle);
 }
 
 pub unsafe fn cleanup_swapchain(vk_handle: &VkHandle)

@@ -4,14 +4,14 @@ use std::path::Path;
 use crate::pixcell::format::ImageFormat;
 
 use super::error::TextureLoadError;
-use super::image::Image;
-use super::image::ImageSize;
+// use super::image::Image;
+use super::image::{ImageDimensions, GenericImage};
 
 const TGA_HEADER_SIZE: usize = 18;
 
 // http://tfc.duke.free.fr/coding/tga_specs.pdf
 #[repr(C)]
-pub struct TGAHeader
+struct TGAHeader
 {
 	id_length: u8,
 	color_map_type: u8,
@@ -21,42 +21,61 @@ pub struct TGAHeader
 	color_map_depth: u8,
 	x_origin: u16,
 	y_origin: u16,
-	pub width: u16,
-	pub height: u16,
-	pub bits_per_pixel: u8,
+	width: u16,
+	height: u16,
+	bits_per_pixel: u8,
 	image_descriptor: u8,
 }
 
 pub struct TGAImage
 {
-	pub header: TGAHeader,
+	header: TGAHeader,
 	format: ImageFormat,
-	pub data: Vec<u8>,
+	data: Vec<u8>,
+	// data: Vec<u32>,
 }
 
-impl Image for TGAImage
-{
-    fn get_data_ref(&self) -> &Vec<u8> 
-	{
-        return &self.data;
-    }
+// impl Image for TGAImage
+// {
+//     fn get_data_ref(&self) -> &Vec<u8> 
+// 	{
+//         return &self.data;
+//     }
 
-    fn get_size(&self) -> ImageSize 
-	{
-        return ImageSize{
-            width: self.header.width as u32,
-            height: self.header.height as u32,
-        };
-    }
+//     fn get_dimensions(&self) -> ImageDimensions 
+// 	{
+//         return ImageDimensions{
+//             width: self.header.width as u32,
+//             height: self.header.height as u32,
+//         };
+//     }
 
-    fn get_format(&self) -> ImageFormat 
-	{
-		return self.format.clone();
-	}
-}
+//     fn get_format(&self) -> ImageFormat 
+// 	{
+// 		return self.format.clone();
+// 	}
+
+// 	fn get_byte_size(&self) -> usize 
+// 	{
+// 		return self.data.len();
+// 	}
+// }
 
 impl TGAImage
 {
+	pub fn to_generic(self) -> GenericImage
+	{
+		return 
+			GenericImage::new( 
+				self.data, 
+				self.format, 
+				ImageDimensions{
+					width: self.header.width as u32,
+					height: self.header.height as u32,
+				}
+			)
+	}
+	
 	pub fn new<P>(tga_path: P) -> Result<TGAImage, TextureLoadError>
 	where P : AsRef<Path>
 	{
@@ -123,6 +142,7 @@ impl TGAImage
 		let image_data = file_bytes[read_offset..(read_offset + image_byte_size)].to_vec();
 
 		let final_image: Vec<u8>;
+		// let final_image: Vec<u32>;
 
 		match format
 		{
@@ -139,6 +159,8 @@ impl TGAImage
 					.map(|rgba| [rgba[2], rgba[1], rgba[0], rgba[3]])
 					.flatten()
 					.collect::<Vec<u8>>();
+					// .map(|chunk| u32::from_le_bytes(chunk.try_into().unwrap_or([0u8; 4])))
+					// .collect::<Vec<u32>>();
 			}
 			ImageFormat::RGB =>
 			{
@@ -152,8 +174,11 @@ impl TGAImage
 					image_data
 					.chunks(3)
 					.map(|rgb| [rgb[2], rgb[1], rgb[0], 255u8])
+					// .map(|rgb| [rgb[2], rgb[1], rgb[0]])
 					.flatten()
 					.collect::<Vec<u8>>();
+					// .map(|chunk| u32::from_le_bytes(chunk.try_into().unwrap_or([0u8; 4])))
+					// .collect::<Vec<u32>>();
 
 				header.bits_per_pixel = 32;
 			}
@@ -164,7 +189,9 @@ impl TGAImage
 		println!("Texture loading time : {:?}", end.duration_since(start));
 		println!("image dimensions w:{} h:{} bpp:{}", header.width, header.height, header.bits_per_pixel);
 		println!("original byte length {}", image_data.len());
-		println!("processed byte length {}", final_image.len());
+		// println!("processed byte length {}", final_image.len()); // for bytes
+		// println!("processed byte length {}", final_image.len() * 4); // for u32
+		println!("processed byte length {}", final_image.len()); // for u8
 
 		return Ok(
 			TGAImage { 
