@@ -25,8 +25,8 @@ pub unsafe fn create_uniform_buffers_hud(
 	hud_element_data: &mut VulkanButtonData,
 ) 
 {
-	// let buffer_size = size_of::<UniformBufferObjectHUD>() as u64;
-	let buffer_size = size_of::<UniformBufferObject>() as u64;
+	let buffer_size = size_of::<UniformBufferObjectHUD>() as u64;
+	// let buffer_size = size_of::<UniformBufferObject>() as u64;
 
 	hud_element_data.uniform_buffers.resize(vk_handle.frames_in_flight, nullptr());
 	hud_element_data.uniform_buffers_memory.resize(vk_handle.frames_in_flight, nullptr());
@@ -70,23 +70,8 @@ pub unsafe fn update_uniform_buffer_hud(
 ) 
 {
 	let ubo = 
-		UniformBufferObject{
-			model: Mat4x4::new_identity(1.0f32),
-			view: Mat4x4::new_identity(1.0f32),
-			// proj: Mat4x4::new_perspective(
-			// 	45.0f32.to_radians(), 
-			// 	vk_handle.swapchain_extent.width as f32 / vk_handle.swapchain_extent.height as f32, 
-			// 	0.1f32, 
-			// 	1000.0f32
-			// )
-			// proj: Mat4x4::new_orthographic(
-			// 	-1.0f32, 1.0f32,
-			// 	-1.0f32, 1.0f32,
-			// 	-1.0f32, 1.0f32,
-			// ),
+	UniformBufferObjectHUD{
 			proj: Mat4x4::new_orthographic(0.0f32, vk_handle.swapchain_extent.width as f32, 0.0f32, vk_handle.swapchain_extent.height as f32, -1.0f32, 1.0f32),
-			light_pos: Vec3::new(0.0f32),
-			view_pos: Vec3::new(0.0f32),
 		};
 	
 	std::ptr::copy_nonoverlapping(&ubo, hud_element_data.uniform_buffers_mapped[vk_handle.current_frame] as _, 1);

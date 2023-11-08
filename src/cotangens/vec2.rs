@@ -13,6 +13,17 @@ pub struct Vec2
 	pub y: f32,
 }
 
+impl Vec2
+{
+	pub fn new(value: f32) -> Vec2
+	{
+		return Vec2 { 
+			x: value, 
+			y: value, 
+		}
+	}
+}
+
 impl Hash for Vec2
 {
 	fn hash<H: Hasher>(&self, state: &mut H) 

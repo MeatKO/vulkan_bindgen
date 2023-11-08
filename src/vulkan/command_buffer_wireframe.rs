@@ -1,42 +1,43 @@
-use crate::detail_core::ui::traits::HUDElement;
+use crate::detail_core::model::model::Model;
+use crate::detail_core::model::model::VulkanModel;
 use crate::vulkan::vk_bindgen::*;
 use crate::vulkan::handle::*;
 use std::ptr::null_mut as nullptr;
 
-// pub unsafe fn create_command_buffers_hud(vk_handle: &mut VkHandle)
+// pub unsafe fn create_command_buffers(vk_handle: &mut VkHandle)
 // {
 // 	let command_buffer_count = vk_handle.frames_in_flight;
 
 // 	let command_buffer_create_info = 
 // 		VkCommandBufferAllocateInfo {
 // 			sType: VkStructureType::VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-// 			commandPool: vk_handle.command_pool.unwrap().get_command_pool_ptr(),
+// 			commandPool: vk_handle.command_pool,
 // 			level: VkCommandBufferLevel::VK_COMMAND_BUFFER_LEVEL_PRIMARY,
 // 			commandBufferCount: command_buffer_count as u32,
 // 			pNext: nullptr(),
 // 		};
 
-// 	vk_handle.command_buffer_hud_vec.resize(command_buffer_count, nullptr());
-// 	match vkAllocateCommandBuffers(vk_handle.logical_device, &command_buffer_create_info, vk_handle.command_buffer_hud_vec.as_mut_ptr())
+// 	vk_handle.command_buffer_vec.resize(command_buffer_count, nullptr());
+// 	match vkAllocateCommandBuffers(vk_handle.logical_device, &command_buffer_create_info, vk_handle.command_buffer_vec.as_mut_ptr())
 // 	{
 // 		VkResult::VK_SUCCESS => { println!("✔️ vkAllocateCommandBuffers()"); }
 // 		err => { panic!("✗ vkAllocateCommandBuffers() failed with code {:?}.", err); }
 // 	}
 // }
 
-pub unsafe fn record_command_buffer_hud(
+
+pub unsafe fn record_command_buffer_wireframe(
 	vk_handle: &VkHandle, 
 	image_index: u32, 
-	hud_elements: &Vec<Box<dyn HUDElement>>
+	models: &mut Vec<Model<VulkanModel>>
 )
 {
-	let current_command_buffer = vk_handle.command_buffer_hud_vec[vk_handle.current_frame].get_command_buffer_ptr();
+	let current_command_buffer = vk_handle.command_buffer_wireframe_vec[vk_handle.current_frame].get_command_buffer_ptr();
 
 	let command_buffer_begin_info = 
 		VkCommandBufferBeginInfo{
 			sType: VkStructureType::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
 			flags: 0,
-			// flags: VkCommandBufferUsageFlagBits::VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT as u32,
 			pInheritanceInfo: nullptr(),
 			pNext: nullptr()
 		};
@@ -52,11 +53,11 @@ pub unsafe fn record_command_buffer_hud(
 		vec![
 			VkClearValue{
 				color: VkClearColorValue{
-					float32: [0.0f32, 0.0f32, 0.0f32, 1.0f32] // THIS IS SET TO FULLY TRANSPARENT ( it doesnt matter cause loadOp is LOAD)
+					float32: [0.0f32, 0.0f32, 0.0f32, 0.0f32]
 				}
 			},
 			VkClearValue{
-				depthStencil: VkClearDepthStencilValue { // THIS CLEARS AS USUAL BTW
+				depthStencil: VkClearDepthStencilValue { 
 					depth: 1.0f32, 
 					stencil: 0,
 				}
@@ -66,8 +67,7 @@ pub unsafe fn record_command_buffer_hud(
 	let render_pass_begin_info = 
 		VkRenderPassBeginInfo{
 			sType: VkStructureType::VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-			// renderPass: vk_handle.render_pass,
-			renderPass: vk_handle.render_pass_hud,
+			renderPass: vk_handle.render_pass_wireframe,
 			framebuffer: vk_handle.swapchain_framebuffers[image_index as usize],
 			renderArea: VkRect2D { 
 					offset: VkOffset2D { x: 0, y: 0 }, 
@@ -87,8 +87,7 @@ pub unsafe fn record_command_buffer_hud(
 	vkCmdBindPipeline(
 		current_command_buffer, 
 		VkPipelineBindPoint::VK_PIPELINE_BIND_POINT_GRAPHICS, 
-		// vk_handle.graphics_pipeline
-		vk_handle.graphics_pipeline_hud
+		vk_handle.graphics_pipeline_wireframe
 	);
 
 	let viewport = 
@@ -124,10 +123,10 @@ pub unsafe fn record_command_buffer_hud(
 		&scissor
 	);
 
-	for hud_element in hud_elements.iter()
+	for model in models.iter()
 	{
 		let vulkan_data = 
-			match hud_element.get_vulkan_data()
+			match &model.aabb_vulkan_data
 			{
 				Some(vd) => vd,
 				None => continue
@@ -159,8 +158,7 @@ pub unsafe fn record_command_buffer_hud(
 		vkCmdBindDescriptorSets(
 			current_command_buffer, 
 			VkPipelineBindPoint::VK_PIPELINE_BIND_POINT_GRAPHICS, 
-			// vk_handle.pipeline_layout, 
-			vk_handle.pipeline_layout_hud, 
+			vk_handle.pipeline_layout_wireframe, 
 			0, 
 			1, 
 			&vulkan_data.descriptor_sets[vk_handle.current_frame],
@@ -170,7 +168,7 @@ pub unsafe fn record_command_buffer_hud(
 
 		vkCmdDrawIndexed(
 			current_command_buffer,
-			vulkan_data.index_count,
+			model.aabb_index_count,
 			1, 
 			0, 
 			0, 

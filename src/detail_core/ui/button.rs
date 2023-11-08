@@ -85,7 +85,7 @@ impl UIButton
 		]
 	}
 
-	pub fn process_vulkan(mut self, vk_handle: &VkHandle, texture_map: Texture<VulkanTexture>) -> Result<UIButton, ()>
+	pub fn process_vulkan(mut self, vk_handle: &VkHandle) -> Result<UIButton, ()>
 	{
 		unsafe
 		{
@@ -117,7 +117,7 @@ impl UIButton
 			create_uniform_buffers_hud(&vk_handle, &mut vulkan_data);
 
 			let descriptor_pool = create_descriptor_pool(&vk_handle).unwrap();
-			create_descriptor_sets_hud(&vk_handle, &mut vulkan_data, &texture_map, &texture_map, &descriptor_pool).unwrap();
+			create_descriptor_sets_hud(&vk_handle, &mut vulkan_data, &descriptor_pool).unwrap();
 			vulkan_data.descriptor_pool = descriptor_pool;
 			
 			self.vulkan_data = Some(vulkan_data);

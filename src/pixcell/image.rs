@@ -9,17 +9,19 @@ pub struct ImageDimensions
 
 pub struct GenericImage
 {
-	pub data: Vec<u8>,
-	// data: Vec<u32>,
+	data: Vec<u32>,
 	format: ImageFormat,
 	dimensions: ImageDimensions,
-	// pub byte_size: usize,
+}
+
+const fn size_of_item<T>(x: &[T]) -> usize {
+    std::mem::size_of::<T>()
 }
 
 impl GenericImage
 {
-	// pub fn new(data: Vec<u32>, format: ImageFormat, dimensions: ImageDimensions) -> Self
-	pub fn new(data: Vec<u8>, format: ImageFormat, dimensions: ImageDimensions) -> Self
+	pub fn new(data: Vec<u32>, format: ImageFormat, dimensions: ImageDimensions) -> Self
+	// pub fn new(data: Vec<u8>, format: ImageFormat, dimensions: ImageDimensions) -> Self
 	{
 		GenericImage { 
 			data: data, 
@@ -28,15 +30,15 @@ impl GenericImage
 		}
 	}
 
-	// pub fn set_data_u32(&mut self, new_data: Vec<u32>)
-	// {
-	// 	return self.data = new_data;
-	// }
-
-	pub fn set_data_u8(&mut self, new_data: Vec<u8>)
+	pub fn set_data_u32(&mut self, new_data: Vec<u32>)
 	{
 		return self.data = new_data;
 	}
+
+	// pub fn set_data_u8(&mut self, new_data: Vec<u8>)
+	// {
+	// 	return self.data = new_data;
+	// }
 
 	pub fn set_dimensions(&mut self, new_dimensions:ImageDimensions)
 	{
@@ -48,15 +50,15 @@ impl GenericImage
 		return self.data.as_ptr() as _
 	}
 
-	// pub fn get_data_u32_ref(&self) -> &Vec<u32>
-	// {
-	// 	return &self.data
-	// }
-
-	pub fn get_data_u8_ref(&self) -> &Vec<u8>
+	pub fn get_data_u32_ref(&self) -> &Vec<u32>
 	{
 		return &self.data
 	}
+
+	// pub fn get_data_u8_ref(&self) -> &Vec<u8>
+	// {
+	// 	return &self.data
+	// }
 
 	pub fn get_format(&self) -> ImageFormat
 	{	
@@ -70,8 +72,8 @@ impl GenericImage
 
 	pub fn get_byte_size(&self) -> usize
 	{
-		// return self.data.len() * 4
-		return self.data.len()
+		return self.data.len() * size_of_item(&self.data)
+		// return self.data.len()
 	}
 }
 

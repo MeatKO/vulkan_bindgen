@@ -40,10 +40,7 @@ use detail_core::{
 	ui::button::UIButton,
 };
 
-use core::panic;
-use std::{ptr::{null_mut as nullptr}, fs, path::{Path, PathBuf}};
-
-use crate::{cotangens::{vec3::Vec3, mat4x4}, detail_core::{model::{model::{Model, VulkanModel}, material::Material}, ui::traits::HUDElement, texture::texture::{Texture, VulkanTexture}}, vulkan::{vk_bindgen::{VkFormat, VkCommandPoolCreateFlagBits}, wrappers::{vk_command_pool::{CommandPool, CommandPoolBuilder}, vk_command_buffer::{CommandBuffer, CommandBufferBuilder}}, shader::create_shader_module, vertex::Vertex}};
+use crate::{cotangens::{vec3::Vec3, mat4x4}, detail_core::{model::{model::{Model, VulkanModel}, material::Material}, ui::traits::HUDElement, texture::texture::{Texture, VulkanTexture}, phys::aabb::AABB}, vulkan::{vk_bindgen::{VkFormat, VkCommandPoolCreateFlagBits, VkPolygonMode}, wrappers::{vk_command_pool::{CommandPool, CommandPoolBuilder}, vk_command_buffer::{CommandBuffer, CommandBufferBuilder}}, shader::create_shader_module, vertex::Vertex}};
 use parmack::{window::event::MouseCode, handle::Handle};
 
 fn main() 
@@ -81,53 +78,91 @@ fn main()
 
 		vk_handle.descriptor_set_layout = create_descriptor_set_layout(&vk_handle.logical_device).unwrap();
 
-		//
-		let vertex_shader_source = include_bytes!("../detail/shaders/normal/vert.spv");
-		let fragment_shader_source = include_bytes!("../detail/shaders/normal/frag.spv");
-		//
-		let vertex_shader_module = create_shader_module(&vk_handle, vertex_shader_source);
-		let fragment_shader_module = create_shader_module(&vk_handle, fragment_shader_source);
-		//
-		let binding_description = Vertex::get_binding_description();
-		let attribute_descriptions_vec = Vertex::get_attribute_descriptions();
-		//
-		let (pipeline_layout, render_pass, pipeline) = 
-			create_pipeline(
-				&mut vk_handle, 
-				vertex_shader_module, 
-				fragment_shader_module, 
-				binding_description, 
-				attribute_descriptions_vec, 
-				true
-			);
-		//
-		vk_handle.pipeline_layout = pipeline_layout;
-		vk_handle.render_pass = render_pass;
-		vk_handle.graphics_pipeline = pipeline;
+		// main forward shading
+		{
+			//
+			let vertex_shader_source = include_bytes!("../detail/shaders/normal/vert.spv");
+			let fragment_shader_source = include_bytes!("../detail/shaders/normal/frag.spv");
+			//
+			let vertex_shader_module = create_shader_module(&vk_handle, vertex_shader_source);
+			let fragment_shader_module = create_shader_module(&vk_handle, fragment_shader_source);
+			//
+			let binding_description = Vertex::get_binding_description();
+			let attribute_descriptions_vec = Vertex::get_attribute_descriptions();
+			//
+			let (pipeline_layout, render_pass, pipeline) = 
+				create_pipeline(
+					&mut vk_handle, 
+					vertex_shader_module, 
+					fragment_shader_module, 
+					binding_description, 
+					attribute_descriptions_vec, 
+					VkPolygonMode::VK_POLYGON_MODE_FILL, 
+					// VkPolygonMode::VK_POLYGON_MODE_LINE, 
+					true
+				);
+			//
+			vk_handle.pipeline_layout = pipeline_layout;
+			vk_handle.render_pass = render_pass;
+			vk_handle.graphics_pipeline = pipeline;
+		}
 
-		//
-		let vertex_shader_source = include_bytes!("../detail/shaders/hud/vert.spv");
-		let fragment_shader_source = include_bytes!("../detail/shaders/hud/frag.spv");
-		//
-		let vertex_shader_module = create_shader_module(&vk_handle, vertex_shader_source);
-		let fragment_shader_module = create_shader_module(&vk_handle, fragment_shader_source);
-		//
-		let binding_description = Vertex::get_binding_description();
-		let attribute_descriptions_vec = Vertex::get_attribute_descriptions();
-		//
-		let (pipeline_layout_hud, render_pass_hud, pipeline_hud) = 
-			create_pipeline(
-				&mut vk_handle, 
-				vertex_shader_module, 
-				fragment_shader_module, 
-				binding_description, 
-				attribute_descriptions_vec, 
-				false
-			);
-		//
-		vk_handle.pipeline_layout_hud = pipeline_layout_hud;
-		vk_handle.render_pass_hud = render_pass_hud;
-		vk_handle.graphics_pipeline_hud = pipeline_hud;
+		// wireframe
+		{
+			//
+			let vertex_shader_source = include_bytes!("../detail/shaders/wireframe_hitbox/vert.spv");
+			let fragment_shader_source = include_bytes!("../detail/shaders/wireframe_hitbox/frag.spv");
+			//
+			let vertex_shader_module = create_shader_module(&vk_handle, vertex_shader_source);
+			let fragment_shader_module = create_shader_module(&vk_handle, fragment_shader_source);
+			//
+			let binding_description = Vertex::get_binding_description();
+			let attribute_descriptions_vec = Vertex::get_attribute_descriptions();
+			//
+			let (pipeline_layout, render_pass, pipeline) = 
+				create_pipeline(
+					&mut vk_handle, 
+					vertex_shader_module, 
+					fragment_shader_module, 
+					binding_description, 
+					attribute_descriptions_vec, 
+					// VkPolygonMode::VK_POLYGON_MODE_FILL, 
+					VkPolygonMode::VK_POLYGON_MODE_LINE, 
+					false
+				);
+			//
+			vk_handle.pipeline_layout_wireframe = pipeline_layout;
+			vk_handle.render_pass_wireframe = render_pass;
+			vk_handle.graphics_pipeline_wireframe = pipeline;
+		}
+
+		// hud
+		{
+			//
+			let vertex_shader_source = include_bytes!("../detail/shaders/hud/vert.spv");
+			let fragment_shader_source = include_bytes!("../detail/shaders/hud/frag.spv");
+			//
+			let vertex_shader_module = create_shader_module(&vk_handle, vertex_shader_source);
+			let fragment_shader_module = create_shader_module(&vk_handle, fragment_shader_source);
+			//
+			let binding_description = Vertex::get_binding_description();
+			let attribute_descriptions_vec = Vertex::get_attribute_descriptions();
+			//
+			let (pipeline_layout_hud, render_pass_hud, pipeline_hud) = 
+				create_pipeline(
+					&mut vk_handle, 
+					vertex_shader_module, 
+					fragment_shader_module, 
+					binding_description, 
+					attribute_descriptions_vec,
+					VkPolygonMode::VK_POLYGON_MODE_FILL, 
+					false,
+				);
+			//
+			vk_handle.pipeline_layout_hud = pipeline_layout_hud;
+			vk_handle.render_pass_hud = render_pass_hud;
+			vk_handle.graphics_pipeline_hud = pipeline_hud;
+		}
 
 		create_depth_buffer(&mut vk_handle);
 		create_framebuffers(&mut vk_handle);
@@ -136,22 +171,34 @@ fn main()
 
 		let command_buffer_count = vk_handle.frames_in_flight as u32;
 
-		let command_buffer_graphics =
+		{
+			let command_buffer_graphics =
 			CommandBufferBuilder::new()
 			.with_command_pool(&vk_handle.command_pool.as_ref().unwrap())
 			.with_count(command_buffer_count)
 			.build(&vk_handle.logical_device)
 			.unwrap();
-		vk_handle.command_buffer_vec = command_buffer_graphics;
-
-		let command_buffer_hud =
+			vk_handle.command_buffer_vec = command_buffer_graphics;
+		}
+		{
+			let command_buffer_hud =
 			CommandBufferBuilder::new()
 			.with_command_pool(&vk_handle.command_pool.as_ref().unwrap())
 			.with_count(command_buffer_count)
 			.build(&vk_handle.logical_device)
 			.unwrap();
-		vk_handle.command_buffer_hud_vec = command_buffer_hud;
-
+			vk_handle.command_buffer_hud_vec = command_buffer_hud;
+		}
+		{
+			let command_buffer_wireframe =
+			CommandBufferBuilder::new()
+			.with_command_pool(&vk_handle.command_pool.as_ref().unwrap())
+			.with_count(command_buffer_count)
+			.build(&vk_handle.logical_device)
+			.unwrap();
+			vk_handle.command_buffer_wireframe_vec = command_buffer_wireframe;
+		}	
+		
 		let default_normal_map: Texture<VulkanTexture> = 
 			Texture::new("./detail/textures/smiley_normal.tga".into())
 			.load()
@@ -194,7 +241,7 @@ fn main()
 			
 		let hud_elements: Vec<Box<dyn HUDElement>> =
 			vec![
-				Box::new(UIButton::new(50, 50, 200, 200).process_vulkan(&vk_handle, default_normal_map).unwrap())
+				Box::new(UIButton::new(50, 50, 200, 200).process_vulkan(&vk_handle).unwrap())
 			];
 
 		for model in models.iter_mut()
@@ -206,18 +253,42 @@ fn main()
 			}
 		}
 
-		let mut pointer_pos = (0i32, 0i32);
 		let mut focus_on_gui = false;
-
 		let mut light_pos = Vec3::new(10.0f32);
 
 		let mut last_delta_time_ms : f64;
 		while !input_processor.should_quit() 
 		{
+			// aabb collision checking
+			{
+				for model in models.iter_mut()
+				{
+					model.aabb.color = Vec3{ x: 1.0f32, y: 1.0f32, z: 1.0f32};
+					model.aabb.position = model.translation.clone();
+				}
+
+				let mut aabb_references = models.iter_mut().map(|model| &mut model.aabb).collect::<Vec<&mut AABB>>();
+
+				for i in 0..aabb_references.len()
+				{
+					for j in i+1..aabb_references.len()
+					{
+						if aabb_references[i].check_collision(aabb_references[j])
+						{
+							aabb_references[i].color = Vec3{ x: 1.0f32, y: 0.0f32, z: 0.0f32};
+							aabb_references[j].color = Vec3{ x: 1.0f32, y: 0.0f32, z: 0.0f32};
+
+							// println!("AABBs : \n{:?} \ncollides with \n{:?}", aabb_references[i], aabb_references[j]);
+						}
+					}
+				}
+			}
+
 			let start_time = std::time::Instant::now();
 			// let absolute_current_time_stamp_ms = start_time.duration_since(vk_handle.start_time).as_secs_f32() * 1000.0f32;
 			let absolute_current_time_stamp_s = start_time.duration_since(vk_handle.start_time).as_secs_f32();
 
+			let pointer_pos = window.get_pointer_location();
 			draw_frame(&mut vk_handle, &mut models, &light_pos.clone(), &hud_elements);
 			// draw_hud(&mut vk_handle, &hud_elements);
 			// std::thread::sleep(std::time::Duration::from_millis(15));
@@ -249,7 +320,7 @@ fn main()
 			// println!("delta time : {:?}ms", last_delta_time_ms);
 
 			// println!("window size : {:?}", window.get_size());
-			pointer_pos = window.get_pointer_location();
+			
 			// println!("pointer loc : {:?}", pointer_pos);
 
 			// if hud_elements[0].is_inside(pointer_pos.0, pointer_pos.1) 

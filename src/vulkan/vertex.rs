@@ -21,6 +21,17 @@ pub struct Vertex
 
 impl Vertex
 {
+	pub fn from_position(position: Vec3) -> Vertex
+	{
+		Vertex { 
+			pos: position, 
+			uv: Vec2::new(0.0f32), 
+			normal: Vec3::new(0.0f32), 
+			tangent: Vec3::new(0.0f32), 
+			bitangent: Vec3::new(0.0f32)
+		}
+	}
+
 	pub fn get_binding_description() -> VkVertexInputBindingDescription
 	{
 		return VkVertexInputBindingDescription{

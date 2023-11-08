@@ -10,7 +10,9 @@ use crate::vulkan::uniform_buffer::*;
 use std::ptr::null_mut as nullptr;
 
 use super::command_buffer_hud::record_command_buffer_hud;
+use super::command_buffer_wireframe::record_command_buffer_wireframe;
 use super::uniform_buffer_hud::update_uniform_buffer_hud;
+use super::uniform_buffer_wireframe::update_uniform_buffer_wireframe;
 
 pub fn 	draw_frame(
 	vk_handle: &mut VkHandle, 
@@ -34,6 +36,17 @@ pub fn 	draw_frame(
 
 		for (index, model) in models.iter_mut().enumerate()
 		{
+			// model.aabb.size = model.scale.clone();
+
+			update_uniform_buffer_wireframe(
+				vk_handle, 
+				model.aabb_vulkan_data.as_ref().unwrap(), 
+				&model.aabb.size,
+				&model.translation, 
+				&Vec3::new(0.0f32), 
+				&model.aabb.color,
+			);
+
 			for mesh in &model.meshes
 			{
 				let vulkan_data = 
@@ -62,6 +75,7 @@ pub fn 	draw_frame(
 		vk_handle.command_buffer_vec[vk_handle.current_frame].reset(None);
 
 		record_command_buffer(vk_handle, image_index, models);
+		record_command_buffer_wireframe(vk_handle, image_index, models);
 		record_command_buffer_hud(vk_handle, image_index, hud_elements);
 
 		let wait_semaphore_vec = vec![vk_handle.image_available_semaphore_vec[vk_handle.current_frame]];
@@ -71,6 +85,7 @@ pub fn 	draw_frame(
 		let command_buffers = 
 			vec![
 				vk_handle.command_buffer_vec[vk_handle.current_frame].get_command_buffer_ptr(),
+				vk_handle.command_buffer_wireframe_vec[vk_handle.current_frame].get_command_buffer_ptr(),
 				vk_handle.command_buffer_hud_vec[vk_handle.current_frame].get_command_buffer_ptr(),
 			];
 

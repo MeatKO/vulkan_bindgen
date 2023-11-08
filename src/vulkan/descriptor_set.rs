@@ -79,7 +79,7 @@ pub unsafe fn create_descriptor_sets(
 	let layouts: Vec<VkDescriptorSetLayout> = 
 		vec![
 			vk_handle.descriptor_set_layout; 
-			vk_handle.frames_in_flight
+			vk_handle.frames_in_flight // size
 		];
 
 	let descriptor_set_allocate_info = 
@@ -91,7 +91,11 @@ pub unsafe fn create_descriptor_sets(
 			pNext: nullptr()
 		};
 
-	mesh_data.descriptor_sets = vec![nullptr(); vk_handle.frames_in_flight];
+	mesh_data.descriptor_sets = 
+		vec![
+			nullptr(); 
+			vk_handle.frames_in_flight
+		];
 
 	match vkAllocateDescriptorSets(vk_handle.logical_device, &descriptor_set_allocate_info, mesh_data.descriptor_sets.as_mut_ptr())
 	{

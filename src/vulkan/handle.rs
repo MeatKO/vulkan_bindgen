@@ -47,6 +47,10 @@ pub struct VkHandle<'a>
 	pub graphics_pipeline_hud: VkPipeline,
 	pub pipeline_layout_hud: VkPipelineLayout,
 
+	pub render_pass_wireframe: VkRenderPass,
+	pub graphics_pipeline_wireframe: VkPipeline,
+	pub pipeline_layout_wireframe: VkPipelineLayout,
+
 	pub queue_handle: QueueHandle,
 
 	pub queue_family_indices: Vec<u32>,
@@ -62,6 +66,7 @@ pub struct VkHandle<'a>
 	// pub command_pool: CommandPool<'a>,
 	pub command_buffer_vec: Vec<CommandBuffer<'a>>,
 	pub command_buffer_hud_vec: Vec<CommandBuffer<'a>>,
+	pub command_buffer_wireframe_vec: Vec<CommandBuffer<'a>>,
 
 	pub image_available_semaphore_vec: Vec<VkSemaphore>,
 	pub rendering_finished_semaphore_vec: Vec<VkSemaphore>,
@@ -137,20 +142,30 @@ impl<'a> VkHandle<'a>
 			swapchain_framebuffers: vec![],
 			queue_handle: QueueHandle::default(),
 			descriptor_set_layout: nullptr(),
+
 			render_pass: nullptr(),
 			graphics_pipeline: nullptr(),
 			pipeline_layout: nullptr(),
+
 			render_pass_hud: nullptr(),
 			graphics_pipeline_hud: nullptr(),
 			pipeline_layout_hud: nullptr(),
+
+			render_pass_wireframe: nullptr(),
+			graphics_pipeline_wireframe: nullptr(),
+			pipeline_layout_wireframe: nullptr(),
+
 			queue_family_indices: vec![],
 			graphics_queue: nullptr(),
 			presentation_queue: nullptr(),
 			// command_pool: unsafe { std::mem::MaybeUninit::zeroed },
 			command_pool: None,
 			// command_pool_hud: nullptr(),
+
 			command_buffer_vec: vec![],
 			command_buffer_hud_vec: vec![],
+			command_buffer_wireframe_vec: vec![],
+
 			image_available_semaphore_vec: vec![],
 			rendering_finished_semaphore_vec: vec![],
 			in_flight_fence_vec: vec![],

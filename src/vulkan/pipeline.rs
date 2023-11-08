@@ -12,6 +12,7 @@ pub unsafe fn create_pipeline(
 	fragment_shader_module: VkShaderModule,
 	binding_description: VkVertexInputBindingDescription,
 	attribute_descriptions_vec: Vec<VkVertexInputAttributeDescription>,
+	polygon_mode: VkPolygonMode,
 	first_pass: bool, 
 ) -> (VkPipelineLayout, VkRenderPass, VkPipeline)
 {
@@ -89,7 +90,8 @@ pub unsafe fn create_pipeline(
 			sType: VkStructureType::VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
 			depthClampEnable: VK_FALSE,
 			rasterizerDiscardEnable: VK_FALSE,
-			polygonMode: VkPolygonMode::VK_POLYGON_MODE_FILL,
+			// polygonMode: VkPolygonMode::VK_POLYGON_MODE_FILL,
+			polygonMode: polygon_mode,
 			lineWidth: 1.0f32,
 			// cullMode: VkCullModeFlagBits::VK_CULL_MODE_BACK_BIT as u32,
 			cullMode: VkCullModeFlagBits::VK_CULL_MODE_NONE as u32,
@@ -201,7 +203,7 @@ pub unsafe fn create_pipeline(
 			format: find_depth_format(vk_handle),
 			samples: VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT,
 			loadOp: VkAttachmentLoadOp::VK_ATTACHMENT_LOAD_OP_CLEAR,
-			storeOp: VkAttachmentStoreOp::VK_ATTACHMENT_STORE_OP_DONT_CARE,
+			storeOp: VkAttachmentStoreOp::VK_ATTACHMENT_STORE_OP_STORE,
 			stencilLoadOp: VkAttachmentLoadOp::VK_ATTACHMENT_LOAD_OP_DONT_CARE,
 			stencilStoreOp: VkAttachmentStoreOp::VK_ATTACHMENT_STORE_OP_DONT_CARE,
 			initialLayout: VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED,

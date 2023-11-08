@@ -7,6 +7,10 @@ use super::error::TextureLoadError;
 // use super::image::Image;
 use super::image::{ImageDimensions, GenericImage};
 
+const fn size_of_item<T>(x: &[T]) -> usize {
+    std::mem::size_of::<T>()
+}
+
 const TGA_HEADER_SIZE: usize = 18;
 
 // http://tfc.duke.free.fr/coding/tga_specs.pdf
@@ -31,8 +35,8 @@ pub struct TGAImage
 {
 	header: TGAHeader,
 	format: ImageFormat,
-	data: Vec<u8>,
-	// data: Vec<u32>,
+	// data: Vec<u8>,
+	data: Vec<u32>,
 }
 
 // impl Image for TGAImage
@@ -141,8 +145,8 @@ impl TGAImage
 
 		let image_data = file_bytes[read_offset..(read_offset + image_byte_size)].to_vec();
 
-		let final_image: Vec<u8>;
-		// let final_image: Vec<u32>;
+		// let final_image: Vec<u8>;
+		let final_image: Vec<u32>;
 
 		match format
 		{
@@ -156,11 +160,11 @@ impl TGAImage
 				final_image = 
 					image_data
 					.chunks(4)
-					.map(|rgba| [rgba[2], rgba[1], rgba[0], rgba[3]])
-					.flatten()
-					.collect::<Vec<u8>>();
-					// .map(|chunk| u32::from_le_bytes(chunk.try_into().unwrap_or([0u8; 4])))
-					// .collect::<Vec<u32>>();
+					// .map(|rgba| [rgba[2], rgba[1], rgba[0], rgba[3]])
+					// .flatten()
+					// .collect::<Vec<u8>>();
+					.map(|chunk| u32::from_le_bytes(chunk.try_into().unwrap_or([0u8; 4])))
+					.collect::<Vec<u32>>();
 			}
 			ImageFormat::RGB =>
 			{
@@ -175,10 +179,10 @@ impl TGAImage
 					.chunks(3)
 					.map(|rgb| [rgb[2], rgb[1], rgb[0], 255u8])
 					// .map(|rgb| [rgb[2], rgb[1], rgb[0]])
-					.flatten()
-					.collect::<Vec<u8>>();
-					// .map(|chunk| u32::from_le_bytes(chunk.try_into().unwrap_or([0u8; 4])))
-					// .collect::<Vec<u32>>();
+					// .flatten()
+					// .collect::<Vec<u8>>();
+					.map(|chunk| u32::from_le_bytes(chunk.try_into().unwrap_or([0u8; 4])))
+					.collect::<Vec<u32>>();
 
 				header.bits_per_pixel = 32;
 			}
@@ -189,9 +193,7 @@ impl TGAImage
 		println!("Texture loading time : {:?}", end.duration_since(start));
 		println!("image dimensions w:{} h:{} bpp:{}", header.width, header.height, header.bits_per_pixel);
 		println!("original byte length {}", image_data.len());
-		// println!("processed byte length {}", final_image.len()); // for bytes
-		// println!("processed byte length {}", final_image.len() * 4); // for u32
-		println!("processed byte length {}", final_image.len()); // for u8
+		println!("processed byte length {}", final_image.len() * size_of_item(&final_image)); // for u8
 
 		return Ok(
 			TGAImage { 

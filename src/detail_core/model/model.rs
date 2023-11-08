@@ -1,6 +1,6 @@
 use std::{ptr::null_mut as nullptr, ops::{Deref, DerefMut}, path::PathBuf};
 
-use crate::{cotangens::{vec3::*, vec2::Vec2}, exedra::{error::ModelLoadError, model_descriptor::ModelDescriptor}, detail_core::texture::texture::{Texture, VulkanTexture}, vulkan::{handle::VkHandle, vertex::{create_vertex_buffer, Vertex}, index::create_index_buffer, descriptor_set::create_descriptor_sets, descriptor_pool::create_descriptor_pool, uniform_buffer::create_uniform_buffers, vk_bindgen::VkFormat}};
+use crate::{cotangens::{vec3::*, vec2::Vec2}, exedra::{error::ModelLoadError, model_descriptor::ModelDescriptor}, detail_core::{texture::texture::{Texture, VulkanTexture}, phys::aabb::AABB}, vulkan::{handle::VkHandle, vertex::{create_vertex_buffer, Vertex}, index::create_index_buffer, descriptor_set::create_descriptor_sets, descriptor_pool::create_descriptor_pool, uniform_buffer::create_uniform_buffers, vk_bindgen::VkFormat, descriptor_set_wireframe::create_descriptor_sets_wireframe}};
 
 use super::{mesh::{Mesh, VulkanMeshData}, material::Material};
 
@@ -48,6 +48,10 @@ pub struct VulkanModel
 	pub scale: Vec3,
 	pub translation: Vec3,
 	pub rotation: Vec3,
+
+	pub aabb: AABB,
+	pub aabb_vulkan_data: Option<VulkanMeshData>,
+	pub aabb_index_count: u32,
 }
 
 impl VulkanModel
@@ -119,60 +123,55 @@ impl VulkanModel
 		unsafe
 		{
 			let mut out_model = 
-			VulkanModel{
-				name: model_descriptor.name,
-				meshes: vec![],
-				scale: Vec3::new(1.0f32),
-				translation: Vec3::new(0.0f32),
-				rotation: Vec3::new(0.0f32),
-			};
+				VulkanModel{
+					name: model_descriptor.name,
+					meshes: vec![],
+					scale: Vec3::new(1.0f32),
+					translation: Vec3::new(0.0f32),
+					rotation: Vec3::new(0.0f32),
+					aabb: AABB::new(),
+					aabb_vulkan_data: None,
+					aabb_index_count: 0u32,
+				};
+			
+			// process the aabb box of the model
+			{
+				let (vertex_vec, index_vec) = AABB::new().get_geometry();
 
+				let (vertex_buffer, vertex_buffer_memory) =
+					create_vertex_buffer(&vk_handle, &vertex_vec)
+					.unwrap();
+		
+				let (index_buffer, index_buffer_memory) =
+					create_index_buffer(&vk_handle, &index_vec)
+					.unwrap();
+
+				let mut mesh_data =
+					VulkanMeshData{
+						vertex_buffer: vertex_buffer,
+						vertex_buffer_memory: vertex_buffer_memory,
+						index_buffer: index_buffer,
+						index_buffer_memory: index_buffer_memory,
+						uniform_buffers: vec![],
+						uniform_buffers_memory: vec![],
+						uniform_buffers_mapped: vec![],
+						descriptor_pool: nullptr(),
+						descriptor_sets: vec![],
+					};
+
+				create_uniform_buffers(&vk_handle, &mut mesh_data);
+
+				let descriptor_pool = create_descriptor_pool(&vk_handle).unwrap();
+				create_descriptor_sets_wireframe(&vk_handle, &mut mesh_data, &descriptor_pool).unwrap();
+				mesh_data.descriptor_pool = descriptor_pool;
+
+				out_model.aabb_vulkan_data = Some(mesh_data);
+				out_model.aabb_index_count = index_vec.len() as _;
+			}
+
+			// process all the meshes of the model
 			for mesh_descriptor in model_descriptor.meshes.into_iter()
 			{
-				// let mesh_material_albedo_map = 
-				// 	match Texture::new(mesh_descriptor.material.albedo_path.clone().into()).load()
-				// 	{
-				// 		Ok(loaded_texture) =>
-				// 		{
-				// 			loaded_texture
-				// 			.process_vk(vk_handle, VkFormat::VK_FORMAT_R8G8B8A8_SRGB)
-				// 			.map_err(
-				// 				|string_error| 
-				// 				ModelLoadError::TextureLoadingError(
-				// 					mesh_descriptor.material.albedo_path.clone().into(), 
-				// 					string_error
-				// 				)
-				// 			)?
-				// 		}
-				// 		Err(_) =>
-				// 		{
-				// 			println!("Couldn't load normal map, using default");
-				// 			material_defaults.albedo_map.as_ref().unwrap().clone()
-				// 		}
-				// 	};
-
-				// let mesh_material_normal_map = 
-				// 	match Texture::new(mesh_descriptor.material.normal_path.clone().into()).load()
-				// 	{
-				// 		Ok(loaded_texture) =>
-				// 		{
-				// 			loaded_texture
-				// 			.process_vk(vk_handle, VkFormat::VK_FORMAT_R8G8B8A8_UNORM)
-				// 			.map_err(
-				// 				|string_error| 
-				// 				ModelLoadError::TextureLoadingError(
-				// 					mesh_descriptor.material.albedo_path.clone().into(), 
-				// 					string_error
-				// 				)
-				// 			)?
-				// 		}
-				// 		Err(_) =>
-				// 		{
-				// 			println!("Couldn't load normal map, using default");
-				// 			material_defaults.normal_map.as_ref().unwrap().clone()
-				// 		}
-				// 	};
-
 				let mesh_material_albedo_map = material_defaults.albedo_map.as_ref().unwrap().clone();
 
 				let mesh_material_normal_map = material_defaults.normal_map.as_ref().unwrap().clone();
