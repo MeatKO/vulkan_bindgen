@@ -40,7 +40,7 @@ use detail_core::{
 	ui::button::UIButton,
 };
 
-use crate::{cotangens::{vec3::Vec3, mat4x4}, detail_core::{model::{model::{Model, VulkanModel}, material::Material}, ui::traits::HUDElement, texture::texture::{Texture, VulkanTexture}, phys::aabb::AABB}, vulkan::{vk_bindgen::{VkFormat, VkCommandPoolCreateFlagBits, VkPolygonMode}, wrappers::{vk_command_pool::{CommandPool, CommandPoolBuilder}, vk_command_buffer::{CommandBuffer, CommandBufferBuilder}}, shader::create_shader_module, vertex::Vertex}};
+use crate::{cotangens::{vec3::Vec3, mat4x4}, detail_core::{model::{model::{Model, VulkanModel}, material::Material}, ui::traits::HUDElement, texture::texture::{Texture, VulkanTexture}, phys::{aabb::AABB, system::run_physics}}, vulkan::{vk_bindgen::{VkFormat, VkCommandPoolCreateFlagBits, VkPolygonMode}, wrappers::{vk_command_pool::{CommandPool, CommandPoolBuilder}, vk_command_buffer::{CommandBuffer, CommandBufferBuilder}}, shader::create_shader_module, vertex::Vertex}};
 use parmack::{window::event::MouseCode, handle::Handle};
 
 fn main() 
@@ -238,6 +238,8 @@ fn main()
 				// Model::new("/home/gate/Documents/Models/sponza/Main.1_Sponza/sponza.obj".into()).process_meshes(&vk_handle, material_defaults.clone()),
 				// Model::new("/home/gate/Documents/Models/sponza/Main.1_Sponza/sponza2.obj".into()).process_meshes(&vk_handle, material_defaults.clone()),
 			];
+
+		models[1].aabb.is_static = true;
 			
 		let hud_elements: Vec<Box<dyn HUDElement>> =
 			vec![
@@ -261,27 +263,8 @@ fn main()
 		{
 			// aabb collision checking
 			{
-				for model in models.iter_mut()
-				{
-					model.aabb.color = Vec3{ x: 1.0f32, y: 1.0f32, z: 1.0f32};
-					// model.aabb.position = model.translation.clone();
-				}
-
 				let mut aabb_references = models.iter_mut().map(|model| &mut model.aabb).collect::<Vec<&mut AABB>>();
-
-				for i in 0..aabb_references.len()
-				{
-					for j in i+1..aabb_references.len()
-					{
-						if aabb_references[i].check_collision(aabb_references[j])
-						{
-							aabb_references[i].color = Vec3{ x: 1.0f32, y: 0.0f32, z: 0.0f32};
-							aabb_references[j].color = Vec3{ x: 1.0f32, y: 0.0f32, z: 0.0f32};
-
-							// println!("AABBs : \n{:?} \ncollides with \n{:?}", aabb_references[i], aabb_references[j]);
-						}
-					}
-				}
+				run_physics(&mut aabb_references, 1f64);
 			}
 
 			let start_time = std::time::Instant::now();
@@ -301,11 +284,12 @@ fn main()
 			{
 				if vk_handle.mouse_input_buffer.is_pressed(MouseCode::Left as u8)
 				{
-					models[0].aabb.position = &vk_handle.camera.get_position() + &(&vk_handle.camera.get_front() * &4.0f32);
+					models[0].aabb.translation = vk_handle.camera.get_position() + vk_handle.camera.get_front() * 4.0f32;
+					models[0].aabb.velocity = Vec3::new(0.0f32);
 				}
 				if vk_handle.mouse_input_buffer.is_pressed(MouseCode::Right as u8)
 				{
-					light_pos = &vk_handle.camera.get_position() + &(&vk_handle.camera.get_front() * &4.0f32);
+					light_pos = vk_handle.camera.get_position() + vk_handle.camera.get_front() * 4.0f32;
 					// models[0].rotation = Vec3{ x: 0.0f32, y: vk_handle.camera.get_rotation().y - 90.0f32, z: 0.0f32};// + &(&vk_handle.camera.get_front() * &10.0f32);
 				}
 

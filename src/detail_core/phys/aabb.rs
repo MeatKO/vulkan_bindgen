@@ -1,76 +1,50 @@
 use crate::{cotangens::vec3::Vec3, vulkan::vertex::Vertex};
 
 #[derive(Debug)]
-pub struct AABB
+pub struct AABB 
 {
-	pub position: Vec3,
-	pub size: Vec3,
 	pub color: Vec3,
-	pub index_count: u32,
+
+    pub translation: Vec3,
+    pub size: Vec3,
+    pub velocity: Vec3,
+    pub mass: f32,
+    pub is_static: bool,
+    pub damping: f32,
+    pub restitution: f32, // The bounciness of the object
 }
 
-impl AABB
+impl AABB 
 {
-	pub fn new() -> AABB
-	{
-		AABB {
-			position: Vec3::new(1.0f32),
-			size: Vec3::new(1.0f32),
+    // Constructor that also initializes the half-size
+    pub fn new(translation: &Vec3, size: &Vec3, velocity: Vec3, mass: f32, is_static: bool, damping: f32, restitution: f32) -> AABB 
+    {
+        AABB 
+        {
 			color: Vec3::new(1.0f32),
-			index_count: 36,
-		}
-	}
-
-	pub fn check_collision(&self, other: &AABB) -> bool 
-	{
-		let self_min = Vec3
-        {
-            x: self.position.x - self.size.x,
-            y: self.position.y - self.size.y,
-            z: self.position.z - self.size.z,
-        };
-
-        let self_max = Vec3
-        {
-            x: self.position.x + self.size.x,
-            y: self.position.y + self.size.y,
-            z: self.position.z + self.size.z,
-        };
-
-        let other_min = Vec3
-        {
-            x: other.position.x - other.size.x,
-            y: other.position.y - other.size.y,
-            z: other.position.z - other.size.z,
-        };
-
-        let other_max = Vec3
-        {
-            x: other.position.x + other.size.x,
-            y: other.position.y + other.size.y,
-            z: other.position.z + other.size.z,
-        };
-
-        // Check for overlap along the x-axis
-        if self_max.x < other_min.x || self_min.x > other_max.x 
-		{
-            return false;
+            translation: translation.clone(),
+            size: size.clone(),
+            velocity: velocity,
+            mass: mass,
+            is_static: is_static,
+            damping: damping,
+            restitution: restitution,
         }
+    }
 
-        // Check for overlap along the y-axis
-        if self_max.y < other_min.y || self_min.y > other_max.y 
-		{
-            return false;
+	pub fn new_empty() -> AABB 
+    {
+        AABB 
+        {
+			color: Vec3::new(1.0f32),
+            translation: Vec3::new(0.0f32),
+            size: Vec3::new(1.0f32),
+            velocity: Vec3::new(0.0f32),
+            mass: 1.0f32,
+            is_static: false,
+            damping: 0.5,
+            restitution: 0.9,
         }
-
-        // Check for overlap along the z-axis
-        if self_max.z < other_min.z || self_min.z > other_max.z 
-		{
-            return false;
-        }
-
-        // If we have overlap along all three axes, the AABBs are colliding
-        true
     }
 
 	pub fn get_geometry(&self) -> (Vec<Vertex>, Vec<u32>)
@@ -105,4 +79,89 @@ impl AABB
 
 		(out_vertices, out_indices)
 	}
+
+    // Method to compute penetration depth
+    // fn compute_penetration(&self, other: &AABB) -> Vec3 
+    pub fn compute_penetration(&self, other: &AABB) -> Vec3 
+    {
+        Vec3 
+        {
+            x: (other.translation.x - self.translation.x).abs() - self.size.x - other.size.x,
+            y: (other.translation.y - self.translation.y).abs() - self.size.y - other.size.y,
+            z: (other.translation.z - self.translation.z).abs() - self.size.z - other.size.z,
+        }.negate()
+    }
+
+    // New collision response method
+    pub fn check_and_respond_collision(&mut self, other: &AABB) 
+    {
+        if self.is_static 
+        {
+            // Static objects do not move or respond to collisions
+            return;
+        }
+
+        let penetration = self.compute_penetration(other);
+
+        if penetration.x > 0.0 && penetration.y > 0.0 && penetration.z > 0.0 
+        {
+            // Find the axis with the minimal penetration
+            let axis_of_least_penetration = 
+				if penetration.x.min(penetration.y).min(penetration.z) == penetration.x 
+				{ 
+					"x" 
+				} 
+				else if penetration.x.min(penetration.y).min(penetration.z) == penetration.y 
+				{ 
+					"y" 
+				} 
+				else 
+				{ 
+					"z" 
+				};
+
+            // Reflect velocity vector based on the axis of collision
+            match axis_of_least_penetration 
+            {
+                "x" => self.velocity.x = -self.velocity.x * self.restitution,
+                "y" => self.velocity.y = -self.velocity.y * self.restitution,
+                "z" => self.velocity.z = -self.velocity.z * self.restitution,
+                _ => {},
+            }
+
+            // Correct the translation to avoid sinking into the other AABB due to penetration
+            // match axis_of_least_penetration 
+            // {
+            //     "x" => self.translation.x += penetration.x,
+            //     "y" => self.translation.y += penetration.y,
+            //     "z" => self.translation.z += penetration.z,
+            //     _ => {},
+            // }
+        }
+    }
+
+	pub fn apply_gravity(&mut self, delta_time_ms: f32)
+    {
+        let gravity = Vec3 { x: 0.0, y: -9.81, z: 0.0 };
+
+        if !self.is_static
+        {
+            self.velocity += gravity * (delta_time_ms / 1000f32);
+        }
+    }
+
+    // Method to update the AABB considering gravity and collisions
+    pub fn update(&mut self, other: &AABB, dt: f32) 
+    {
+        // Apply gravity and update translation only if the object is not static
+        if !self.is_static 
+        {
+            // Assuming apply_gravity is a method that updates self.velocity
+            self.apply_gravity(dt); 
+            // Apply damping linearly instead of using the power function
+            self.velocity *= 1.0 - (self.damping * dt);
+            self.translation += self.velocity * dt;
+            self.check_and_respond_collision(other);
+        }
+    }
 }

@@ -43,7 +43,7 @@ pub fn 	draw_frame(
 				model.aabb_vulkan_data.as_ref().unwrap(), 
 				&model.aabb.size,
 				// &model.translation, 
-				&model.aabb.position, 
+				&model.aabb.translation, 
 				&Vec3::new(0.0f32), 
 				&model.aabb.color,
 			);
@@ -57,7 +57,7 @@ pub fn 	draw_frame(
 						None => continue
 					};
 
-				update_uniform_buffer(vk_handle, vulkan_data, index, &model.scale, &model.aabb.position, &model.rotation, light_pos);
+				update_uniform_buffer(vk_handle, vulkan_data, index, &model.scale, &model.aabb.translation, &model.rotation, light_pos);
 			}
 		}
 		for hud_element in hud_elements.iter()

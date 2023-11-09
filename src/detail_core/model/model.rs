@@ -129,14 +129,14 @@ impl VulkanModel
 					scale: Vec3::new(1.0f32),
 					translation: Vec3::new(0.0f32),
 					rotation: Vec3::new(0.0f32),
-					aabb: AABB::new(),
+					aabb: AABB::new_empty(),
 					aabb_vulkan_data: None,
 					aabb_index_count: 0u32,
 				};
 			
 			// process the aabb box of the model
 			{
-				let (vertex_vec, index_vec) = AABB::new().get_geometry();
+				let (vertex_vec, index_vec) = AABB::new_empty().get_geometry();
 
 				let (vertex_buffer, vertex_buffer_memory) =
 					create_vertex_buffer(&vk_handle, &vertex_vec)
@@ -201,11 +201,11 @@ impl VulkanModel
 
 				for triangle_points in vertex_vec.chunks_mut(3)
 				{
-					let edge_1: Vec3 = &triangle_points[1].pos - &triangle_points[0].pos;
-					let edge_2: Vec3 = &triangle_points[2].pos - &triangle_points[0].pos;
+					let edge_1: Vec3 = triangle_points[1].pos - triangle_points[0].pos;
+					let edge_2: Vec3 = triangle_points[2].pos - triangle_points[0].pos;
 
-					let delta_uv_1: Vec2 = &triangle_points[1].uv - &triangle_points[0].uv;
-					let delta_uv_2: Vec2 = &triangle_points[2].uv - &triangle_points[0].uv;
+					let delta_uv_1: Vec2 = triangle_points[1].uv - triangle_points[0].uv;
+					let delta_uv_2: Vec2 = triangle_points[2].uv - triangle_points[0].uv;
 
 					let f = 1.0f32 / (delta_uv_1.x * delta_uv_2.y - delta_uv_2.x * delta_uv_1.y);
 					let mut tangent = Vec3::new(0.0f32);
