@@ -255,8 +255,8 @@ fn main()
 
 		let mut focus_on_gui = false;
 		let mut light_pos = Vec3::new(10.0f32);
-
 		let mut last_delta_time_ms : f64;
+
 		while !input_processor.should_quit() 
 		{
 			// aabb collision checking
@@ -264,7 +264,7 @@ fn main()
 				for model in models.iter_mut()
 				{
 					model.aabb.color = Vec3{ x: 1.0f32, y: 1.0f32, z: 1.0f32};
-					model.aabb.position = model.translation.clone();
+					// model.aabb.position = model.translation.clone();
 				}
 
 				let mut aabb_references = models.iter_mut().map(|model| &mut model.aabb).collect::<Vec<&mut AABB>>();
@@ -301,7 +301,7 @@ fn main()
 			{
 				if vk_handle.mouse_input_buffer.is_pressed(MouseCode::Left as u8)
 				{
-					models[0].translation = &vk_handle.camera.get_position() + &(&vk_handle.camera.get_front() * &4.0f32);
+					models[0].aabb.position = &vk_handle.camera.get_position() + &(&vk_handle.camera.get_front() * &4.0f32);
 				}
 				if vk_handle.mouse_input_buffer.is_pressed(MouseCode::Right as u8)
 				{
