@@ -1,5 +1,5 @@
 use std::ops::{
-	Mul, AddAssign, SubAssign, Add, Sub, MulAssign,
+	Mul, AddAssign, SubAssign, Add, Sub, MulAssign, Div,
 };
 use std::cmp::Eq;
 use std::hash::{
@@ -47,12 +47,17 @@ impl Vec3
 
 	pub fn normalize(&self) -> Self
 	{
-		let self_len = self.len();
+		let mut self_len = self.len();
+
+		if self_len == 0.0f32
+		{
+			self_len = 1.0f32;
+		}
 
 		return Vec3 { 
 			x: self.x / self_len, 
 			y: self.y / self_len, 
-			z: self.z / self_len 
+			z: self.z / self_len,
 		}
 	}
 
@@ -135,6 +140,24 @@ where
             x: self.x * factor,
             y: self.y * factor,
             z: self.z * factor,
+        }
+    }
+}
+
+impl<T> Div<T> for Vec3
+where
+    T: Into<f32>
+{
+    type Output = Self;
+
+    fn div(self, factor: T) -> Self
+    {
+        let factor = factor.into();
+        Vec3 
+        {
+            x: self.x / factor,
+            y: self.y / factor,
+            z: self.z / factor,
         }
     }
 }

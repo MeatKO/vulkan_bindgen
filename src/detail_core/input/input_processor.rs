@@ -1,9 +1,11 @@
+use parmack::window::event::MouseCode;
 use parmack::window::window_handle::WindowHandle;
 use parmack::window::event::WindowEvent;
 use parmack::window::event::WindowActions;
 use parmack::window::event::KeyCode;
 use parmack::handle::Handle;
 
+use crate::cotangens::vec3::Vec3;
 use crate::vulkan::handle::VkHandle;
 
 pub struct InputProcessor
@@ -35,6 +37,7 @@ impl InputProcessor
 		window: &mut WindowHandle, 
 		vk_handle: &mut VkHandle,
 		focus_on_gui: &mut bool,
+		picked_object_info: &mut Option<(usize, f32, Vec3)>,
 		delta_time_ms: f32, 
 	)
 	{
@@ -47,6 +50,22 @@ impl InputProcessor
 			{
 				WindowEvent::MousePress(mouse_code, x, y) =>
 				{
+					match picked_object_info.as_mut()
+					{
+						Some(object_info) =>
+						{
+							if mouse_code == MouseCode::ScrollDown
+							{
+								object_info.1 -= 1000.0f32 * (delta_time_ms / 1000.0f32);
+							}
+							if mouse_code == MouseCode::ScrollUp
+							{
+								object_info.1  += 1000.0f32 * (delta_time_ms / 1000.0f32);
+							}
+						}
+						None => {}
+					}
+
 					vk_handle.mouse_input_buffer.set_key(mouse_code as u8, absolute_current_time_stamp_ms);
 				}
 				WindowEvent::MouseRelease(mouse_code, x, y) =>

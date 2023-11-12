@@ -8,7 +8,6 @@ pub struct AABB
     pub translation: Vec3,
     pub scale: Vec3,
     pub velocity: Vec3,
-    pub pressure_force: Vec3,
     pub mass: f32,
     pub is_static: bool,
     pub damping: f32,
@@ -18,7 +17,7 @@ pub struct AABB
 impl AABB 
 {
     // Constructor that also initializes the half-size
-    pub fn new(translation: &Vec3, size: &Vec3, velocity: Vec3, pressure: Vec3, mass: f32, is_static: bool, damping: f32, restitution: f32) -> AABB 
+    pub fn new(translation: &Vec3, size: &Vec3, velocity: Vec3, mass: f32, is_static: bool, damping: f32, restitution: f32) -> AABB 
     {
         AABB 
         {
@@ -26,7 +25,6 @@ impl AABB
             translation: translation.clone(),
             scale: size.clone(),
             velocity: velocity,
-            pressure_force: pressure,
             mass: mass,
             is_static: is_static,
             damping: damping,
@@ -42,7 +40,6 @@ impl AABB
             translation: Vec3::new(0.0f32),
             scale: Vec3::new(1.0f32),
             velocity: Vec3::new(0.0f32),
-            pressure_force: Vec3::new(0.0f32),
             mass: 1.0f32,
             is_static: false,
             damping: 0.5,
@@ -95,61 +92,76 @@ impl AABB
         }.negate()
     }
 
-	// gives camera-relative coordinate of the nearest penetration
-	pub fn raycast_hit(&self, ray_origin: Vec3, ray_direction: Vec3) -> Option<Vec3> 
+    // New collision response method
+    pub fn check_and_respond_collision(&mut self, other: &AABB) 
     {
-        let inv_direction = Vec3 
+        if self.is_static 
         {
-            x: 1.0 / ray_direction.x,
-            y: 1.0 / ray_direction.y,
-            z: 1.0 / ray_direction.z,
-        };
-
-        let bounds = [self.translation - self.scale, self.translation + self.scale];
-        let mut t_min = (bounds[(ray_direction.x < 0.0) as usize].x - ray_origin.x) * inv_direction.x;
-        let mut t_max = (bounds[(ray_direction.x >= 0.0) as usize].x - ray_origin.x) * inv_direction.x;
-        let t_y_min = (bounds[(ray_direction.y < 0.0) as usize].y - ray_origin.y) * inv_direction.y;
-        let t_y_max = (bounds[(ray_direction.y >= 0.0) as usize].y - ray_origin.y) * inv_direction.y;
-
-        if (t_min > t_y_max) || (t_y_min > t_max) 
-        {
-            return None;
+            // Static objects do not move or respond to collisions
+            return;
         }
 
-        if t_y_min > t_min 
+        let penetration = self.compute_penetration(other);
+
+        if penetration.x > 0.0 && penetration.y > 0.0 && penetration.z > 0.0 
         {
-            t_min = t_y_min;
-        }
+            // Find the axis with the minimal penetration
+            let axis_of_least_penetration = 
+				if penetration.x.min(penetration.y).min(penetration.z) == penetration.x 
+				{ 
+					"x" 
+				} 
+				else if penetration.x.min(penetration.y).min(penetration.z) == penetration.y 
+				{ 
+					"y" 
+				} 
+				else 
+				{ 
+					"z" 
+				};
 
-        if t_y_max < t_max 
+            // Reflect velocity vector based on the axis of collision
+            match axis_of_least_penetration 
+            {
+                "x" => self.velocity.x = -self.velocity.x * self.restitution,
+                "y" => self.velocity.y = -self.velocity.y * self.restitution,
+                "z" => self.velocity.z = -self.velocity.z * self.restitution,
+                _ => {},
+            }
+
+            // Correct the translation to avoid sinking into the other AABB due to penetration
+            // match axis_of_least_penetration 
+            // {
+            //     "x" => self.translation.x += penetration.x,
+            //     "y" => self.translation.y += penetration.y,
+            //     "z" => self.translation.z += penetration.z,
+            //     _ => {},
+            // }
+        }
+    }
+
+	pub fn apply_gravity(&mut self, delta_time_ms: f32)
+    {
+        let gravity = Vec3 { x: 0.0, y: -9.81, z: 0.0 };
+
+        if !self.is_static
         {
-            t_max = t_y_max;
+            self.velocity += gravity * (delta_time_ms / 1000f32);
         }
+    }
 
-        let t_z_min = (bounds[(ray_direction.z < 0.0) as usize].z - ray_origin.z) * inv_direction.z;
-        let t_z_max = (bounds[(ray_direction.z >= 0.0) as usize].z - ray_origin.z) * inv_direction.z;
-
-        if (t_min > t_z_max) || (t_z_min > t_max) 
+    // Method to update the AABB considering gravity and collisions
+    pub fn update(&mut self, other: &AABB, dt: f32) 
+    {
+        // Apply gravity and update translation only if the object is not static
+        if !self.is_static 
         {
-            return None;
+            // Assuming apply_gravity is a method that updates self.velocity
+            self.apply_gravity(dt); 
+            // Apply damping linearly instead of using the power function
+            self.velocity *= 1.0 - (self.damping * dt);
+            self.translation += self.velocity * dt;
+            self.check_and_respond_collision(other);
         }
-
-        if t_z_min > t_min 
-        {
-            t_min = t_z_min;
-        }
-
-        if t_z_max < t_max 
-        {
-            t_max = t_z_max;
-        }
-
-        if t_min < 0.0 && t_max < 0.0 
-        {
-            return None;
-        }
-
-        let t = if t_min < 0.0 { t_max } else { t_min };
-        Some(ray_direction * t)
     }
 }

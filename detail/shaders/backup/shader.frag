@@ -18,13 +18,14 @@ void main()
 	vec4 tex_color = texture(albedo_map, frag_texcoord);
 	vec3 color = tex_color.rgb;
 
-	vec3 ambient = 0.1 * color;
+	vec3 ambient = 0.05 * color;
 
 	vec3 sampled_normal = texture(normal_map, frag_texcoord).rgb;
 	sampled_normal = normalize(sampled_normal * 2.0 - 1.0);
 	sampled_normal = normalize(tbn * sampled_normal);
+	// vec3 normal = sampled_normal;
 	vec3 normal = sampled_normal;
-	
+	normal.z = -normal.z;
 
     // diffuse
     vec3 light_dir = normalize(light_pos - frag_pos);

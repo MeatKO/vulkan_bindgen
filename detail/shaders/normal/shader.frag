@@ -23,9 +23,14 @@ void main()
 	vec3 sampled_normal = texture(normal_map, frag_texcoord).rgb;
 	sampled_normal = normalize(sampled_normal * 2.0 - 1.0);
 	sampled_normal = normalize(tbn * sampled_normal);
-	// vec3 normal = sampled_normal;
 	vec3 normal = sampled_normal;
-	normal.z = -normal.z;
+
+	// vec3 normal = -sampled_normal;
+	// float old_x = normal.x;
+	// normal.x = normal.z;
+	// normal.z = old_x;
+
+	// normal = frag_normal;
 
     // diffuse
     vec3 light_dir = normalize(light_pos - frag_pos);
@@ -42,5 +47,7 @@ void main()
 	spec = pow(max(dot(normal, halfway_dir), 0.0), 32.0);
 
     vec3 specular = vec3(0.3) * spec; // assuming bright white light color
+	specular *= (length(ambient) / 255.0);
     out_color = vec4(ambient + diffuse + specular, tex_color.a);
+    // out_color = vec4(normal, 1.0);
 }

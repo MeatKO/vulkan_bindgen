@@ -41,7 +41,7 @@ pub fn 	draw_frame(
 			update_uniform_buffer_wireframe(
 				vk_handle, 
 				model.aabb_vulkan_data.as_ref().unwrap(), 
-				&model.aabb.size,
+				&model.aabb.scale,
 				// &model.translation, 
 				&model.aabb.translation, 
 				&Vec3::new(0.0f32), 
@@ -57,7 +57,8 @@ pub fn 	draw_frame(
 						None => continue
 					};
 
-				update_uniform_buffer(vk_handle, vulkan_data, index, &model.scale, &model.aabb.translation, &model.rotation, light_pos);
+				// update_uniform_buffer(vk_handle, vulkan_data, index, &model.scale, &model.aabb.translation, &model.rotation, light_pos);
+				update_uniform_buffer(vk_handle, vulkan_data, index, &model.aabb.scale, &model.aabb.translation, &model.rotation, light_pos);
 			}
 		}
 		for hud_element in hud_elements.iter()
@@ -77,7 +78,7 @@ pub fn 	draw_frame(
 
 		record_command_buffer(vk_handle, image_index, models);
 		record_command_buffer_wireframe(vk_handle, image_index, models);
-		record_command_buffer_hud(vk_handle, image_index, hud_elements);
+		// record_command_buffer_hud(vk_handle, image_index, hud_elements);
 
 		let wait_semaphore_vec = vec![vk_handle.image_available_semaphore_vec[vk_handle.current_frame]];
 		let wait_stages_vec : Vec<VkPipelineStageFlags> = vec![VkPipelineStageFlagBits::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT as u32];
@@ -87,7 +88,7 @@ pub fn 	draw_frame(
 			vec![
 				vk_handle.command_buffer_vec[vk_handle.current_frame].get_command_buffer_ptr(),
 				vk_handle.command_buffer_wireframe_vec[vk_handle.current_frame].get_command_buffer_ptr(),
-				vk_handle.command_buffer_hud_vec[vk_handle.current_frame].get_command_buffer_ptr(),
+				// vk_handle.command_buffer_hud_vec[vk_handle.current_frame].get_command_buffer_ptr(),
 			];
 
 		let submit_info = 
