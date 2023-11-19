@@ -19,7 +19,7 @@ pub fn run_physics(aabb_vector: &mut Vec<&mut AABB>, delta_time_ms: f64)
 			continue;
 		}
 
-		aabb.velocity += gravity * (delta_time_ms as f32 / 50000.0f32);
+		aabb.velocity += gravity * (delta_time_ms as f32 / 10000.0f32);
 	}
 
 	for aabb in aabb_vector.iter_mut()

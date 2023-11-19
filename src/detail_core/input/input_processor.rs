@@ -5,6 +5,7 @@ use parmack::window::event::WindowActions;
 use parmack::window::event::KeyCode;
 use parmack::handle::Handle;
 
+use crate::EventDrivenVariables;
 use crate::cotangens::vec3::Vec3;
 use crate::vulkan::handle::VkHandle;
 
@@ -36,7 +37,7 @@ impl InputProcessor
 		&mut self, 
 		window: &mut WindowHandle, 
 		vk_handle: &mut VkHandle,
-		focus_on_gui: &mut bool,
+		event_vars: &mut EventDrivenVariables,
 		picked_object_info: &mut Option<(usize, f32, Vec3)>,
 		delta_time_ms: f32, 
 	)
@@ -79,7 +80,8 @@ impl InputProcessor
 					match key_code 
 					{
 						KeyCode::Escape => { self.should_quit = true; }
-						KeyCode::ShiftLeft => { *focus_on_gui = !*focus_on_gui; }
+						KeyCode::ShiftLeft => { event_vars.focus_on_gui = !event_vars.focus_on_gui; }
+						KeyCode::V => { event_vars.should_run_physics = !event_vars.should_run_physics; }
 						_ => {}
 					}
 				}
@@ -121,7 +123,7 @@ impl InputProcessor
 
 							// if window.is_focused &&
 							if
-							!*focus_on_gui && 
+							!event_vars.focus_on_gui && 
 							(delta_x != 0 ||
 							delta_y != 0)
 							{

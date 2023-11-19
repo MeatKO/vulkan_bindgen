@@ -1,7 +1,7 @@
 use std::ops::{
 	Mul, AddAssign, SubAssign, Add, Sub, MulAssign, Div,
 };
-use std::cmp::Eq;
+use std::cmp::{Eq, Ordering};
 use std::hash::{
 	Hash,
 	Hasher,
@@ -22,10 +22,7 @@ impl Vec3
     {
         start + (end - start) * t
     }
-}
 
-impl Vec3
-{
 	pub fn new(value: f32) -> Vec3
 	{
 		return Vec3 { 
@@ -94,6 +91,22 @@ impl Hash for Vec3
         (self.y as u32).hash(state);
         (self.z as u32).hash(state);
 	}
+}
+
+impl PartialOrd for Vec3 
+{
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> 
+	{
+        self.len().partial_cmp(&other.len())
+    }
+}
+
+impl Ord for Vec3 
+{
+    fn cmp(&self, other: &Self) -> Ordering 
+	{
+        self.partial_cmp(other).unwrap()
+    }
 }
 
 impl Eq for Vec3 {}
