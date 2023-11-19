@@ -1,4 +1,4 @@
-use crate::exedra::model_descriptor::ModelDescriptor;
+use crate::pixcell::image::GenericImage;
 use crate::vulkan::vk_bindgen::*;
 use crate::vulkan::handle::*;
 use crate::vulkan::vk_buffer::*;
@@ -6,7 +6,7 @@ use crate::vulkan::depth_buffer::*;
 use crate::vulkan::vk_memory::find_memory_type;
 
 // use crate::pixcell::tga::*;
-use crate::pixcell::image::Image;
+// use crate::pixcell::image::Image;
 
 use std::ptr::null_mut as nullptr;
 
@@ -39,44 +39,40 @@ impl ImageLayoutTransition
 
 pub unsafe fn create_texture_image(
 	vk_handle: &VkHandle,
-	image: &Box<dyn Image>,
+	image: &GenericImage,
 	vk_format: VkFormat,
-) -> (VkImage, VkDeviceMemory)
-// where
-// 	I: Image
+) -> Result<(VkImage, VkDeviceMemory), String>
 {
-	// let tga_image = TGAImage::new(tga_image_path).unwrap();
-
 	let (staging_buffer, staging_buffer_memory) = 
 		match create_buffer(
 				vk_handle, 
-				image.get_data_ref().len() as u64,
+				image.get_byte_size() as u64,
 				VkBufferUsageFlagBits::VK_BUFFER_USAGE_TRANSFER_SRC_BIT as u32,
 				VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT as u32 |
 				VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_HOST_COHERENT_BIT as u32
 			)
 		{
 			Ok(tuple) => { tuple }
-			Err(e) => { panic!("Couldn't create index staging buffer - {}", e) }
+			Err(err) => { return Err(format!("Couldn't create index staging buffer - {}", err)) }
 		};
 
 	let mut data = nullptr();
-	vkMapMemory(vk_handle.logical_device, staging_buffer_memory, 0, image.get_data_ref().len() as u64, 0, &mut data);
-	std::ptr::copy_nonoverlapping(image.get_data_ref().as_ptr() as _, data as _, image.get_data_ref().len());
+	vkMapMemory(vk_handle.logical_device, staging_buffer_memory, 0, image.get_byte_size() as u64, 0, &mut data);
+	std::ptr::copy_nonoverlapping(image.get_data_u8_ptr(), data as _, image.get_byte_size());
 	vkUnmapMemory(vk_handle.logical_device, staging_buffer_memory);
 
 	let (vk_image, vk_image_memory) = 
 		create_image(
 			vk_handle,
-			image.get_size().width,
-			image.get_size().height,
+			image.get_dimensions().width,
+			image.get_dimensions().height,
 			// VkFormat::VK_FORMAT_R8G8B8A8_SRGB,
 			vk_format,
 			VkImageTiling::VK_IMAGE_TILING_OPTIMAL, 
 			VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_DST_BIT as u32 | 
 			VkImageUsageFlagBits::VK_IMAGE_USAGE_SAMPLED_BIT as u32, 
 			VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT as u32
-		);
+		)?;
 
 	transition_image_layout(
 		vk_handle, 
@@ -88,7 +84,7 @@ pub unsafe fn create_texture_image(
 		VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
 	);
 
-	copy_buffer_to_image(vk_handle, staging_buffer, vk_image, image.get_size().width as u32, image.get_size().height as u32);
+	copy_buffer_to_image(vk_handle, staging_buffer, vk_image, image.get_dimensions().width as u32, image.get_dimensions().height as u32);
 	transition_image_layout(
 		vk_handle, 
 		// VkFormat::VK_FORMAT_R8G8B8A8_SRGB,
@@ -101,7 +97,7 @@ pub unsafe fn create_texture_image(
 	vkDestroyBuffer(vk_handle.logical_device, staging_buffer, nullptr());
 	vkFreeMemory(vk_handle.logical_device, staging_buffer_memory, nullptr());
 
-	(vk_image, vk_image_memory)
+	Ok((vk_image, vk_image_memory))
 }
 
 pub unsafe fn create_image(
@@ -112,7 +108,7 @@ pub unsafe fn create_image(
 	tiling: VkImageTiling,
 	usage: VkImageUsageFlags,
 	properties: VkMemoryPropertyFlags,
-) -> (VkImage, VkDeviceMemory)
+) -> Result<(VkImage, VkDeviceMemory), String>
 {
 	let image_create_info = 
 		VkImageCreateInfo{
@@ -142,8 +138,12 @@ pub unsafe fn create_image(
 
 	match vkCreateImage(vk_handle.logical_device, &image_create_info, nullptr(), &mut image)
 	{
-		VkResult::VK_SUCCESS => { println!("✔️ vkCreateImage()"); }
-		err => { panic!("✗ vkCreateImage() failed with code {:?}.", err); }
+		VkResult::VK_SUCCESS => 
+		{ 
+			// println!("✔️ vkCreateImage()");
+		 }
+		// err => { panic!("✗ vkCreateImage() failed with code {:?}.", err); }
+		err => { return Err(format!("✗ vkCreateImage() failed with code {:?}.", err)) }
 	}	
 
 	let mut memory_requirements: VkMemoryRequirements = std::mem::zeroed();
@@ -164,13 +164,17 @@ pub unsafe fn create_image(
 	// replace with dt_memory func
 	match vkAllocateMemory(vk_handle.logical_device, &memory_allocate_info, nullptr(), &mut image_memory)
 	{
-		VkResult::VK_SUCCESS => { println!("✔️ vkAllocateMemory() for texture"); }
-		err => { panic!("vkAllocateMemory() failed with code {:?}", err) }
+		VkResult::VK_SUCCESS => 
+		{ 
+			// println!("✔️ vkAllocateMemory() for texture"); 
+		}
+		// err => { panic!("vkAllocateMemory() failed with code {:?}", err) }
+		err => { return Err(format!("vkAllocateMemory() failed with code {:?}", err)) }
 	}
 
 	vkBindImageMemory(vk_handle.logical_device, image, image_memory, 0);
 
-	(image, image_memory)
+	Ok((image, image_memory))
 }
 
 pub unsafe fn transition_image_layout(
@@ -345,7 +349,7 @@ pub unsafe fn end_single_time_commands(
 	vkQueueSubmit(vk_handle.graphics_queue, 1, &submit_info, nullptr());
 	vkQueueWaitIdle(vk_handle.graphics_queue);
 
-	vkFreeCommandBuffers(vk_handle.logical_device, vk_handle.command_pool, 1, &command_buffer);	
+	vkFreeCommandBuffers(vk_handle.logical_device, vk_handle.command_pool.as_ref().unwrap().get_command_pool_ptr(), 1, &command_buffer);	
 }
 
 pub unsafe fn begin_single_time_commands(
@@ -356,7 +360,7 @@ pub unsafe fn begin_single_time_commands(
 		VkCommandBufferAllocateInfo{
 			sType: VkStructureType::VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
 			level: VkCommandBufferLevel::VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-			commandPool: vk_handle.command_pool,
+			commandPool: vk_handle.command_pool.as_ref().unwrap().get_command_pool_ptr(),
 			commandBufferCount: 1,
 			pNext: nullptr(),
 		};

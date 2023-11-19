@@ -4,26 +4,26 @@ use crate::vulkan::vk_bindgen::*;
 use crate::vulkan::handle::*;
 use std::ptr::null_mut as nullptr;
 
-pub unsafe fn create_command_buffers(vk_handle: &mut VkHandle)
-{
-	let command_buffer_count = vk_handle.frames_in_flight;
+// pub unsafe fn create_command_buffers(vk_handle: &mut VkHandle)
+// {
+// 	let command_buffer_count = vk_handle.frames_in_flight;
 
-	let command_buffer_create_info = 
-		VkCommandBufferAllocateInfo {
-			sType: VkStructureType::VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-			commandPool: vk_handle.command_pool,
-			level: VkCommandBufferLevel::VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-			commandBufferCount: command_buffer_count as u32,
-			pNext: nullptr(),
-		};
+// 	let command_buffer_create_info = 
+// 		VkCommandBufferAllocateInfo {
+// 			sType: VkStructureType::VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+// 			commandPool: vk_handle.command_pool,
+// 			level: VkCommandBufferLevel::VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+// 			commandBufferCount: command_buffer_count as u32,
+// 			pNext: nullptr(),
+// 		};
 
-	vk_handle.command_buffer_vec.resize(command_buffer_count, nullptr());
-	match vkAllocateCommandBuffers(vk_handle.logical_device, &command_buffer_create_info, vk_handle.command_buffer_vec.as_mut_ptr())
-	{
-		VkResult::VK_SUCCESS => { println!("✔️ vkAllocateCommandBuffers()"); }
-		err => { panic!("✗ vkAllocateCommandBuffers() failed with code {:?}.", err); }
-	}
-}
+// 	vk_handle.command_buffer_vec.resize(command_buffer_count, nullptr());
+// 	match vkAllocateCommandBuffers(vk_handle.logical_device, &command_buffer_create_info, vk_handle.command_buffer_vec.as_mut_ptr())
+// 	{
+// 		VkResult::VK_SUCCESS => { println!("✔️ vkAllocateCommandBuffers()"); }
+// 		err => { panic!("✗ vkAllocateCommandBuffers() failed with code {:?}.", err); }
+// 	}
+// }
 
 pub unsafe fn record_command_buffer(
 	vk_handle: &VkHandle, 
@@ -31,7 +31,7 @@ pub unsafe fn record_command_buffer(
 	models: &mut Vec<Model<VulkanModel>>
 )
 {
-	let current_command_buffer = vk_handle.command_buffer_vec[vk_handle.current_frame];
+	let current_command_buffer = vk_handle.command_buffer_vec[vk_handle.current_frame].get_command_buffer_ptr();
 
 	let command_buffer_begin_info = 
 		VkCommandBufferBeginInfo{

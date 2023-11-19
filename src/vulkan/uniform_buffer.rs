@@ -73,9 +73,7 @@ pub unsafe fn update_uniform_buffer(
 	light_pos: &Vec3,
 ) 
 {
-	let time: f32 = std::time::Instant::now().duration_since(vk_handle.start_time).as_secs_f32();
-
-	// let time = time * 0.5f32;
+	// let time: f32 = std::time::Instant::now().duration_since(vk_handle.start_time).as_secs_f32();
 
 	let camera_position = vk_handle.camera.get_position();
 

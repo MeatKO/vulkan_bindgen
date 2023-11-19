@@ -83,25 +83,25 @@ impl Camera
 
 		if input_buffer.is_pressed(KeyCode::W as u8)
 		{
-			self.position += &(&self.front * &velocity)
+			self.position += self.front * velocity
 		}
 		if input_buffer.is_pressed(KeyCode::A as u8)
 		{
-			self.position -= &(&self.right * &velocity)
+			self.position -= self.right * velocity
 		}
 		if input_buffer.is_pressed(KeyCode::S as u8)
 		{
-			self.position -= &(&self.front * &velocity)
+			self.position -= self.front * velocity
 		}
 		if input_buffer.is_pressed(KeyCode::D as u8)
 		{
-			self.position += &(&self.right * &velocity)
+			self.position += self.right * velocity
 		}
 	}
 
 	pub fn get_view_matrix(&self) -> Mat4x4
 	{
-		return Mat4x4::new_lookat(&self.position, &(&self.position + &self.front), &self.up);
+		return Mat4x4::new_lookat(&self.position, &(self.position + self.front), &self.up);
 	}
 
 	pub fn update_camera_vectors(&mut self)

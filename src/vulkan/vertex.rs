@@ -21,6 +21,17 @@ pub struct Vertex
 
 impl Vertex
 {
+	pub fn from_position(position: Vec3) -> Vertex
+	{
+		Vertex { 
+			pos: position, 
+			uv: Vec2::new(0.0f32), 
+			normal: Vec3::new(0.0f32), 
+			tangent: Vec3::new(0.0f32), 
+			bitangent: Vec3::new(0.0f32)
+		}
+	}
+
 	pub fn get_binding_description() -> VkVertexInputBindingDescription
 	{
 		return VkVertexInputBindingDescription{
@@ -71,12 +82,12 @@ impl Vertex
 	}
 }
 
-pub unsafe fn create_vertex_buffer(
+pub unsafe fn create_vertex_buffer<V>(
 	vk_handle: &VkHandle, 
-	vertices: &mut Vec<Vertex>,
+	vertices: &Vec<V>,
 ) -> Result<(VkBuffer, VkDeviceMemory), String>
 {
-	let buffer_size = size_of::<Vertex>() * vertices.len();
+	let buffer_size = size_of::<V>() * vertices.len();
 
 	let (staging_buffer, staging_buffer_memory) = 
 		match create_buffer(

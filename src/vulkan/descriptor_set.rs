@@ -9,9 +9,8 @@ use std::mem::size_of;
 use std::ptr::null_mut as nullptr;
 
 pub unsafe fn create_descriptor_set_layout(
-	vk_handle: &mut VkHandle,
-	// model: &mut Model
-)
+	logical_device: &VkDevice
+) -> Result<VkDescriptorSetLayout, ()>
 {
 	let ubo_layout_binding = 
 		VkDescriptorSetLayoutBinding{
@@ -57,11 +56,14 @@ pub unsafe fn create_descriptor_set_layout(
 			pNext: nullptr(),
 		};
 
-	match vkCreateDescriptorSetLayout(vk_handle.logical_device, &descriptor_set_layout_create_info, nullptr(), &mut vk_handle.descriptor_set_layout)
+	let mut descriptor_set_layout = nullptr();
+	match vkCreateDescriptorSetLayout(*logical_device, &descriptor_set_layout_create_info, nullptr(), &mut descriptor_set_layout)
 	{
 		VkResult::VK_SUCCESS => { println!("✔️ vkCreateDescriptorSetLayout()"); }
 		err => { panic!("✗ vkCreateDescriptorSetLayout() failed with code {:?}.", err); }
 	}
+
+	Ok(descriptor_set_layout)
 }
 
 pub unsafe fn create_descriptor_sets(
@@ -74,24 +76,10 @@ pub unsafe fn create_descriptor_sets(
 	descriptor_pool: &VkDescriptorPool,
 ) -> Result<(), String>
 {
-	// let material_vulkan_data = 
-	// 	match &mut mesh.material.vulkan_data
-	// 	{
-	// 		Some(vd) => vd,
-	// 		None => return Err(format!("Cannot execute create_descriptor_sets() for mesh '{}' with uninitialized material '{}'", mesh.name, mesh.material.name).to_owned())
-	// 	};
-
-	// let mesh_vulkan_data = 
-	// 	match &mut mesh.vulkan_data
-	// 	{
-	// 		Some(vd) => vd,
-	// 		None => return Err(format!("Cannot execute create_descriptor_sets() for uninitialized mesh '{}'", mesh.name).to_owned())
-	// 	};
-
 	let layouts: Vec<VkDescriptorSetLayout> = 
 		vec![
 			vk_handle.descriptor_set_layout; 
-			vk_handle.frames_in_flight
+			vk_handle.frames_in_flight // size
 		];
 
 	let descriptor_set_allocate_info = 
@@ -103,7 +91,11 @@ pub unsafe fn create_descriptor_sets(
 			pNext: nullptr()
 		};
 
-	mesh_data.descriptor_sets = vec![nullptr(); vk_handle.frames_in_flight];
+	mesh_data.descriptor_sets = 
+		vec![
+			nullptr(); 
+			vk_handle.frames_in_flight
+		];
 
 	match vkAllocateDescriptorSets(vk_handle.logical_device, &descriptor_set_allocate_info, mesh_data.descriptor_sets.as_mut_ptr())
 	{

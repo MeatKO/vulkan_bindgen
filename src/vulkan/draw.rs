@@ -1,6 +1,7 @@
 use crate::cotangens::vec3::Vec3;
 use crate::detail_core::model::model::Model;
 use crate::detail_core::model::model::VulkanModel;
+use crate::detail_core::ui::traits::HUDElement;
 use crate::vulkan::vk_bindgen::*;
 use crate::vulkan::handle::*;
 use crate::vulkan::command_buffer::*;
@@ -8,10 +9,16 @@ use crate::vulkan::swapchain::*;
 use crate::vulkan::uniform_buffer::*;
 use std::ptr::null_mut as nullptr;
 
+use super::command_buffer_hud::record_command_buffer_hud;
+use super::command_buffer_wireframe::record_command_buffer_wireframe;
+use super::uniform_buffer_hud::update_uniform_buffer_hud;
+use super::uniform_buffer_wireframe::update_uniform_buffer_wireframe;
+
 pub fn 	draw_frame(
 	vk_handle: &mut VkHandle, 
 	models: &mut Vec<Model<VulkanModel>>,
 	light_pos: &Vec3,
+	hud_elements: &Vec<Box<dyn HUDElement>>,
 )
 {
 	unsafe
@@ -29,6 +36,18 @@ pub fn 	draw_frame(
 
 		for (index, model) in models.iter_mut().enumerate()
 		{
+			// model.aabb.size = model.scale.clone();
+
+			update_uniform_buffer_wireframe(
+				vk_handle, 
+				model.aabb_vulkan_data.as_ref().unwrap(), 
+				&model.aabb.scale,
+				// &model.translation, 
+				&model.aabb.translation, 
+				&Vec3::new(0.0f32), 
+				&model.aabb.color,
+			);
+
 			for mesh in &model.meshes
 			{
 				let vulkan_data = 
@@ -38,16 +57,39 @@ pub fn 	draw_frame(
 						None => continue
 					};
 
-				update_uniform_buffer(vk_handle, vulkan_data, index, &model.scale, &model.translation, &model.rotation, light_pos);
+				// update_uniform_buffer(vk_handle, vulkan_data, index, &model.scale, &model.aabb.translation, &model.rotation, light_pos);
+				update_uniform_buffer(vk_handle, vulkan_data, index, &model.aabb.scale, &model.aabb.translation, &model.rotation, light_pos);
 			}
 		}
+		for hud_element in hud_elements.iter()
+		{
+			let vulkan_data = 
+				match hud_element.get_vulkan_data()
+				{
+					Some(vd) => vd,
+					None => continue
+				};
 
-		vkResetCommandBuffer(vk_handle.command_buffer_vec[vk_handle.current_frame], 0);
+			update_uniform_buffer_hud(vk_handle, &vulkan_data);
+		}
+
+		// vkResetCommandBuffer(vk_handle.command_buffer_vec[vk_handle.current_frame], 0);
+		vk_handle.command_buffer_vec[vk_handle.current_frame].reset(None);
+
 		record_command_buffer(vk_handle, image_index, models);
+		record_command_buffer_wireframe(vk_handle, image_index, models);
+		// record_command_buffer_hud(vk_handle, image_index, hud_elements);
 
 		let wait_semaphore_vec = vec![vk_handle.image_available_semaphore_vec[vk_handle.current_frame]];
 		let wait_stages_vec : Vec<VkPipelineStageFlags> = vec![VkPipelineStageFlagBits::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT as u32];
 		let signal_semaphores_vec = vec![vk_handle.rendering_finished_semaphore_vec[vk_handle.current_frame]];
+
+		let command_buffers = 
+			vec![
+				vk_handle.command_buffer_vec[vk_handle.current_frame].get_command_buffer_ptr(),
+				vk_handle.command_buffer_wireframe_vec[vk_handle.current_frame].get_command_buffer_ptr(),
+				// vk_handle.command_buffer_hud_vec[vk_handle.current_frame].get_command_buffer_ptr(),
+			];
 
 		let submit_info = 
 			VkSubmitInfo{
@@ -55,8 +97,8 @@ pub fn 	draw_frame(
 				waitSemaphoreCount: 1,
 				pWaitSemaphores: wait_semaphore_vec.as_ptr(),
 				pWaitDstStageMask: wait_stages_vec.as_ptr(),
-				commandBufferCount: 1,
-				pCommandBuffers: &vk_handle.command_buffer_vec[vk_handle.current_frame],
+				commandBufferCount: command_buffers.len() as _,
+				pCommandBuffers: command_buffers.as_ptr(),
 				signalSemaphoreCount: 1,
 				pSignalSemaphores: signal_semaphores_vec.as_ptr(),
 				pNext: nullptr(),

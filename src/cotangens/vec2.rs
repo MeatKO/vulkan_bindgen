@@ -5,12 +5,23 @@ use std::hash::{
 };
 use std::ops::{Sub, Add};
 
-#[repr(align(8))]
-#[derive(Clone, Debug, PartialEq)]
+#[repr(align(16))]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Vec2
 {
 	pub x: f32,
 	pub y: f32,
+}
+
+impl Vec2
+{
+	pub fn new(value: f32) -> Vec2
+	{
+		return Vec2 { 
+			x: value, 
+			y: value, 
+		}
+	}
 }
 
 impl Hash for Vec2
@@ -24,11 +35,11 @@ impl Hash for Vec2
 
 impl Eq for Vec2 {}
 
-impl Add<&Vec2> for &Vec2 
+impl Add<Vec2> for Vec2 
 {
     type Output = Vec2;
 
-    fn add(self, rhs: &Vec2) -> Vec2
+    fn add(self, rhs: Vec2) -> Vec2
 	{
 		return Vec2 {
 			x: self.x + rhs.x,
@@ -37,11 +48,11 @@ impl Add<&Vec2> for &Vec2
 	}
 }
 
-impl Sub<&Vec2> for &Vec2 
+impl Sub<Vec2> for Vec2 
 {
     type Output = Vec2;
 
-    fn sub(self, rhs: &Vec2) -> Vec2
+    fn sub(self, rhs: Vec2) -> Vec2
 	{
 		return Vec2 {
 			x: self.x - rhs.x,

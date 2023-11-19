@@ -63,6 +63,22 @@ impl Mat4x4
 		out_mat
 	}
 
+	pub fn new_orthographic(left: f32, right: f32, bottom: f32, top: f32, near: f32, far: f32) -> Mat4x4 
+	{
+		let mut out_mat = Mat4x4::new_identity(1.0f32);
+	
+		out_mat.data[0][0] = 2.0f32 / (right - left);
+		out_mat.data[1][1] = 2.0f32 / (top - bottom);
+		out_mat.data[2][2] = -2.0f32 / (far - near);
+		
+		out_mat.data[3][0] = -(right + left) / (right - left);
+		out_mat.data[3][1] = -(top + bottom) / (top - bottom);
+		out_mat.data[3][2] = -(far + near) / (far - near);
+		out_mat.data[3][3] = 1.0f32;
+	
+		out_mat
+	}
+
 	pub fn new_lookat(eye: &Vec3, center: &Vec3, up: &Vec3) -> Mat4x4
 	{
 		let mut z_axis = 

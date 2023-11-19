@@ -35,7 +35,10 @@ void main()
 	vec3 N = normalize(mat3(ubo.model) * in_normal);
     vec3 T = normalize(mat3(ubo.model) * in_tangent);
     vec3 B = normalize(mat3(ubo.model) * in_bitangent);
-    // vec3 B = cross(N, T);
+
+	// this fixes something I dont understand, posted by Mike Romberg @ learnopengl.com comment section 7 years ago
+	if (dot(cross(N, T), B) < 0.0)
+        T = T * -1.0;
 
     tbn = mat3(T, B, N);
 }
