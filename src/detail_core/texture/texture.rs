@@ -15,6 +15,7 @@ use crate::vulkan::vk_bindgen::{
 	VkDeviceMemory, VkImageView, VkSampler, VkFormat,
 };
 
+#[derive(Debug)]
 pub struct Texture<T>(T);
 
 pub struct TexturePath
@@ -26,7 +27,7 @@ pub struct LoadedTexture
 	image: GenericImage
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct VulkanTexture
 {
 	pub texture_image: VkImage,

@@ -40,8 +40,10 @@ use detail_core::{
 	ui::button::UIButton,
 };
 
-use crate::{cotangens::{vec3::Vec3, mat4x4}, detail_core::{model::{model::{Model, VulkanModel}, material::Material}, ui::traits::HUDElement, texture::texture::{Texture, VulkanTexture}, phys::{aabb::AABB, system::run_physics}}, vulkan::{vk_bindgen::{VkFormat, VkCommandPoolCreateFlagBits, VkPolygonMode}, wrappers::{vk_command_pool::{CommandPool, CommandPoolBuilder}, vk_command_buffer::{CommandBuffer, CommandBufferBuilder}}, shader::create_shader_module, vertex::Vertex}};
+use crate::{cotangens::{vec3::Vec3, mat4x4}, detail_core::{model::{model::{Model, VulkanModel}, material::Material}, ui::traits::HUDElement, texture::texture::{Texture, VulkanTexture}, phys::{aabb::AABB, system::{run_physics, physics_system}}}, vulkan::{vk_bindgen::{VkFormat, VkCommandPoolCreateFlagBits, VkPolygonMode}, wrappers::{vk_command_pool::{CommandPool, CommandPoolBuilder}, vk_command_buffer::{CommandBuffer, CommandBufferBuilder}}, shader::create_shader_module, vertex::Vertex}};
 use parmack::{window::event::{MouseCode, KeyCode, WindowEvent}, handle::Handle};
+
+use decs::{component, component_derive, manager};
 
 pub struct EventDrivenVariables
 {
@@ -54,6 +56,10 @@ fn main()
 {
 	unsafe
 	{
+		let mut decs = decs::manager::dECS::new();
+
+		decs.add_system(physics_system);
+
 		let mut window = 
 			parmack::window::WindowBuilder::new()
 			.with_title("windole")

@@ -7,6 +7,7 @@ use crate::vulkan::vk_bindgen::{
 	VkDescriptorSet,
 };
 
+#[derive(Debug)]
 pub struct VulkanMeshData
 {
 	pub vertex_buffer: VkBuffer,
@@ -23,7 +24,7 @@ pub struct VulkanMeshData
 	pub descriptor_sets: Vec<VkDescriptorSet>,
 }
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct Mesh
 {
 	pub name: String,

@@ -1,8 +1,24 @@
-use std::{collections::HashMap, vec};
+use std::vec;
+
+use decs::component_derive::system;
+use decs::manager::dECS;
 
 use crate::cotangens::vec3::Vec3;
 
 use super::aabb::AABB;
+
+#[system]
+pub fn physics_system()
+{
+	let _ =
+		decs.modify_components_global::<AABB>(
+			|aabb|
+			{
+				aabb.velocity += Vec3{ x: 0.0f32, y: -0.01f32, z: 0.0f32 };
+				Ok(())
+			}
+		);
+}
 
 pub fn run_physics(aabb_vector: &mut Vec<&mut AABB>, delta_time_ms: f64)
 {

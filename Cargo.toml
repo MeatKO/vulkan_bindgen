@@ -7,4 +7,6 @@ edition = "2021"
 
 [dependencies]
 # parmack = { git = "https://github.com/MeatKO/parmack.git", branch = "master" }
+
 parmack = { path = "../parmack" } #for local development purposes
+decs = { path = "../decs" } #for local development purposes

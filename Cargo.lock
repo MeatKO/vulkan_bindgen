@@ -3,6 +3,17 @@
 version = 3
 
 [[package]]
+name = "component_derive"
+version = "0.1.0"
+
+[[package]]
+name = "decs"
+version = "0.1.0"
+dependencies = [
+ "component_derive",
+]
+
+[[package]]
 name = "parmack"
 version = "0.1.0"
 
@@ -10,5 +21,6 @@ version = "0.1.0"
 name = "vulkan_bindgen"
 version = "0.1.0"
 dependencies = [
+ "decs",
  "parmack",
 ]

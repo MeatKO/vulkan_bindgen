@@ -1,7 +1,7 @@
 use crate::detail_core::texture::texture::{VulkanTexture, Texture};
 
 
-#[derive(Default, Clone)]
+#[derive(Default, Clone, Debug)]
 pub struct Material
 {
 	pub name: String,

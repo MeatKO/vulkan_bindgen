@@ -1,6 +1,9 @@
+use decs::component_derive::component;
+use decs::component::Component;
+
 use crate::{cotangens::vec3::Vec3, vulkan::vertex::Vertex};
 
-#[derive(Debug)]
+#[component]
 pub struct AABB 
 {
 	pub color: Vec3,

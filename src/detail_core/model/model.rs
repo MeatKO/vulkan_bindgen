@@ -1,5 +1,8 @@
 use std::{ptr::null_mut as nullptr, ops::{Deref, DerefMut}, path::PathBuf};
 
+use decs::component_derive::component;
+use decs::component::Component;
+
 use crate::{cotangens::{vec3::*, vec2::Vec2}, exedra::{error::ModelLoadError, model_descriptor::ModelDescriptor}, detail_core::{texture::texture::{Texture, VulkanTexture}, phys::aabb::AABB}, vulkan::{handle::VkHandle, vertex::{create_vertex_buffer, Vertex}, index::create_index_buffer, descriptor_set::create_descriptor_sets, descriptor_pool::create_descriptor_pool, uniform_buffer::create_uniform_buffers, vk_bindgen::VkFormat, descriptor_set_wireframe::create_descriptor_sets_wireframe}};
 
 use super::{mesh::{Mesh, VulkanMeshData}, material::Material};
@@ -41,6 +44,7 @@ impl Model<ModelDescriptor>
 	}
 }
 
+#[component]
 pub struct VulkanModel
 {
 	pub name: String,
