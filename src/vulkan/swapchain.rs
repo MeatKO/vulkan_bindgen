@@ -8,6 +8,7 @@ use std::cmp::min;
 
 use super::depth_buffer::create_depth_buffer;
 
+#[derive(Debug)]
 pub struct SwapchainSupportDetails 
 {
 	pub capabilities: VkSurfaceCapabilitiesKHR,

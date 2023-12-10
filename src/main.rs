@@ -6,29 +6,13 @@ mod exedra;
 
 mod vulkan;
 
-use cotangens::mat4x4::Mat4x4;
 use vulkan::{
 	vk_bindgen::
-		vkDeviceWaitIdle, 
-	texture_view::{
-		create_texture_image_view, 
-		create_texture_sampler
-	}, 
-	swapchain::{
-		create_swapchain, 
-		create_swapchain_image_views
-	},
-	descriptor_set::{
-		create_descriptor_set_layout, 
-		create_descriptor_sets
-	}, 
-	device::create_logical_device,
+		vkDeviceWaitIdle,
 	handle::VkHandle,
 	draw::draw_frame, 
-	framebuffer::create_framebuffers, 
-	pipeline::create_pipeline, 
-	instance::create_instance, 
-	physical_device::create_physical_device, 
+	framebuffer::create_framebuffers,
+	instance::create_instance,
 	synchronization::create_synchronization_structures,
 	depth_buffer::create_depth_buffer,
 };
@@ -38,12 +22,12 @@ use detail_core::{
 	input::input_processor::InputProcessor, 
 	window::create_vulkan_surface,
 	ui::button::UIButton,
+	logic::*,
+	rendering::*,
 };
 
-use crate::{cotangens::{vec3::Vec3, mat4x4}, detail_core::{model::{model::{Model, VulkanModel}, material::Material}, ui::traits::HUDElement, texture::texture::{Texture, VulkanTexture}, phys::{aabb::AABB, system::{run_physics, physics_system}}}, vulkan::{vk_bindgen::{VkFormat, VkCommandPoolCreateFlagBits, VkPolygonMode}, wrappers::{vk_command_pool::{CommandPool, CommandPoolBuilder}, vk_command_buffer::{CommandBuffer, CommandBufferBuilder}}, shader::create_shader_module, vertex::Vertex}};
+use crate::{cotangens::{vec3::Vec3, mat4x4}, detail_core::{model::{model::{Model, VulkanModel}, material::Material}, ui::traits::HUDElement, texture::texture::{Texture, VulkanTexture}, phys::{aabb::AABB, system::{run_physics, physics_system}}, components::misc::{StringComponent, Float32Component, Time, DeltaTime, WindowComponent}, rendering::{init::{init_rendering_objects, init_pipelines, init_window_handle}, draw::rendering_system}, logic::{game_objects::init_domatena_shtaiga_object, game_logic::game_logic}, input::system::input_system}, vulkan::{vk_bindgen::{VkFormat, VkCommandPoolCreateFlagBits, VkPolygonMode}, wrappers::{vk_command_pool::{CommandPool, CommandPoolBuilder}, vk_command_buffer::{CommandBuffer, CommandBufferBuilder}}, shader::create_shader_module, vertex::Vertex}};
 use parmack::{window::event::{MouseCode, KeyCode, WindowEvent}, handle::Handle};
-
-use decs::{component, component_derive, manager};
 
 pub struct EventDrivenVariables
 {
@@ -58,129 +42,77 @@ fn main()
 	{
 		let mut decs = decs::manager::dECS::new();
 
+		decs.add_init_system(init_window_handle);
+		decs.add_init_system(init_rendering_objects);
+		decs.add_init_system(init_pipelines);
+		decs.add_init_system(init_domatena_shtaiga_object);
+		
 		decs.add_system(physics_system);
+		decs.add_system(rendering_system);
+		decs.add_system(input_system);
+		decs.add_system(game_logic);
 
-		let mut window = 
+		let vk_handle_entity = decs.create_entity();
+		decs.add_component(vk_handle_entity, StringComponent{ string : String::from("vk_handle") }).unwrap();
+		decs.add_component(vk_handle_entity, VkHandle::new_empty()).unwrap();
+
+		let main_loop_entity = decs.create_entity();
+		decs.add_component(main_loop_entity, StringComponent{ string : String::from("main_loop") }).unwrap();
+		decs.add_component(main_loop_entity, DeltaTime{ last_delta_time: 0.0f32, last_time_stamp: std::time::Instant::now() }).unwrap();
+
+		match decs.get_entity_with_components_filter::<StringComponent>(|name_tag| name_tag.string == "vk_handle")
+		{
+			Some(entity_id) => { println!("Entity {} has nametag 'vk_handle'", entity_id) }
+			None => { println!("vk_handle not found") }
+		}
+
+		let window = 
 			parmack::window::WindowBuilder::new()
 			.with_title("windole")
 			.with_dimensions(800, 600)
 			.build()
 			.unwrap();
 
+		let window_entity = decs.create_entity();
+		decs.add_component(window_entity, StringComponent{ string : String::from("window") }).unwrap();
+		decs.add_component(window_entity, WindowComponent{ window: window }).unwrap();
+
 		let mut input_processor = InputProcessor::new();
 
-		let mut vk_handle = VkHandle::new_empty();
-
-		create_instance(&mut vk_handle);
-
-		vk_handle.window_surface = create_vulkan_surface(&mut window, &mut vk_handle).unwrap();
-
-		create_physical_device(&mut vk_handle);
-		create_logical_device(&mut vk_handle);
+		let vk_handle_entity = decs.create_entity();
+		decs.add_component(vk_handle_entity, StringComponent{ string : String::from("vk_handle") }).unwrap();
+		decs.add_component(vk_handle_entity, VkHandle::new_empty()).unwrap();
 		
-		create_swapchain(&mut vk_handle);
-		create_swapchain_image_views(&mut vk_handle);
+		let vk_handle = 
+			match decs.get_components_global_mut::<VkHandle>()
+			{
+				Ok(vk_handle_vec) => 
+				{
+					vk_handle_vec.into_iter().next().unwrap()
+				}
+				Err(err) => { panic!("vk_handle not found: {}", err) }
+			};
 
-		let command_pool = 
-			CommandPoolBuilder::new()
-			.with_flag(VkCommandPoolCreateFlagBits::VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT)
-			.with_queue_family_index(vk_handle.queue_family_indices[0])
-			.build(&vk_handle.logical_device)
-			.unwrap();
-		vk_handle.command_pool = Some(command_pool);
+		create_instance(vk_handle);
 
-		vk_handle.descriptor_set_layout = create_descriptor_set_layout(&vk_handle.logical_device).unwrap();
+		// vk_handle.window_surface = create_vulkan_surface(&mut window, vk_handle).unwrap();
 
-		// main forward shading
-		{
-			//
-			let vertex_shader_source = include_bytes!("../detail/shaders/normal/vert.spv");
-			let fragment_shader_source = include_bytes!("../detail/shaders/normal/frag.spv");
-			//
-			let vertex_shader_module = create_shader_module(&vk_handle, vertex_shader_source);
-			let fragment_shader_module = create_shader_module(&vk_handle, fragment_shader_source);
-			//
-			let binding_description = Vertex::get_binding_description();
-			let attribute_descriptions_vec = Vertex::get_attribute_descriptions();
-			//
-			let (pipeline_layout, render_pass, pipeline) = 
-				create_pipeline(
-					&mut vk_handle, 
-					vertex_shader_module, 
-					fragment_shader_module, 
-					binding_description, 
-					attribute_descriptions_vec, 
-					VkPolygonMode::VK_POLYGON_MODE_FILL, 
-					// VkPolygonMode::VK_POLYGON_MODE_LINE, 
-					true
-				);
-			//
-			vk_handle.pipeline_layout = pipeline_layout;
-			vk_handle.render_pass = render_pass;
-			vk_handle.graphics_pipeline = pipeline;
-		}
+		decs.init();
 
-		// wireframe
-		{
-			//
-			let vertex_shader_source = include_bytes!("../detail/shaders/wireframe_hitbox/vert.spv");
-			let fragment_shader_source = include_bytes!("../detail/shaders/wireframe_hitbox/frag.spv");
-			//
-			let vertex_shader_module = create_shader_module(&vk_handle, vertex_shader_source);
-			let fragment_shader_module = create_shader_module(&vk_handle, fragment_shader_source);
-			//
-			let binding_description = Vertex::get_binding_description();
-			let attribute_descriptions_vec = Vertex::get_attribute_descriptions();
-			//
-			let (pipeline_layout, render_pass, pipeline) = 
-				create_pipeline(
-					&mut vk_handle, 
-					vertex_shader_module, 
-					fragment_shader_module, 
-					binding_description, 
-					attribute_descriptions_vec, 
-					// VkPolygonMode::VK_POLYGON_MODE_FILL, 
-					VkPolygonMode::VK_POLYGON_MODE_LINE, 
-					false
-				);
-			//
-			vk_handle.pipeline_layout_wireframe = pipeline_layout;
-			vk_handle.render_pass_wireframe = render_pass;
-			vk_handle.graphics_pipeline_wireframe = pipeline;
-		}
+		let vk_handle = 
+			match decs.get_components_global_mut::<VkHandle>()
+			{
+				Ok(vk_handle_vec) => 
+				{
+					vk_handle_vec.into_iter().next().unwrap()
+				}
+				Err(err) => { panic!("vk_handle not found: {}", err) }
+			};
 
-		// hud
-		{
-			//
-			let vertex_shader_source = include_bytes!("../detail/shaders/hud/vert.spv");
-			let fragment_shader_source = include_bytes!("../detail/shaders/hud/frag.spv");
-			//
-			let vertex_shader_module = create_shader_module(&vk_handle, vertex_shader_source);
-			let fragment_shader_module = create_shader_module(&vk_handle, fragment_shader_source);
-			//
-			let binding_description = Vertex::get_binding_description();
-			let attribute_descriptions_vec = Vertex::get_attribute_descriptions();
-			//
-			let (pipeline_layout_hud, render_pass_hud, pipeline_hud) = 
-				create_pipeline(
-					&mut vk_handle, 
-					vertex_shader_module, 
-					fragment_shader_module, 
-					binding_description, 
-					attribute_descriptions_vec,
-					VkPolygonMode::VK_POLYGON_MODE_FILL, 
-					false,
-				);
-			//
-			vk_handle.pipeline_layout_hud = pipeline_layout_hud;
-			vk_handle.render_pass_hud = render_pass_hud;
-			vk_handle.graphics_pipeline_hud = pipeline_hud;
-		}
+		create_depth_buffer(vk_handle);
+		create_framebuffers(vk_handle);
 
-		create_depth_buffer(&mut vk_handle);
-		create_framebuffers(&mut vk_handle);
-
-		create_synchronization_structures(&mut vk_handle);
+		create_synchronization_structures(vk_handle);
 
 		let command_buffer_count = vk_handle.frames_in_flight as u32;
 
@@ -212,6 +144,28 @@ fn main()
 			vk_handle.command_buffer_wireframe_vec = command_buffer_wireframe;
 		}	
 		
+		let mut last_delta_time_ms = 0.0f32;
+
+		loop
+		{
+			let update_start = std::time::Instant::now();
+
+			decs.update();
+
+			let update_end = std::time::Instant::now();
+			last_delta_time_ms = update_end.duration_since(update_start).as_secs_f32() * 1000.0f32;
+
+			let main_loop_var = 
+				match decs.get_components_global_mut::<DeltaTime>()
+					{
+						Ok(delta_time_vec) =>  { delta_time_vec.into_iter().next().unwrap() }
+						Err(err) => { panic!("DeltaTime component not found: {}", err) }
+					};
+
+			main_loop_var.last_time_stamp = update_end;
+			main_loop_var.last_delta_time = last_delta_time_ms;
+		}
+
 		let default_normal_map: Texture<VulkanTexture> = 
 			Texture::new("./detail/textures/smiley_normal.tga".into())
 			.load()
@@ -424,13 +378,13 @@ fn main()
 			let start_time = std::time::Instant::now();
 			let absolute_current_time_stamp_s = start_time.duration_since(vk_handle.start_time).as_secs_f32();
 
-			let pointer_pos = window.get_pointer_location();
-			draw_frame(&mut vk_handle, &mut models, &light_pos.clone(), &hud_elements);
+			// let pointer_pos = window.get_pointer_location();
+			draw_frame(vk_handle, &mut models, &light_pos.clone(), &hud_elements);
 
 			let end_time = std::time::Instant::now();
 			last_delta_time_ms = end_time.duration_since(start_time).as_secs_f64() * 1000.0f64;
 			
-			input_processor.process_window_events(&mut window, &mut vk_handle, &mut event_vars, &mut picked_object_info, last_delta_time_ms as f32);
+			input_processor.process_window_events(&mut window, vk_handle, &mut event_vars, &mut picked_object_info, last_delta_time_ms as f32);
 
 			if !event_vars.focus_on_gui
 			{

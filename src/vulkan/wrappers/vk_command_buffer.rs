@@ -89,6 +89,7 @@ impl<'a> CommandBufferBuilder<'a>
 	}
 }
 
+#[derive(Debug)]
 pub struct CommandBuffer<'a>
 {
 	command_buffer_ptr: VkCommandBuffer,

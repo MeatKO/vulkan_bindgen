@@ -35,7 +35,7 @@ impl InputProcessor
 	// pub fn process_window_events(&mut self, delta_time_ms: f32, window: &Window, camera: &mut Camera)
 	pub fn process_window_events(
 		&mut self, 
-		window: &mut WindowHandle, 
+		window: &WindowHandle, 
 		vk_handle: &mut VkHandle,
 		event_vars: &mut EventDrivenVariables,
 		picked_object_info: &mut Option<(usize, f32, Vec3)>,

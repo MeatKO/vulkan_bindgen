@@ -7,7 +7,12 @@ use crate::{cotangens::{vec3::*, vec2::Vec2}, exedra::{error::ModelLoadError, mo
 
 use super::{mesh::{Mesh, VulkanMeshData}, material::Material};
 
+// #[component]
+
+#[derive(Debug)]
 pub struct Model<T>(T);
+
+impl <T: Component> Component for Model<T> {}
 
 impl<T> Deref for Model<T> 
 {

@@ -1,10 +1,11 @@
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct ButtonInfo
 {
 	is_pressed: bool,
 	press_timestamp_ms: f32
 }
 
+#[derive(Debug)]
 pub struct InputBuffer
 {
 	key_states: [ButtonInfo; u8::MAX as usize + 1],

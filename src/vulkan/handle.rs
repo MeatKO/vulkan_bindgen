@@ -21,6 +21,10 @@ use std::vec;
 use super::wrappers::vk_command_buffer::CommandBuffer;
 use super::wrappers::vk_command_pool::CommandPool;
 
+use decs::component_derive::component;
+use decs::component::Component;
+
+#[component]
 pub struct VkHandle<'a>
 {
 	pub camera: Camera,

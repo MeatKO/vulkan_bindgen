@@ -10,9 +10,9 @@ use crate::loseit::xcb_functions::*;
 use std::ptr::null_mut as nullptr;
 
 #[cfg(target_os = "linux")]
-pub fn create_vulkan_surface(window: &mut WindowHandle, vk_handle: &mut VkHandle) -> Result<*mut VkSurfaceKHR_T, String>
+pub fn create_vulkan_surface(window: &WindowHandle, vk_handle: &VkHandle) -> Result<*mut VkSurfaceKHR_T, String>
 {
-	let handle = window as &mut LinuxHandle;
+	let handle = window as &LinuxHandle;
 
 	let mut surface: *mut VkSurfaceKHR_T = nullptr();
 

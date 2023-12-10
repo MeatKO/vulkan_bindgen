@@ -14,7 +14,7 @@ pub fn physics_system()
 		decs.modify_components_global::<AABB>(
 			|aabb|
 			{
-				aabb.velocity += Vec3{ x: 0.0f32, y: -0.01f32, z: 0.0f32 };
+				// aabb.velocity += Vec3{ x: 0.0f32, y: -0.001f32, z: 0.0f32 };
 				Ok(())
 			}
 		);

@@ -15,6 +15,7 @@ pub enum CameraMovement
 	RIGHT
 }
 
+#[derive(Debug)]
 pub struct Camera
 {
 	pub position: Vec3,

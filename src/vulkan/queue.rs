@@ -2,13 +2,14 @@ use crate::vulkan::vk_bindgen::*;
 use crate::vulkan::handle::VkHandle;
 use std::ptr::null_mut as nullptr;
 
+#[derive(Debug)]
 pub struct QueueDescriptor
 {
 	pub family_index: u32,
 	pub queue_index: u32
 }
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct QueueHandle
 {
 	pub presentation_queue: Option<QueueDescriptor>,

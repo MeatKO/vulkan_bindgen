@@ -1,28 +1,33 @@
+use decs::component_derive::system;
+use decs::manager::dECS;
+
 use crate::cotangens::vec3::Vec3;
-use crate::detail_core::model::model::Model;
-use crate::detail_core::model::model::VulkanModel;
-use crate::detail_core::ui::traits::HUDElement;
-use crate::vulkan::vk_bindgen::*;
-use crate::vulkan::handle::*;
-use crate::vulkan::command_buffer::*;
-use crate::vulkan::swapchain::*;
-use crate::vulkan::uniform_buffer::*;
+use crate::detail_core::model::model::{Model, VulkanModel};
+use crate::vulkan::command_buffer::{record_command_buffer, record_command_buffer_ref};
+use crate::vulkan::command_buffer_wireframe::{record_command_buffer_wireframe, record_command_buffer_wireframe_ref};
+use crate::vulkan::handle::VkHandle;
+use crate::vulkan::swapchain::recreate_swapchain;
+use crate::vulkan::uniform_buffer::update_uniform_buffer;
+use crate::vulkan::uniform_buffer_wireframe::update_uniform_buffer_wireframe;
+use crate::vulkan::vk_bindgen::{vkWaitForFences, vkResetFences, vkAcquireNextImageKHR, VkResult, VK_TRUE, VkPipelineStageFlags, VkPipelineStageFlagBits, VkSubmitInfo, VkStructureType, vkQueueSubmit, VkPresentInfoKHR, vkDeviceWaitIdle, vkQueuePresentKHR};
+
 use std::ptr::null_mut as nullptr;
 
-use super::command_buffer_hud::record_command_buffer_hud;
-use super::command_buffer_wireframe::record_command_buffer_wireframe;
-use super::uniform_buffer_hud::update_uniform_buffer_hud;
-use super::uniform_buffer_wireframe::update_uniform_buffer_wireframe;
-
-pub fn 	draw_frame(
-	vk_handle: &mut VkHandle, 
-	models: &mut Vec<Model<VulkanModel>>,
-	light_pos: &Vec3,
-	hud_elements: &Vec<Box<dyn HUDElement>>,
-)
+#[system]
+pub fn rendering_system()
 {
 	unsafe
 	{
+		let vk_handle = 
+			match decs.get_components_global_mut::<VkHandle>()
+			{
+				Ok(vk_handle_vec) => 
+				{
+					vk_handle_vec.into_iter().next().unwrap()
+				}
+				Err(err) => { panic!("vk_handle not found: {}", err) }
+			};
+			
 		vkWaitForFences(vk_handle.logical_device, 1, &vk_handle.in_flight_fence_vec[vk_handle.current_frame], VK_TRUE, u64::MAX);
 		vkResetFences(vk_handle.logical_device, 1, &vk_handle.in_flight_fence_vec[vk_handle.current_frame]);
 
@@ -30,14 +35,38 @@ pub fn 	draw_frame(
 		match vkAcquireNextImageKHR(vk_handle.logical_device, vk_handle.swapchain, u64::MAX, vk_handle.image_available_semaphore_vec[vk_handle.current_frame], nullptr(), &mut image_index)
 		{
 			VkResult::VK_SUCCESS => {}
-			VkResult::VK_ERROR_OUT_OF_DATE_KHR => { recreate_swapchain(vk_handle); }
+			VkResult::VK_ERROR_OUT_OF_DATE_KHR => 
+			{
+				recreate_swapchain(vk_handle); 
+			}
 			e => { panic!("vkAcquireNextImageKHR() resulted in {:?}", e) }
 		}
 
 		vk_handle.command_buffer_vec[vk_handle.current_frame].reset(None);
 
+		let vk_handle = 
+			match decs.get_components_global::<VkHandle>()
+			{
+				Ok(vk_handle_vec) => 
+				{
+					vk_handle_vec.into_iter().next().unwrap()
+				}
+				Err(err) => { panic!("vk_handle not found: {}", err) }
+			};
+		
+		let models = 
+			match decs.get_components_global::<Model<VulkanModel>>()
+			{
+				Ok(vk_handle_vec) => 
+				{
+					vk_handle_vec
+				}
+				Err(err) => { panic!("vk_handle not found: {}", err) }
+			};
+
 		for (index, model) in models.iter().enumerate()
 		{
+			println!("Printing model [{}]", index);
 			update_uniform_buffer_wireframe(
 				vk_handle, 
 				model.aabb_vulkan_data.as_ref().unwrap(), 
@@ -57,27 +86,22 @@ pub fn 	draw_frame(
 						None => continue
 					};
 
-				// update_uniform_buffer(vk_handle, vulkan_data, index, &model.scale, &model.aabb.translation, &model.rotation, light_pos);
-				update_uniform_buffer(vk_handle, vulkan_data, index, &model.aabb.scale, &model.aabb.translation, &model.rotation, light_pos);
+				update_uniform_buffer(vk_handle, vulkan_data, index, &model.aabb.scale, &model.aabb.translation, &model.rotation, &Vec3::new(0.0f32));
 			}
 		}
-		for hud_element in hud_elements.iter()
-		{
-			let vulkan_data = 
-				match hud_element.get_vulkan_data()
+
+		record_command_buffer_ref(vk_handle, image_index, &models);
+		record_command_buffer_wireframe_ref(vk_handle, image_index, &models);
+
+		let vk_handle = 
+			match decs.get_components_global_mut::<VkHandle>()
+			{
+				Ok(vk_handle_vec) => 
 				{
-					Some(vd) => vd,
-					None => continue
-				};
-
-			update_uniform_buffer_hud(vk_handle, &vulkan_data);
-		}
-
-		// vkResetCommandBuffer(vk_handle.command_buffer_vec[vk_handle.current_frame], 0);
-
-		record_command_buffer(vk_handle, image_index, models);
-		record_command_buffer_wireframe(vk_handle, image_index, models);
-		// record_command_buffer_hud(vk_handle, image_index, hud_elements);
+					vk_handle_vec.into_iter().next().unwrap()
+				}
+				Err(err) => { panic!("vk_handle not found: {}", err) }
+			};
 
 		let wait_semaphore_vec = vec![vk_handle.image_available_semaphore_vec[vk_handle.current_frame]];
 		let wait_stages_vec : Vec<VkPipelineStageFlags> = vec![VkPipelineStageFlagBits::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT as u32];
@@ -87,7 +111,6 @@ pub fn 	draw_frame(
 			vec![
 				vk_handle.command_buffer_vec[vk_handle.current_frame].get_command_buffer_ptr(),
 				vk_handle.command_buffer_wireframe_vec[vk_handle.current_frame].get_command_buffer_ptr(),
-				// vk_handle.command_buffer_hud_vec[vk_handle.current_frame].get_command_buffer_ptr(),
 			];
 
 		let submit_info = 
@@ -130,8 +153,6 @@ pub fn 	draw_frame(
 			// VkResult::VK_ERROR_DEVICE_LOST => 
 			_ => { panic!("sheeeit") }
 		}
-		
-		// let start_time = std::time::Instant::now();
 
 		match vkQueuePresentKHR(vk_handle.presentation_queue, &present_info)
 		{
@@ -139,8 +160,6 @@ pub fn 	draw_frame(
 			VkResult::VK_ERROR_OUT_OF_DATE_KHR => { println!("vkQueuePresentKHR() out of date - recreating"); recreate_swapchain(vk_handle) }
 			e => { panic!("vkQueuePresentKHR() resulted in {:?}", e) }
 		}
-
-		// println!("vkQueuePresentKHR() time : {:?}ms", std::time::Instant::now().duration_since(start_time).as_secs_f64() * 1000.0f64);
 
 		vk_handle.current_frame = (vk_handle.current_frame + 1) % vk_handle.frames_in_flight;
 	}

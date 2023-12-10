@@ -60,6 +60,7 @@ impl CommandPoolBuilder
 	}
 }
 
+#[derive(Debug)]
 pub struct CommandPool
 {
 	command_pool_ptr: VkCommandPool,
