@@ -8,6 +8,7 @@ use crate::vulkan::handle::VkHandle;
 use crate::vulkan::shader::create_shader_module;
 use crate::vulkan::vertex::Vertex;
 use crate::vulkan::vk_bindgen::{VkCommandPoolCreateFlagBits, VkPolygonMode};
+use crate::vulkan::wrappers::vk_command_buffer::CommandBufferBuilder;
 use crate::vulkan::wrappers::vk_command_pool::CommandPoolBuilder;
 use crate::vulkan::{
 	vk_bindgen::
@@ -91,6 +92,8 @@ pub fn init_rendering_objects()
 
 	unsafe
 	{
+		// create_instance(vk_handle);
+
 		create_physical_device(vk_handle);
 		create_logical_device(vk_handle);
 		
@@ -212,5 +215,57 @@ pub fn init_pipelines()
 			vk_handle.render_pass_hud = render_pass_hud;
 			vk_handle.graphics_pipeline_hud = pipeline_hud;
 		}
+	}
+}
+
+#[system]
+pub fn init_buffer_objects()
+{
+	let vk_handle = 
+		match decs.get_components_global_mut::<VkHandle>()
+		{
+			Ok(vk_handle_vec) => 
+			{
+				vk_handle_vec.into_iter().next().unwrap()
+			}
+			Err(err) => { panic!("vk_handle not found: {}", err) }
+		};
+
+	unsafe
+	{
+		create_depth_buffer(vk_handle);
+		create_framebuffers(vk_handle);
+
+		create_synchronization_structures(vk_handle);
+
+		let command_buffer_count = vk_handle.frames_in_flight as u32;
+
+		{
+			let command_buffer_graphics =
+			CommandBufferBuilder::new()
+			.with_command_pool(&vk_handle.command_pool.as_ref().unwrap())
+			.with_count(command_buffer_count)
+			.build(&vk_handle.logical_device)
+			.unwrap();
+			vk_handle.command_buffer_vec = command_buffer_graphics;
+		}
+		{
+			let command_buffer_hud =
+			CommandBufferBuilder::new()
+			.with_command_pool(&vk_handle.command_pool.as_ref().unwrap())
+			.with_count(command_buffer_count)
+			.build(&vk_handle.logical_device)
+			.unwrap();
+			vk_handle.command_buffer_hud_vec = command_buffer_hud;
+		}
+		{
+			let command_buffer_wireframe =
+			CommandBufferBuilder::new()
+			.with_command_pool(&vk_handle.command_pool.as_ref().unwrap())
+			.with_count(command_buffer_count)
+			.build(&vk_handle.logical_device)
+			.unwrap();
+			vk_handle.command_buffer_wireframe_vec = command_buffer_wireframe;
+		}	
 	}
 }

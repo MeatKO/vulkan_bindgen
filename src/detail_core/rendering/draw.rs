@@ -18,12 +18,22 @@ pub fn rendering_system()
 {
 	unsafe
 	{
+		// let vk_handle = 
+		// 	match decs.get_components_global_mut::<VkHandle>()
+		// 	{
+		// 		Ok(vk_handle_vec) => 
+		// 		{
+		// 			vk_handle_vec.into_iter().next().unwrap()
+		// 		}
+		// 		Err(err) => { panic!("vk_handle not found: {}", err) }
+		// 	};
+
 		let vk_handle = 
-			match decs.get_components_global_mut::<VkHandle>()
+			match decs.get_components_global_mut_unchecked::<VkHandle>()
 			{
 				Ok(vk_handle_vec) => 
 				{
-					vk_handle_vec.into_iter().next().unwrap()
+					vk_handle_vec.into_iter().next().unwrap().component
 				}
 				Err(err) => { panic!("vk_handle not found: {}", err) }
 			};
@@ -44,15 +54,15 @@ pub fn rendering_system()
 
 		vk_handle.command_buffer_vec[vk_handle.current_frame].reset(None);
 
-		let vk_handle = 
-			match decs.get_components_global::<VkHandle>()
-			{
-				Ok(vk_handle_vec) => 
-				{
-					vk_handle_vec.into_iter().next().unwrap()
-				}
-				Err(err) => { panic!("vk_handle not found: {}", err) }
-			};
+		// let vk_handle = 
+		// 	match decs.get_components_global::<VkHandle>()
+		// 	{
+		// 		Ok(vk_handle_vec) => 
+		// 		{
+		// 			vk_handle_vec.into_iter().next().unwrap()
+		// 		}
+		// 		Err(err) => { panic!("vk_handle not found: {}", err) }
+		// 	};
 		
 		let models = 
 			match decs.get_components_global::<Model<VulkanModel>>()
@@ -67,6 +77,7 @@ pub fn rendering_system()
 		for (index, model) in models.iter().enumerate()
 		{
 			println!("Printing model [{}]", index);
+			println!("translation [{:?}]", model.aabb.translation);
 			update_uniform_buffer_wireframe(
 				vk_handle, 
 				model.aabb_vulkan_data.as_ref().unwrap(), 

@@ -54,9 +54,13 @@ pub fn init_domatena_shtaiga_object()
 				normal_map: Some(default_normal_map.clone()),
 			};
 
-	let model = 
+	let mut model = 
 		Model::new("./detail/models/tomato_crate/tomato_crate_high_geometry.obj".into()).process_meshes(&vk_handle, material_defaults.clone());
-				
-	decs.add_component(shtaiga, model).unwrap();
+	
+	match model.process_textures(vk_handle)
+	{
+		Ok(_) => { decs.add_component(shtaiga, model).unwrap(); }
+		Err(err) => { panic!("couldnt process textures: {}", err)}
+	}
 
 }

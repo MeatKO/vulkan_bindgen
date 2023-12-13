@@ -4,17 +4,27 @@ use decs::component_derive::system;
 use decs::manager::dECS;
 
 use crate::cotangens::vec3::Vec3;
+use crate::detail_core::model::model::{Model, VulkanModel};
 
 use super::aabb::AABB;
 
 #[system]
 pub fn physics_system()
 {
+	// let _ =
+	// 	decs.modify_components_global::<AABB>(
+	// 		|aabb|
+	// 		{
+	// 			aabb.translation += Vec3{ x: 0.0f32, y: -0.01f32, z: 0.0f32 };
+	// 			Ok(())
+	// 		}
+	// 	);
+
 	let _ =
-		decs.modify_components_global::<AABB>(
-			|aabb|
+		decs.modify_components_global::<Model<VulkanModel>>(
+			|model|
 			{
-				// aabb.velocity += Vec3{ x: 0.0f32, y: -0.001f32, z: 0.0f32 };
+				model.aabb.translation += Vec3{ x: 0.0f32, y: -0.001f32, z: 0.0f32 };
 				Ok(())
 			}
 		);

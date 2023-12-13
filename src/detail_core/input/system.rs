@@ -1,21 +1,32 @@
 use decs::component_derive::system;
 use decs::manager::dECS;
 use parmack::handle::Handle;
-use parmack::window::event::{WindowEvent, WindowActions};
+use parmack::window::event::{WindowEvent, WindowActions, KeyCode};
 
-use crate::detail_core::components::misc::{WindowComponent, DeltaTime};
+use crate::detail_core::components::misc::{WindowComponent, DeltaTime, MainLoopComponent};
 use crate::vulkan::handle::VkHandle;
 
 #[system]
 pub fn input_system()
 {
-	let window_events = 
-		match decs.get_components_global_mut::<WindowComponent>()
+	// let window_events =
+	// 	match decs.get_components_global_mut::<WindowComponent>()
+	// 	{
+	// 		Ok(window_handle_vec) => 
+	// 		{
+	// 			let window_handle = window_handle_vec.into_iter().next().unwrap();
+	// 			window_handle.window.get_events()
+	// 		}
+	// 		Err(err) => { panic!("vk_handle not found: {}", err) }
+	// 	};
+
+	let window =
+		match unsafe { decs.get_components_global_mut_unchecked::<WindowComponent>() }
 		{
-			Ok(window_handle_vec) => 
+			Ok(mut window_handle_vec) => 
 			{
-				let window_handle = window_handle_vec.into_iter().next().unwrap();
-				window_handle.window.get_events()
+				let window_handle = window_handle_vec.remove(0);
+				window_handle
 			}
 			Err(err) => { panic!("vk_handle not found: {}", err) }
 		};
@@ -31,11 +42,12 @@ pub fn input_system()
 		};
 
 	let vk_handle = 
-		match decs.get_components_global_mut::<VkHandle>()
+		match unsafe { decs.get_components_global_mut_unchecked::<VkHandle>() }
 		{
-			Ok(vk_handle_vec) => 
+			Ok(mut vk_handle_vec) => 
 			{
-				vk_handle_vec.into_iter().next().unwrap()
+				let vk_handle = vk_handle_vec.remove(0);
+				vk_handle.component
 			}
 			Err(err) => { panic!("vk_handle not found: {}", err) }
 		};
@@ -45,7 +57,9 @@ pub fn input_system()
 	
 	let delta_time_ms = delta_time.last_delta_time;
 
-	for event in window_events
+	let window = &mut window.component.window;
+
+	for event in window.get_events()
 	{
 		match event
 		{
@@ -77,13 +91,22 @@ pub fn input_system()
 			{
 				vk_handle.input_buffer.set_key(key_code as u8, absolute_current_time_stamp_ms);
 
-				// match key_code 
-				// {
-				// 	KeyCode::Escape => { self.should_quit = true; }
-				// 	KeyCode::ShiftLeft => { event_vars.focus_on_gui = !event_vars.focus_on_gui; }
-				// 	KeyCode::V => { event_vars.should_run_physics = !event_vars.should_run_physics; }
-				// 	_ => {}
-				// }
+				match key_code 
+				{
+					KeyCode::Escape => 
+					{ 
+						decs.modify_components_global::<MainLoopComponent>(
+							|main_loop| 
+							{
+								main_loop.should_quit = true;
+								Ok(())
+							}
+						).expect("vk_handle not found");
+					}
+					// KeyCode::ShiftLeft => { event_vars.focus_on_gui = !event_vars.focus_on_gui; }
+					// KeyCode::V => { event_vars.should_run_physics = !event_vars.should_run_physics; }
+					_ => {}
+				}
 			}
 			WindowEvent::KeyRelease(key_code) => 
 			{
@@ -96,15 +119,17 @@ pub fn input_system()
 					// WindowActions::Close => { self.should_quit = true; }
 					// WindowActions::FocusIn => 
 					// { 
-					// 	window.is_focused = true; 
+					// 	// window.is_focused = true; 
 					// 	window.lock_pointer(); 
 					// 	window.hide_cursor();
 					// }
 					// WindowActions::FocusOut => 
 					// { 
-					// 	window.is_focused = false; 
+					// 	// window.is_focused = false; 
 					// 	window.unlock_pointer(); 
 					// 	window.show_cursor(); 
+
+					// 	window.show_pointer(active)
 					// }
 
 					// assuming x and y are delta from the center (will think of something better later)
@@ -114,8 +139,8 @@ pub fn input_system()
 
 						// vk_handle.camera.process_mouse_movement(x as f32 * delta_time_ms, y as f32 * delta_time_ms);
 
-						// let (width, height) = window.get_size();
-						let (width, height) = (800, 600);
+						let (width, height) = window.get_size();
+						// let (width, height) = (800, 600);
 						let mid_x = (width / 2) as i32;
 						let mid_y = (height / 2) as i32;
 
@@ -127,7 +152,7 @@ pub fn input_system()
 						(delta_x != 0 ||
 						delta_y != 0)
 						{
-							// window.center_pointer(true);
+							window.center_pointer(true);
 							vk_handle.camera.process_mouse_movement(delta_x as f32 * 10.0f32, delta_y as f32 * 10.0f32);
 						}
 

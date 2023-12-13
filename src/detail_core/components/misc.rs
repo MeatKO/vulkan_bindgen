@@ -35,3 +35,9 @@ pub struct WindowComponent
 {
 	pub window: WindowHandle
 }
+
+#[component]
+pub struct MainLoopComponent
+{
+	pub should_quit: bool
+}
