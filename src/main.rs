@@ -6,7 +6,7 @@ mod exedra;
 
 mod vulkan;
 
-use detail_core::{rendering::{init::{init_window_handle, init_rendering_objects, init_pipelines, init_buffer_objects}, draw::rendering_system}, logic::{game_objects::init_domatena_shtaiga_object, game_logic::game_logic_system}, diagnostics::system::print_delta_time_system, phys::system::physics_system, input::system::input_system, components::misc::{StringComponent, DeltaTime, WindowComponent, MainLoopComponent}};
+use detail_core::{rendering::{init::{init_window_handle, init_rendering_objects, init_pipelines, init_buffer_objects}, draw::rendering_system}, logic::{game_objects::init_domatena_shtaiga_object, game_logic::game_logic_system}, diagnostics::system::print_delta_time_system, phys::system::{physics_system, physics_system_2}, input::system::input_system, components::misc::{StringComponent, DeltaTime, WindowComponent, MainLoopComponent, GlobalVariables, RaycastObject, RaycastObjectState}, camera::system::update_camera_system, misc_systems::raycast_aabb_pickup::raycast_aabb_pickup_system};
 use vulkan::{
 	vk_bindgen::
 		vkDeviceWaitIdle,
@@ -28,10 +28,13 @@ fn main()
 		decs.add_init_system(init_buffer_objects);
 		decs.add_init_system(init_domatena_shtaiga_object);
 		
-		decs.add_system(physics_system);
+		// decs.add_system(physics_system);
+		decs.add_system(physics_system_2);
 		decs.add_system(rendering_system);
 		decs.add_system(input_system);
 		decs.add_system(game_logic_system);
+		decs.add_system(update_camera_system);
+		decs.add_system(raycast_aabb_pickup_system);
 
 		decs.add_system(print_delta_time_system);
 
@@ -65,6 +68,10 @@ fn main()
 
 		decs.init();
 
+		let global_vars = decs.create_entity();
+		decs.add_component(global_vars, GlobalVariables{ should_run_physics: false, focus_on_gui: false }).unwrap();
+		decs.add_component(global_vars, RaycastObject{ state: RaycastObjectState::None }).unwrap();
+
 		'main_loop: 
 		loop
 		{
@@ -78,7 +85,7 @@ fn main()
 				|delta_time_obj| 
 				{
 					delta_time_obj.last_time_stamp = update_end;
-					delta_time_obj.last_delta_time = update_end.duration_since(update_start).as_secs_f32() * 1000.0f32;;
+					delta_time_obj.last_delta_time = update_end.duration_since(update_start).as_secs_f32() * 1000.0f32;
 					Ok(())
 				}
 			).unwrap();

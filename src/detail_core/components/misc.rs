@@ -4,6 +4,8 @@ use parmack::window::window_handle::WindowHandle;
 
 use std::fmt::Debug;
 
+use crate::cotangens::vec3::Vec3;
+
 #[component]
 pub struct StringComponent
 {
@@ -40,4 +42,25 @@ pub struct WindowComponent
 pub struct MainLoopComponent
 {
 	pub should_quit: bool
+}
+
+#[derive(Debug)]
+pub enum RaycastObjectState
+{
+	Picked((usize, f32, Vec3)),
+	Thrown((usize, f32, Vec3)),
+	None,
+}
+
+#[component]
+pub struct RaycastObject
+{
+	pub state: RaycastObjectState
+}
+
+#[component]
+pub struct GlobalVariables
+{
+	pub should_run_physics: bool,
+	pub focus_on_gui: bool,
 }

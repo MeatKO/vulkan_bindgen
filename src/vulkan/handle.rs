@@ -3,6 +3,7 @@ use crate::cotangens::{
 	vec3::*,
 };
 
+use crate::detail_core::camera::camera::Camera;
 use crate::vulkan::{
 	vk_bindgen::*, 
 	swapchain::*, 

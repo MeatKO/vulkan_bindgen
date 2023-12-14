@@ -1,63 +1,32 @@
+use std::borrow::BorrowMut;
+
 use decs::component_derive::system;
 use decs::manager::dECS;
 use parmack::handle::Handle;
-use parmack::window::event::{WindowEvent, WindowActions, KeyCode};
+use parmack::window::event::{WindowEvent, WindowActions, KeyCode, MouseCode};
 
-use crate::detail_core::components::misc::{WindowComponent, DeltaTime, MainLoopComponent};
+use crate::detail_core::components::misc::{WindowComponent, DeltaTime, MainLoopComponent, GlobalVariables, RaycastObject, RaycastObjectState};
 use crate::vulkan::handle::VkHandle;
 
 #[system]
 pub fn input_system()
 {
-	// let window_events =
-	// 	match decs.get_components_global_mut::<WindowComponent>()
-	// 	{
-	// 		Ok(window_handle_vec) => 
-	// 		{
-	// 			let window_handle = window_handle_vec.into_iter().next().unwrap();
-	// 			window_handle.window.get_events()
-	// 		}
-	// 		Err(err) => { panic!("vk_handle not found: {}", err) }
-	// 	};
+	let window: &mut WindowComponent =
+		unsafe { decs.get_components_global_mut_unchecked::<WindowComponent>() }.unwrap().remove(0).component;
 
-	let window =
-		match unsafe { decs.get_components_global_mut_unchecked::<WindowComponent>() }
-		{
-			Ok(mut window_handle_vec) => 
-			{
-				let window_handle = window_handle_vec.remove(0);
-				window_handle
-			}
-			Err(err) => { panic!("vk_handle not found: {}", err) }
-		};
+	let delta_time: &mut DeltaTime =
+		unsafe { decs.get_components_global_mut_unchecked::<DeltaTime>() }.unwrap().remove(0).component;
 
-	let delta_time: DeltaTime =
-		match decs.get_components_global_mut::<DeltaTime>()
-		{
-			Ok(delta_time_vec) => 
-			{
-				delta_time_vec.into_iter().next().unwrap().clone()
-			}
-			Err(err) => { panic!("vk_handle not found: {}", err) }
-		};
+	let vk_handle: &mut VkHandle =
+		unsafe { decs.get_components_global_mut_unchecked::<VkHandle>() }.unwrap().remove(0).component;
 
-	let vk_handle = 
-		match unsafe { decs.get_components_global_mut_unchecked::<VkHandle>() }
-		{
-			Ok(mut vk_handle_vec) => 
-			{
-				let vk_handle = vk_handle_vec.remove(0);
-				vk_handle.component
-			}
-			Err(err) => { panic!("vk_handle not found: {}", err) }
-		};
+	let raycast_object: &mut RaycastObject =
+		unsafe { decs.get_components_global_mut_unchecked::<RaycastObject>() }.unwrap().remove(0).component;
 
 	let process_start_time = std::time::Instant::now();
 	let absolute_current_time_stamp_ms = process_start_time.duration_since(vk_handle.start_time).as_secs_f32() * 1000.0f32;
-	
-	let delta_time_ms = delta_time.last_delta_time;
 
-	let window = &mut window.component.window;
+	let window = &mut window.window;
 
 	for event in window.get_events()
 	{
@@ -65,6 +34,21 @@ pub fn input_system()
 		{
 			WindowEvent::MousePress(mouse_code, x, y) =>
 			{
+				match raycast_object.state.borrow_mut()
+				{
+					RaycastObjectState::Picked((index, length, obj_relative_hit)) =>
+					{
+						if mouse_code == MouseCode::ScrollDown
+						{
+							*length -= 1000.0f32 * (delta_time.last_delta_time / 1000.0f32);
+						}
+						if mouse_code == MouseCode::ScrollUp
+						{
+							*length += 1000.0f32 * (delta_time.last_delta_time / 1000.0f32);
+						}
+					}
+					_ => {}
+				}
 				// match picked_object_info.as_mut()
 				// {
 				// 	Some(object_info) =>
@@ -103,8 +87,26 @@ pub fn input_system()
 							}
 						).expect("vk_handle not found");
 					}
-					// KeyCode::ShiftLeft => { event_vars.focus_on_gui = !event_vars.focus_on_gui; }
-					// KeyCode::V => { event_vars.should_run_physics = !event_vars.should_run_physics; }
+					KeyCode::ShiftLeft => 
+					{ 
+						decs.modify_components_global::<GlobalVariables>(
+							|global_variables|
+							{
+								global_variables.focus_on_gui = !global_variables.focus_on_gui;
+								Ok(())
+							}
+						).unwrap();
+					}
+					KeyCode::V => 
+					{ 
+						decs.modify_components_global::<GlobalVariables>(
+							|global_variables|
+							{
+								global_variables.should_run_physics = !global_variables.should_run_physics;
+								Ok(())
+							}
+						).unwrap();
+					}
 					_ => {}
 				}
 			}
@@ -116,7 +118,16 @@ pub fn input_system()
 			{
 				match val
 				{
-					// WindowActions::Close => { self.should_quit = true; }
+					WindowActions::Close => 
+					{ 
+						decs.modify_components_global::<MainLoopComponent>(
+							|main_loop_component|
+							{
+								main_loop_component.should_quit = true;
+								Ok(())
+							}
+						).unwrap();
+					}
 					// WindowActions::FocusIn => 
 					// { 
 					// 	// window.is_focused = true; 
