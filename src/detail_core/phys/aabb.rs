@@ -1,7 +1,9 @@
 use decs::component_derive::component;
 use decs::component::Component;
 
-use crate::{cotangens::vec3::Vec3, vulkan::vertex::Vertex};
+use std::ptr::null_mut as nullptr;
+
+use crate::{cotangens::vec3::Vec3, vulkan::{vertex::{Vertex, create_vertex_buffer}, handle::VkHandle, index::create_index_buffer, uniform_buffer::create_uniform_buffers, descriptor_pool::create_descriptor_pool, descriptor_set_wireframe::create_descriptor_sets_wireframe}, detail_core::model::mesh::VulkanMeshData};
 
 #[component]
 pub struct AABB 
@@ -16,6 +18,9 @@ pub struct AABB
     pub is_static: bool,
     pub damping: f32,
     pub restitution: f32, // The bounciness of the object
+
+	pub aabb_vulkan_data: Option<VulkanMeshData>,
+	pub aabb_index_count: u32,
 }
 
 impl AABB 
@@ -34,6 +39,9 @@ impl AABB
             is_static: is_static,
             damping: damping,
             restitution: restitution,
+            aabb_vulkan_data: None,
+            aabb_index_count: 0,
+			
         }
     }
 
@@ -50,8 +58,63 @@ impl AABB
             is_static: false,
             damping: 0.5,
             restitution: 0.9,
+			aabb_vulkan_data: None,
+            aabb_index_count: 0,
         }
     }
+
+	pub fn new_nonverbose(translation: Vec3, scale: Vec3, is_static: bool) -> AABB 
+    {
+        AABB 
+        {
+			color: Vec3::new(1.0f32),
+            translation: translation,
+            scale: scale,
+            velocity: Vec3::new(0.0f32),
+            pressure_force: Vec3::new(0.0f32),
+            mass: 1.0f32,
+            is_static: is_static,
+            damping: 0.5,
+            restitution: 0.9,
+			aabb_vulkan_data: None,
+            aabb_index_count: 0,
+        }
+    }
+
+	pub unsafe fn process_vulkan(&mut self, vk_handle: &VkHandle)
+	{
+		let (vertex_vec, index_vec) = AABB::new_empty().get_geometry();
+
+		let (vertex_buffer, vertex_buffer_memory) =
+			create_vertex_buffer(&vk_handle, &vertex_vec)
+			.unwrap();
+
+		let (index_buffer, index_buffer_memory) =
+			create_index_buffer(&vk_handle, &index_vec)
+			.unwrap();
+
+		let mut mesh_data =
+			VulkanMeshData{
+				vertex_buffer: vertex_buffer,
+				vertex_buffer_memory: vertex_buffer_memory,
+				index_buffer: index_buffer,
+				index_buffer_memory: index_buffer_memory,
+				uniform_buffers: vec![],
+				uniform_buffers_memory: vec![],
+				uniform_buffers_mapped: vec![],
+				descriptor_pool: nullptr(),
+				descriptor_sets: vec![],
+			};
+
+		create_uniform_buffers(&vk_handle, &mut mesh_data);
+
+		let descriptor_pool = create_descriptor_pool(&vk_handle).unwrap();
+		create_descriptor_sets_wireframe(&vk_handle, &mut mesh_data, &descriptor_pool).unwrap();
+		mesh_data.descriptor_pool = descriptor_pool;
+
+		self.aabb_vulkan_data = Some(mesh_data);
+		self.aabb_index_count = index_vec.len() as _;
+	}
 
 	pub fn get_geometry(&self) -> (Vec<Vertex>, Vec<u32>)
 	{

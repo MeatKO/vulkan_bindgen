@@ -2,12 +2,15 @@ use decs::component_derive::system;
 use decs::manager::dECS;
 
 use crate::detail_core::components::misc::WindowComponent;
+use crate::detail_core::model::material::Material;
+use crate::detail_core::model::model::Model;
+use crate::detail_core::texture::texture::{VulkanTexture, Texture};
 use crate::detail_core::window::create_vulkan_surface;
 use crate::vulkan::handle::VkHandle;
 
 use crate::vulkan::shader::create_shader_module;
 use crate::vulkan::vertex::Vertex;
-use crate::vulkan::vk_bindgen::{VkCommandPoolCreateFlagBits, VkPolygonMode};
+use crate::vulkan::vk_bindgen::{VkCommandPoolCreateFlagBits, VkPolygonMode, VkFormat};
 use crate::vulkan::wrappers::vk_command_buffer::CommandBufferBuilder;
 use crate::vulkan::wrappers::vk_command_pool::CommandPoolBuilder;
 use crate::vulkan::{
@@ -26,7 +29,6 @@ use crate::vulkan::{
 		create_descriptor_sets
 	}, 
 	device::create_logical_device,
-	draw::draw_frame, 
 	framebuffer::create_framebuffers, 
 	pipeline::create_pipeline, 
 	instance::create_instance, 
@@ -35,6 +37,52 @@ use crate::vulkan::{
 	depth_buffer::create_depth_buffer,
 };
 
+#[system]
+pub fn init_rendering_assets()
+{
+	let vk_handle: &mut VkHandle =
+		unsafe { decs.get_components_global_mut_unchecked::<VkHandle>() }.unwrap().remove(0).component;
+
+	let default_normal_map: Texture<VulkanTexture> = 
+	Texture::new("./detail/textures/smiley_normal.tga".into())
+	.load()
+	.unwrap()
+	.process_vk(
+		&vk_handle, 
+		VkFormat::VK_FORMAT_R8G8B8A8_UNORM
+	)
+	.unwrap();
+
+	let default_albedo_map: Texture<VulkanTexture> = 
+		Texture::new("./detail/textures/test.tga".into())
+		.load()
+		.unwrap()
+		.process_vk(
+			&vk_handle, 
+			VkFormat::VK_FORMAT_R8G8B8A8_SRGB
+		)
+		.unwrap();
+
+	let material_defaults =	
+		Material {
+			name: "default".into(),
+			albedo_path: "unused".to_string(),
+			normal_path: "unused".to_string(),
+			albedo_map: Some(default_albedo_map.clone()),
+			normal_map: Some(default_normal_map.clone()),
+		};
+
+	decs.add_asset("material_defaults", material_defaults.clone()).unwrap();
+
+	let mut error_model = Model::new("./detail/models/error/error.obj".into()).process_meshes(&vk_handle, material_defaults.clone());
+	match error_model.process_textures(&vk_handle)
+	{
+		Ok(()) => {},
+		Err(err) => { println!("couldn't parse textures for model '{}' err : '{}'", error_model.name, err) }
+	}
+
+	decs.add_asset("error_model", error_model).expect("couldnt add error_model asset");
+}
 
 #[system]
 pub fn init_window_handle()

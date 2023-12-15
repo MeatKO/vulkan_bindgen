@@ -1,5 +1,5 @@
 use decs::component_derive::system;
-use decs::manager::dECS;
+use decs::manager::{dECS, QueryResultMut};
 use parmack::window::event::{MouseCode, KeyCode};
 
 use crate::detail_core::components::misc::{DeltaTime, GlobalVariables, RaycastObject, RaycastObjectState};
@@ -22,9 +22,13 @@ pub fn raycast_aabb_pickup_system()
 	let raycast_object: &mut RaycastObject =
 		unsafe { decs.get_components_global_mut_unchecked::<RaycastObject>() }.unwrap().remove(0).component;
 
-	let mut aabb_vector = 
-		unsafe {decs.get_components_global_mut_unchecked::<Model<VulkanModel>>().unwrap().into_iter().map(|model| &mut model.component.aabb).collect::<Vec<&mut AABB>>() };
-	
+	// let mut aabb_vector: Vec<&mut AABB> = 
+	// 	unsafe {decs.get_components_global_mut_unchecked::<Model<VulkanModel>>().unwrap().into_iter().map(|model| &mut model.component.aabb).collect::<Vec<&mut AABB>>() };
+
+	// let mut aabb_vector: Vec<&mut AABB> = 
+	let mut aabb_vector: Vec<QueryResultMut<AABB>> = 
+		unsafe {decs.get_components_global_mut_unchecked::<AABB>() }.unwrap();
+
 	// rewrite this so it uses click and release events because its getting ridiculous
 	if vk_handle.mouse_input_buffer.is_pressed(MouseCode::Left as u8)
 	{
@@ -38,9 +42,9 @@ pub fn raycast_aabb_pickup_system()
 					println!("throwing");
 					raycast_object.state = RaycastObjectState::Thrown((index, length, obj_relative_hit));
 
-					let aabb_pos = aabb_vector[index].translation;
+					let aabb_pos = aabb_vector[index].component.translation;
 
-					aabb_vector[index].velocity += 
+					aabb_vector[index].component.velocity += 
 						(aabb_pos - vk_handle.camera.get_position()).normalize() / 1.0f32;
 				}
 			}
@@ -53,7 +57,7 @@ pub fn raycast_aabb_pickup_system()
 				.filter_map(
 					|(index, aabb)|
 					{
-						match aabb.raycast_hit(vk_handle.camera.get_position(), vk_handle.camera.get_front())
+						match aabb.component.raycast_hit(vk_handle.camera.get_position(), vk_handle.camera.get_front())
 						{
 							Some(hit_point) =>
 							{
@@ -65,17 +69,17 @@ pub fn raycast_aabb_pickup_system()
 				)
 				.collect();
 			
-				hit_points.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal));
+				hit_points.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
 
 				for (aabb_index, camera_front_scale) in hit_points.iter().cloned()
 				{
-					if aabb_vector[aabb_index].is_static
+					if aabb_vector[aabb_index].component.is_static
 					{
 						continue;
 					}
 
 					let hit_world_pos = vk_handle.camera.get_position() + (vk_handle.camera.get_front() * camera_front_scale);
-					let aabb_center_hit_vec3 = aabb_vector[aabb_index].translation - hit_world_pos;
+					let aabb_center_hit_vec3 = aabb_vector[aabb_index].component.translation - hit_world_pos;
 
 					raycast_object.state = RaycastObjectState::Picked((aabb_index, camera_front_scale, aabb_center_hit_vec3));
 					// break;

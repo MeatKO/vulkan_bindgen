@@ -58,9 +58,9 @@ pub struct VulkanModel
 	pub translation: Vec3,
 	pub rotation: Vec3,
 
-	pub aabb: AABB,
-	pub aabb_vulkan_data: Option<VulkanMeshData>,
-	pub aabb_index_count: u32,
+	// pub aabb: AABB,
+	// pub aabb_vulkan_data: Option<VulkanMeshData>,
+	// pub aabb_index_count: u32,
 }
 
 impl VulkanModel
@@ -138,9 +138,9 @@ impl VulkanModel
 					scale: Vec3::new(1.0f32),
 					translation: Vec3::new(0.0f32),
 					rotation: Vec3::new(0.0f32),
-					aabb: AABB::new_empty(),
-					aabb_vulkan_data: None,
-					aabb_index_count: 0u32,
+					// aabb: AABB::new_empty(),
+					// aabb_vulkan_data: None,
+					// aabb_index_count: 0u32,
 				};
 			
 			// process the aabb box of the model
@@ -174,8 +174,8 @@ impl VulkanModel
 				create_descriptor_sets_wireframe(&vk_handle, &mut mesh_data, &descriptor_pool).unwrap();
 				mesh_data.descriptor_pool = descriptor_pool;
 
-				out_model.aabb_vulkan_data = Some(mesh_data);
-				out_model.aabb_index_count = index_vec.len() as _;
+				// out_model.aabb_vulkan_data = Some(mesh_data);
+				// out_model.aabb_index_count = index_vec.len() as _;
 			}
 
 			// process all the meshes of the model

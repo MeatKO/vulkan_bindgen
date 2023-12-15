@@ -1,8 +1,10 @@
 use crate::detail_core::model::model::Model;
 use crate::detail_core::model::model::VulkanModel;
+use crate::detail_core::phys::aabb::AABB;
 use crate::vulkan::vk_bindgen::*;
 use crate::vulkan::handle::*;
 use std::ptr::null_mut as nullptr;
+use std::rc::Rc;
 
 // pub unsafe fn create_command_buffers(vk_handle: &mut VkHandle)
 // {
@@ -192,10 +194,15 @@ pub unsafe fn record_command_buffer(
 }
 
 
+// pub unsafe fn record_command_buffer_ref(
+// 	vk_handle: &VkHandle, 
+// 	image_index: u32, 
+// 	models: &Vec<&Model<VulkanModel>>
+// )
 pub unsafe fn record_command_buffer_ref(
 	vk_handle: &VkHandle, 
 	image_index: u32, 
-	models: &Vec<&Model<VulkanModel>>
+	models: &Vec<(&AABB, Rc<Model<VulkanModel>>)>
 )
 {
 	let current_command_buffer = vk_handle.command_buffer_vec[vk_handle.current_frame].get_command_buffer_ptr();
@@ -291,7 +298,7 @@ pub unsafe fn record_command_buffer_ref(
 
 	for model in models.iter()
 	{
-		for mesh in model.meshes.iter()
+		for mesh in model.1.meshes.iter()
 		{
 			let vulkan_data = 
 				match &mesh.vulkan_data

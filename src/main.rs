@@ -6,7 +6,7 @@ mod exedra;
 
 mod vulkan;
 
-use detail_core::{rendering::{init::{init_window_handle, init_rendering_objects, init_pipelines, init_buffer_objects}, draw::rendering_system}, logic::{game_objects::init_domatena_shtaiga_object, game_logic::game_logic_system}, diagnostics::system::print_delta_time_system, phys::system::{physics_system, physics_system_2}, input::system::input_system, components::misc::{StringComponent, DeltaTime, WindowComponent, MainLoopComponent, GlobalVariables, RaycastObject, RaycastObjectState}, camera::system::update_camera_system, misc_systems::raycast_aabb_pickup::raycast_aabb_pickup_system};
+use detail_core::{rendering::{init::{init_window_handle, init_rendering_objects, init_pipelines, init_buffer_objects, init_rendering_assets}, draw::rendering_system3}, logic::{game_objects::{init_domatena_shtaiga_object, init_domatena_shtaiga_asset_prefabs}, game_logic::game_logic_system}, diagnostics::system::print_delta_time_system, phys::system::physics_system_2, input::system::input_system, components::misc::{StringComponent, DeltaTime, WindowComponent, MainLoopComponent, GlobalVariables, RaycastObject, RaycastObjectState}, camera::system::update_camera_system, misc_systems::raycast_aabb_pickup::raycast_aabb_pickup_system};
 use vulkan::{
 	vk_bindgen::
 		vkDeviceWaitIdle,
@@ -26,11 +26,15 @@ fn main()
 		decs.add_init_system(init_rendering_objects);
 		decs.add_init_system(init_pipelines);
 		decs.add_init_system(init_buffer_objects);
+
+		decs.add_init_system(init_rendering_assets);
+
+		decs.add_init_system(init_domatena_shtaiga_asset_prefabs);
 		decs.add_init_system(init_domatena_shtaiga_object);
 		
 		// decs.add_system(physics_system);
 		decs.add_system(physics_system_2);
-		decs.add_system(rendering_system);
+		decs.add_system(rendering_system3);
 		decs.add_system(input_system);
 		decs.add_system(game_logic_system);
 		decs.add_system(update_camera_system);
@@ -69,6 +73,7 @@ fn main()
 		decs.init();
 
 		let global_vars = decs.create_entity();
+		decs.add_component(global_vars, StringComponent{ string : String::from("global_vars") }).unwrap();
 		decs.add_component(global_vars, GlobalVariables{ should_run_physics: false, focus_on_gui: false }).unwrap();
 		decs.add_component(global_vars, RaycastObject{ state: RaycastObjectState::None }).unwrap();
 
@@ -90,14 +95,16 @@ fn main()
 				}
 			).unwrap();
 
-			if decs.get_components_global::<MainLoopComponent>().expect("missing main loop component").first().unwrap().should_quit
+			if 
+			decs.get_components_global::<MainLoopComponent>().expect("missing main loop component").remove(0)
+			.should_quit
 			{
 				break 'main_loop;
 			}
 		}
 
 		decs.modify_components_global::<VkHandle>(
-			|vk_handle| 
+			|vk_handle|
 			{
 				println!("Destroying vk objects...");
 				vkDeviceWaitIdle(vk_handle.logical_device);
