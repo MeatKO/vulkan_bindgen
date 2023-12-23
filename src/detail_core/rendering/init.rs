@@ -6,11 +6,12 @@ use crate::detail_core::model::material::Material;
 use crate::detail_core::model::model::Model;
 use crate::detail_core::texture::texture::{VulkanTexture, Texture};
 use crate::detail_core::window::create_vulkan_surface;
+use crate::vulkan::descriptor_pool::create_descriptor_pool;
 use crate::vulkan::handle::VkHandle;
 
 use crate::vulkan::shader::create_shader_module;
 use crate::vulkan::vertex::Vertex;
-use crate::vulkan::vk_bindgen::{VkCommandPoolCreateFlagBits, VkPolygonMode, VkFormat};
+use crate::vulkan::vk_bindgen::{VkCommandPoolCreateFlagBits, VkPolygonMode, VkFormat, vkUpdateDescriptorSets, VkDescriptorImageInfo, VkImageLayout, VkWriteDescriptorSet, VkStructureType, VkDescriptorType};
 use crate::vulkan::wrappers::vk_command_buffer::CommandBufferBuilder;
 use crate::vulkan::wrappers::vk_command_pool::CommandPoolBuilder;
 use crate::vulkan::{
@@ -37,6 +38,8 @@ use crate::vulkan::{
 	depth_buffer::create_depth_buffer,
 };
 
+use std::ptr::null_mut as nullptr;
+
 #[system]
 pub fn init_rendering_assets()
 {
@@ -44,14 +47,14 @@ pub fn init_rendering_assets()
 		unsafe { decs.get_components_global_mut_unchecked::<VkHandle>() }.unwrap().remove(0).component;
 
 	let default_normal_map: Texture<VulkanTexture> = 
-	Texture::new("./detail/textures/smiley_normal.tga".into())
-	.load()
-	.unwrap()
-	.process_vk(
-		&vk_handle, 
-		VkFormat::VK_FORMAT_R8G8B8A8_UNORM
-	)
-	.unwrap();
+		Texture::new("./detail/textures/smiley_normal.tga".into())
+		.load()
+		.unwrap()
+		.process_vk(
+			&vk_handle, 
+			VkFormat::VK_FORMAT_R8G8B8A8_UNORM
+		)
+		.unwrap();
 
 	let default_albedo_map: Texture<VulkanTexture> = 
 		Texture::new("./detail/textures/test.tga".into())
@@ -68,8 +71,8 @@ pub fn init_rendering_assets()
 			name: "default".into(),
 			albedo_path: "unused".to_string(),
 			normal_path: "unused".to_string(),
-			albedo_map: Some(default_albedo_map.clone()),
-			normal_map: Some(default_normal_map.clone()),
+			albedo_map: Some(default_albedo_map),
+			normal_map: Some(default_normal_map),
 		};
 
 	decs.add_asset("material_defaults", material_defaults.clone()).unwrap();
@@ -82,6 +85,61 @@ pub fn init_rendering_assets()
 	}
 
 	decs.add_asset("error_model", error_model).expect("couldnt add error_model asset");
+
+	unsafe 
+	{
+		let descriptor_pool = create_descriptor_pool(&vk_handle).unwrap();
+		let descriptor_sets = create_descriptor_sets(&vk_handle, &descriptor_pool).unwrap();		
+
+		vk_handle.global_mesh_descriptor_pool = descriptor_pool;
+		vk_handle.global_mesh_descriptor_sets = descriptor_sets;
+
+		// {
+		// 	let albedo_image_info = 
+		// 		VkDescriptorImageInfo {
+		// 			imageLayout: VkImageLayout::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+		// 			imageView: default_albedo_map.texture_image_view,
+		// 			sampler: default_albedo_map.texture_sampler
+		// 		};
+
+		// 	let normal_image_info = 
+		// 		VkDescriptorImageInfo {
+		// 			imageLayout: VkImageLayout::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+		// 			imageView: default_normal_map.texture_image_view,
+		// 			sampler: default_normal_map.texture_sampler
+		// 	};
+
+		// 	let descriptor_writes = 
+		// 		vec![
+		// 			VkWriteDescriptorSet {
+		// 				sType: VkStructureType::VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+		// 				dstSet: vk_handle.global_mesh_descriptor_sets[vk_handle.current_frame],
+		// 				dstBinding: 1,
+		// 				dstArrayElement: 0,
+		// 				descriptorType: VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+		// 				descriptorCount: 1,
+		// 				pBufferInfo: nullptr(),
+		// 				pImageInfo: &albedo_image_info,
+		// 				pTexelBufferView: nullptr(),
+		// 				pNext: nullptr()
+		// 			},
+		// 			VkWriteDescriptorSet {
+		// 				sType: VkStructureType::VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+		// 				dstSet: vk_handle.global_mesh_descriptor_sets[vk_handle.current_frame],
+		// 				dstBinding: 2,
+		// 				dstArrayElement: 0,
+		// 				descriptorType: VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+		// 				descriptorCount: 1,
+		// 				pBufferInfo: nullptr(),
+		// 				pImageInfo: &normal_image_info,
+		// 				pTexelBufferView: nullptr(),
+		// 				pNext: nullptr()
+		// 			},
+		// 		];
+
+		// 	vkUpdateDescriptorSets(vk_handle.logical_device, descriptor_writes.len() as _, descriptor_writes.as_ptr(), 0, nullptr());
+		// }
+	}	
 }
 
 #[system]

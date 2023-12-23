@@ -11,6 +11,7 @@ use std::ptr::null_mut as nullptr;
 // don't remember if this should be commented out : EDIT - its *not* needed because inner structs have 16B alignment
 #[repr(C)]
 #[repr(align(16))]
+#[derive(Debug, Clone)]
 pub struct UniformBufferObject
 {
 	pub light_pos: Vec3,
@@ -20,53 +21,66 @@ pub struct UniformBufferObject
 	pub proj: Mat4x4,
 }
 
-pub unsafe fn create_uniform_buffers(
-	vk_handle: &VkHandle,
-	mesh_data: &mut VulkanMeshData
-) 
+impl UniformBufferObject
 {
-	let buffer_size = size_of::<UniformBufferObject>() as u64;
+	pub fn new_empty() -> Self
+	{
+		UniformBufferObject{
+			light_pos: Vec3::new(0.0f32),
+			view_pos: Vec3::new(0.0f32),
+			model: Mat4x4::new_identity(1.0f32),
+			view: Mat4x4::new_identity(1.0f32),
+			proj: Mat4x4::new_identity(1.0f32),
+		}
+	}
+}
 
-	mesh_data.uniform_buffers.resize(vk_handle.frames_in_flight, nullptr());
-	mesh_data.uniform_buffers_memory.resize(vk_handle.frames_in_flight, nullptr());
-	mesh_data.uniform_buffers_mapped.resize(vk_handle.frames_in_flight, nullptr());
+pub unsafe fn create_uniform_buffers<T>(
+	vk_handle: &VkHandle,
+	count: usize,
+) -> Result<(Vec<VkBuffer>, Vec<VkDeviceMemory>, Vec<*mut T>), String>
+{
+	let buffer_size = size_of::<T>() as u64;
 
-	for i in 0..mesh_data.uniform_buffers.len()
+	let mut out_uniform_buffers = vec![nullptr(); count];
+	let mut out_uniform_buffers_memory = vec![nullptr(); count];
+	let mut out_uniform_buffers_mapped = vec![nullptr(); count];
+
+	for i in 0..out_uniform_buffers.len()
 	{
 		let (buffer, buffer_memory) = 
-			match create_buffer(
+			create_buffer(
 				vk_handle, 
 				buffer_size,
 				VkBufferUsageFlagBits::VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT as u32, 
 				VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT as u32 | 
 				VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_HOST_COHERENT_BIT as u32
-			)
-			{
-				Ok(tuple) => { tuple }
-				Err(e) => { panic!("create_uniform_buffers, create_buffer failed {}", e) }
-			};
+			)?;
 		
-		mesh_data.uniform_buffers[i] = buffer;
-		mesh_data.uniform_buffers_memory[i] = buffer_memory;
+		out_uniform_buffers[i] = buffer;
+		out_uniform_buffers_memory[i] = buffer_memory;
 
 		// persistent mapping
 		let mut uniform_buffer_map : *mut c_void = nullptr();
 		vkMapMemory(
 			vk_handle.logical_device, 
-			mesh_data.uniform_buffers_memory[i], 
+			out_uniform_buffers_memory[i], 
 			0, 
 			buffer_size, 
 			0, 
 			&mut uniform_buffer_map, 
 		);
-		mesh_data.uniform_buffers_mapped[i] = uniform_buffer_map as _;
+		out_uniform_buffers_mapped[i] = uniform_buffer_map as _;
 	}
+
+	Ok((out_uniform_buffers, out_uniform_buffers_memory, out_uniform_buffers_mapped))
 }
 
 pub unsafe fn update_uniform_buffer(
 	vk_handle: &VkHandle,
-	mesh_data: &VulkanMeshData,
-	index: usize,
+	// mesh_data: &VulkanMeshData,
+	// ubo_vec: &Vec<UniformBufferObject>,
+	ubo_mapped: *mut UniformBufferObject,
 	scale: &Vec3,
 	translation: &Vec3,
 	rotation: &Vec3,
@@ -98,5 +112,6 @@ pub unsafe fn update_uniform_buffer(
 			)
 		};
 	
-	std::ptr::copy_nonoverlapping(&ubo, mesh_data.uniform_buffers_mapped[vk_handle.current_frame] as _, 1);
+	// std::ptr::copy_nonoverlapping(&ubo, ubo_mapped as _, 1);
+	std::ptr::copy_nonoverlapping(&ubo, ubo_mapped, 1);
 }	

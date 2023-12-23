@@ -33,9 +33,7 @@ use crate::vulkan::vk_memory::{
 	find_memory_type,
 };
 
-use crate::vulkan::handle::{
-	VkHandle,
-};
+use crate::vulkan::handle::VkHandle;
 
 use std::ptr::null_mut as nullptr;
 
@@ -63,16 +61,17 @@ pub unsafe fn create_buffer(
 	let mut memory_requirements: VkMemoryRequirements = std::mem::zeroed();
 	vkGetBufferMemoryRequirements(vk_handle.logical_device, buffer, &mut memory_requirements);
 
-	let memory_allocate_info = VkMemoryAllocateInfo{
-		sType: VkStructureType::VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-		allocationSize: memory_requirements.size,
-		memoryTypeIndex: find_memory_type(
-			vk_handle.physical_device, 
-			memory_requirements.memoryTypeBits, 
-			properties
-		).unwrap(), // handle this later !
-		pNext: nullptr(),
-	};
+	let memory_allocate_info = 
+		VkMemoryAllocateInfo{
+			sType: VkStructureType::VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+			allocationSize: memory_requirements.size,
+			memoryTypeIndex: find_memory_type(
+				vk_handle.physical_device, 
+				memory_requirements.memoryTypeBits, 
+				properties
+			).unwrap(), // handle this later !
+			pNext: nullptr(),
+		};
 
 	let buffer_memory = vk_allocate_memory(vk_handle.logical_device, &memory_allocate_info)?;
 

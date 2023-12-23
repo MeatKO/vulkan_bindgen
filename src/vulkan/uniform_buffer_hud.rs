@@ -1,5 +1,4 @@
 use crate::cotangens::mat4x4::Mat4x4;
-use crate::cotangens::vec3::Vec3;
 use crate::detail_core::ui::button::VulkanButtonData;
 use crate::vulkan::vk_bindgen::*;
 use crate::vulkan::handle::*;
@@ -8,7 +7,6 @@ use std::ffi::c_void;
 use std::mem::size_of;
 use std::ptr::null_mut as nullptr;
 
-use super::uniform_buffer::UniformBufferObject;
 
 // don't remember if this should be commented out : EDIT - its *not* needed because inner structs have 16B alignment
 #[repr(C)]

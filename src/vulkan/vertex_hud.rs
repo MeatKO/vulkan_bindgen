@@ -1,13 +1,9 @@
 use crate::vulkan::vk_bindgen::*;
-use crate::vulkan::handle::*;
-use crate::vulkan::vk_buffer::*;
-use crate::cotangens::{vec2::*, vec3::*};
+use crate::cotangens::vec3::*;
 
 use crate::ffi::offsetof::offset_of;
 
-use std::ffi::c_void;
 use std::mem::size_of;
-use std::ptr::null_mut as nullptr;
 
 #[derive(Eq, Hash, PartialEq, Clone)]
 pub struct VertexHud

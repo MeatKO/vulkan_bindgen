@@ -1,25 +1,23 @@
-use std::rc::{Weak, Rc};
+use std::rc::Weak;
 
 use decs::component_derive::system;
 use decs::manager::dECS;
 
 use crate::cotangens::vec3::Vec3;
 use crate::detail_core::components::misc::StringComponent;
-use crate::detail_core::components::rendering::ModelComponent;
+use crate::detail_core::components::rendering::{ModelComponent, UniformBufferComponent};
 use crate::detail_core::model::material::Material;
 use crate::detail_core::model::model::{Model, VulkanModel};
 use crate::detail_core::phys::aabb::AABB;
-use crate::detail_core::texture::texture::{Texture, VulkanTexture};
 use crate::vulkan::handle::VkHandle;
-use crate::vulkan::vk_bindgen::VkFormat;
 
 #[system]
-pub fn init_domatena_shtaiga_asset_prefabs()
+pub fn init_domatena_shtaiga_assets()
 {
 	let vk_handle: &mut VkHandle =
-	unsafe { decs.get_components_global_mut_unchecked::<VkHandle>() }.unwrap().remove(0).component;
+		unsafe { decs.get_components_global_mut_unchecked::<VkHandle>() }.unwrap().remove(0).component;
 
-	let material_defaults_ptr: Weak<Material> = decs.get_asset::<Material, _>("material_defaults").unwrap();
+	let material_defaults_ptr = decs.get_asset::<Material>("material_defaults").unwrap();
 	let material_defaults = material_defaults_ptr.upgrade().unwrap().clone();
 
 	let mut shtaiga = Model::new("./detail/models/tomato_crate/tomato_crate_high_geometry.obj".into()).process_meshes(&vk_handle, material_defaults.as_ref().clone());
@@ -38,7 +36,7 @@ pub fn init_domatena_shtaiga_object()
 	let vk_handle: &mut VkHandle =
 		unsafe { decs.get_components_global_mut_unchecked::<VkHandle>() }.unwrap().remove(0).component;
 
-	let shtaiga_asset: Weak<Model<VulkanModel>> = decs.get_asset::<Model<VulkanModel>, _>("shtaiga").unwrap();
+	let shtaiga_asset: Weak<Model<VulkanModel>> = decs.get_asset::<Model<VulkanModel>>("shtaiga").unwrap();
 
 	let mut phys_boxes: Vec<AABB> =
 		vec![
@@ -73,5 +71,6 @@ pub fn init_domatena_shtaiga_object()
 		decs.add_component(shtaiga, StringComponent{ string : format!("shtaiga_{}", index).to_owned() }).unwrap();
 		decs.add_component(shtaiga, aabb).unwrap();
 		decs.add_component(shtaiga, ModelComponent{model_asset: shtaiga_asset.clone()}).unwrap();
+		decs.add_component(shtaiga, UniformBufferComponent::new(vk_handle).unwrap()).unwrap();
 	}
 }

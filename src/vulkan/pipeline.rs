@@ -1,7 +1,5 @@
 use crate::vulkan::vk_bindgen::*;
 use crate::vulkan::handle::*;
-use crate::vulkan::shader::*;
-use crate::vulkan::vertex::*;
 use crate::vulkan::depth_buffer::*;
 use crate::ffi::strings::*;
 use std::ptr::null_mut as nullptr;
@@ -16,9 +14,6 @@ pub unsafe fn create_pipeline(
 	first_pass: bool, 
 ) -> (VkPipelineLayout, VkRenderPass, VkPipeline)
 {
-	// let binding_description = Vertex::get_binding_description();
-	// let attribute_descriptions_vec = Vertex::get_attribute_descriptions();
-
 	// Vertex input
 	let vertex_input_create_info = 
 		VkPipelineVertexInputStateCreateInfo{
@@ -173,11 +168,11 @@ pub unsafe fn create_pipeline(
 				VkAttachmentDescription{
 					format: vk_handle.surface_format.format,
 					samples: VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT,
-					loadOp: VkAttachmentLoadOp::VK_ATTACHMENT_LOAD_OP_CLEAR,
+					loadOp: VkAttachmentLoadOp::VK_ATTACHMENT_LOAD_OP_CLEAR, // diff
 					storeOp: VkAttachmentStoreOp::VK_ATTACHMENT_STORE_OP_STORE,
 					stencilLoadOp: VkAttachmentLoadOp::VK_ATTACHMENT_LOAD_OP_DONT_CARE,
 					stencilStoreOp: VkAttachmentStoreOp::VK_ATTACHMENT_STORE_OP_DONT_CARE,
-					initialLayout: VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED,
+					initialLayout: VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED, // diff
 					finalLayout: VkImageLayout::VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
 					flags: 0
 				}
@@ -187,11 +182,11 @@ pub unsafe fn create_pipeline(
 				VkAttachmentDescription{
 					format: vk_handle.surface_format.format,
 					samples: VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT,
-					loadOp: VkAttachmentLoadOp::VK_ATTACHMENT_LOAD_OP_LOAD,
+					loadOp: VkAttachmentLoadOp::VK_ATTACHMENT_LOAD_OP_LOAD, // diff
 					storeOp: VkAttachmentStoreOp::VK_ATTACHMENT_STORE_OP_STORE,
 					stencilLoadOp: VkAttachmentLoadOp::VK_ATTACHMENT_LOAD_OP_DONT_CARE,
 					stencilStoreOp: VkAttachmentStoreOp::VK_ATTACHMENT_STORE_OP_DONT_CARE,
-					initialLayout: VkImageLayout::VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+					initialLayout: VkImageLayout::VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, // diff
 					finalLayout: VkImageLayout::VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
 					flags: 0
 				}

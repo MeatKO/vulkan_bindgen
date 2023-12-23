@@ -13,5 +13,5 @@ pub fn print_delta_time_system()
 				Err(_) => { return }
 			};
 
-	println!("Last delta time : {}", main_loop_var.last_delta_time)
+	// println!("Last delta time : {}", main_loop_var.last_delta_time)
 }

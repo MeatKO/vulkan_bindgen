@@ -28,6 +28,7 @@ pub unsafe fn create_descriptor_pool(
 			poolSizeCount: pool_sizes.len() as u32,
 			pPoolSizes: pool_sizes.as_ptr(),
 			flags: 0,
+				// VkDescriptorPoolCreateFlagBits::VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT as u32,
 			maxSets: vk_handle.frames_in_flight as u32,
 			pNext: nullptr()
 		};

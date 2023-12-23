@@ -1,21 +1,22 @@
+use decs::component::AsAny;
 use decs::component_derive::system;
 use decs::manager::{dECS, QueryResult};
 
 use crate::cotangens::vec3::Vec3;
-use crate::detail_core::components::rendering::ModelComponent;
+use crate::detail_core::components::rendering::{ModelComponent, UniformBufferComponent};
+use crate::detail_core::model::material::Material;
 use crate::detail_core::model::model::{Model, VulkanModel};
 use crate::detail_core::phys::aabb::AABB;
-use crate::vulkan::command_buffer::{record_command_buffer, record_command_buffer_ref};
-// use crate::vulkan::command_buffer_wireframe::{record_command_buffer_wireframe, record_command_buffer_wireframe_ref};
+use crate::vulkan::command_buffer::record_command_buffer_ref;
 use crate::vulkan::command_buffer_wireframe::record_command_buffer_wireframe_ref;
 use crate::vulkan::handle::VkHandle;
 use crate::vulkan::swapchain::recreate_swapchain;
-use crate::vulkan::uniform_buffer::update_uniform_buffer;
+use crate::vulkan::uniform_buffer::{update_uniform_buffer, UniformBufferObject};
 use crate::vulkan::uniform_buffer_wireframe::update_uniform_buffer_wireframe;
 use crate::vulkan::vk_bindgen::{vkWaitForFences, vkResetFences, vkAcquireNextImageKHR, VkResult, VK_TRUE, VkPipelineStageFlags, VkPipelineStageFlagBits, VkSubmitInfo, VkStructureType, vkQueueSubmit, VkPresentInfoKHR, vkDeviceWaitIdle, vkQueuePresentKHR};
 
 use std::ptr::null_mut as nullptr;
-use std::rc::{Weak, Rc};
+use std::rc::Rc;
 
 #[system]
 pub fn rendering_system3()
@@ -24,6 +25,9 @@ pub fn rendering_system3()
 	{
 		let vk_handle: &mut VkHandle =
 			unsafe { decs.get_components_global_mut_unchecked::<VkHandle>() }.unwrap().remove(0).component;
+
+		let default_albedo_map =
+			decs.get_asset_rc::<Material>("material_defaults").unwrap();
 
 		vkWaitForFences(vk_handle.logical_device, 1, &vk_handle.in_flight_fence_vec[vk_handle.current_frame], VK_TRUE, u64::MAX);
 		vkResetFences(vk_handle.logical_device, 1, &vk_handle.in_flight_fence_vec[vk_handle.current_frame]);
@@ -41,7 +45,7 @@ pub fn rendering_system3()
 
 		vk_handle.command_buffer_vec[vk_handle.current_frame].reset(None);
 
-		let error_model: Rc<Model<VulkanModel>> = decs.get_asset_rc::<Model<VulkanModel>, _>("error_model").unwrap();
+		let error_model: Rc<Model<VulkanModel>> = decs.get_asset_rc::<Model<VulkanModel>>("error_model").unwrap();
 
 		'model_rendering:
 		{
@@ -55,10 +59,12 @@ pub fn rendering_system3()
 					Err(_) => { println!("no models to render"); break 'model_rendering }
 				};
 
-			println!("There are {} models", models.len());
+			// println!("There are {} models", models.len());
 
-			let mut model_aabb_pairs = vec![];
+			let mut model_aabb_ubo_pairs = vec![];
 			let aabb_empty = AABB::new_empty();
+			// let ubo_empty = vec![UniformBufferObject::new_empty(); vk_handle.frames_in_flight];
+			// let ubo_empty = UniformBufferComponent::new_empty();
 
 			for model in models.iter()
 			{
@@ -88,10 +94,13 @@ pub fn rendering_system3()
 						}
 					};
 
-				model_aabb_pairs.push((aabb, model_component))
+				let ubo = 
+					decs.get_components::<UniformBufferComponent>(model.entity_id).unwrap().remove(0);
+
+				model_aabb_ubo_pairs.push((aabb, model_component, ubo))
 			}
 
-			for (index,(aabb, model)) in model_aabb_pairs.iter().enumerate()
+			for (index,(aabb, model, ubo_component)) in model_aabb_ubo_pairs.iter().enumerate()
 			{
 				for mesh in &model.meshes
 				{
@@ -104,16 +113,24 @@ pub fn rendering_system3()
 
 					update_uniform_buffer(
 						vk_handle, 
-						vulkan_data, 
-						index, 
+						ubo_component.uniform_buffers_mapped[vk_handle.current_frame],
 						&aabb.scale, 
 						&aabb.translation, 
-						&model.rotation, 
+						&Vec3::new(0.0f32),
 						&Vec3::new(0.0f32)
 					);
+					// update_uniform_buffer(
+					// 	vk_handle, 
+					// 	vulkan_data, 
+					// 	index, 
+					// 	&aabb.scale, 
+					// 	&aabb.translation, 
+					// 	&Vec3::new(0.0f32),
+					// 	&Vec3::new(0.0f32)
+					// );
 				}
 			}
-			record_command_buffer_ref(vk_handle, image_index, &model_aabb_pairs);
+			record_command_buffer_ref(vk_handle, image_index, &model_aabb_ubo_pairs, default_albedo_map);
 		}
 
 		'physbox_rendering:

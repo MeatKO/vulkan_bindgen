@@ -32,8 +32,8 @@ pub unsafe fn create_descriptor_sets_wireframe(
 
 	match vkAllocateDescriptorSets(vk_handle.logical_device, &descriptor_set_allocate_info, mesh_data.descriptor_sets.as_mut_ptr())
 	{
-		VkResult::VK_SUCCESS => { println!("✔️ vkAllocateDescriptorSets() HUD"); }
-		err => { panic!("✗ vkAllocateDescriptorSets() HUD failed with code {:?}.", err); }
+		VkResult::VK_SUCCESS => { println!("✔️ vkAllocateDescriptorSets() WIREFRAME"); }
+		err => { panic!("✗ vkAllocateDescriptorSets() WIREFRAME failed with code {:?}.", err); }
 	}
 
 	for i in 0..mesh_data.descriptor_sets.len()

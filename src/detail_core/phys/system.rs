@@ -211,11 +211,11 @@ pub fn physics_system_2()
 
 				//	I fucked the delta_time somewhere in the calculations and now im simulating black holes
 
-				println!("X [{}] [{}] \ni_mf : {:?}\ni_mass : {:?}\nj_mf : {:?}\ni_mass : {:?}", 
-					i, j, 
-					translation_ratio_factor_i, aabb_vector[i].component.mass, 
-					translation_ratio_factor_j, aabb_vector[j].component.mass
-				);
+				// println!("X [{}] [{}] \ni_mf : {:?}\ni_mass : {:?}\nj_mf : {:?}\ni_mass : {:?}", 
+				// 	i, j, 
+				// 	translation_ratio_factor_i, aabb_vector[i].component.mass, 
+				// 	translation_ratio_factor_j, aabb_vector[j].component.mass
+				// );
 				
 				translation_delta_vec[i].x += ((translation_ratio_factor_j * penetration.x) * i_sign) * translation_delta_damp_factor;
 				translation_delta_vec[j].x += ((translation_ratio_factor_i * penetration.x) * j_sign) * translation_delta_damp_factor;
@@ -234,11 +234,11 @@ pub fn physics_system_2()
 				let combined_momentum = mass_i * velocity_i.y.abs() + mass_j * velocity_j.y.abs();
 				// let combined_momentum = mass_i * (relative_velocity_y / 2.0f32) + mass_j * (relative_velocity_y / 2.0f32);
 
-				println!("Y [{}] [{}] \ni_mf : {:?}\ni_mass : {:?}\nj_mf : {:?}\ni_mass : {:?}", 
-					i, j, 
-					translation_ratio_factor_i, aabb_vector[i].component.mass, 
-					translation_ratio_factor_j, aabb_vector[j].component.mass
-				);
+				// println!("Y [{}] [{}] \ni_mf : {:?}\ni_mass : {:?}\nj_mf : {:?}\ni_mass : {:?}", 
+				// 	i, j, 
+				// 	translation_ratio_factor_i, aabb_vector[i].component.mass, 
+				// 	translation_ratio_factor_j, aabb_vector[j].component.mass
+				// );
 				
 				translation_delta_vec[i].y += ((translation_ratio_factor_j * penetration.y) * i_sign) * translation_delta_damp_factor;
 				translation_delta_vec[j].y += ((translation_ratio_factor_i * penetration.y) * j_sign) * translation_delta_damp_factor;
@@ -256,11 +256,11 @@ pub fn physics_system_2()
 				let combined_momentum = mass_i * velocity_i.z.abs() + mass_j * velocity_j.z.abs();
 				// let combined_momentum = mass_i * (relative_velocity_z / 2.0f32) + mass_j * (relative_velocity_z / 2.0f32);
 
-				println!("Z [{}] [{}] \ni_mf : {:?}\ni_mass : {:?}\nj_mf : {:?}\ni_mass : {:?}", 
-					i, j, 
-					translation_ratio_factor_i, aabb_vector[i].component.mass, 
-					translation_ratio_factor_j, aabb_vector[j].component.mass
-				);
+				// println!("Z [{}] [{}] \ni_mf : {:?}\ni_mass : {:?}\nj_mf : {:?}\ni_mass : {:?}", 
+				// 	i, j, 
+				// 	translation_ratio_factor_i, aabb_vector[i].component.mass, 
+				// 	translation_ratio_factor_j, aabb_vector[j].component.mass
+				// );
 
 				translation_delta_vec[i].z += ((translation_ratio_factor_j * penetration.z) * i_sign) * translation_delta_damp_factor;
 				translation_delta_vec[j].z += ((translation_ratio_factor_i * penetration.z) * j_sign) * translation_delta_damp_factor;
@@ -301,7 +301,7 @@ pub fn physics_system_2()
 
 	for (index, aabb) in aabb_vector.iter_mut().enumerate()
 	{
-		println!("[{}] static:{} mass:{:?}\nvel:{:?} = {}", index, aabb.component.is_static, aabb.component.mass, aabb.component.velocity, aabb.component.velocity.len());
+		// println!("[{}] static:{} mass:{:?}\nvel:{:?} = {}", index, aabb.component.is_static, aabb.component.mass, aabb.component.velocity, aabb.component.velocity.len());
 	}
 }
 

@@ -11,10 +11,7 @@ use crate::vulkan::{
 	debugger::*,
 };
 
-use crate::detail_core::{
-	camera::*,
-	input::input_buffer::InputBuffer,
-};
+use crate::detail_core::input::input_buffer::InputBuffer;
 
 use std::ptr::null_mut as nullptr;
 use std::vec;
@@ -116,6 +113,11 @@ pub struct VkHandle<'a>
 	pub depth_image: VkImage,
 	pub depth_image_memory: VkDeviceMemory,
 	pub depth_image_view: VkImageView,
+
+	pub global_mesh_descriptor_pool: VkDescriptorPool,
+	pub global_mesh_descriptor_sets: Vec<VkDescriptorSet>,
+
+	pub default_image_sampler: VkSampler,
 }
 
 impl<'a> VkHandle<'a>
@@ -231,6 +233,10 @@ impl<'a> VkHandle<'a>
 			depth_image: nullptr(),
 			depth_image_memory: nullptr(),
 			depth_image_view: nullptr(),
+			global_mesh_descriptor_sets: vec![],
+			global_mesh_descriptor_pool: nullptr(),
+
+			default_image_sampler: nullptr(),
 		};
 	}
 

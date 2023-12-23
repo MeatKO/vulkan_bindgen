@@ -1,8 +1,6 @@
-use crate::vulkan::{vk_bindgen::{VkCommandPoolCreateInfo, VkStructureType, VkCommandPoolCreateFlagBits, VkDevice, vkCreateCommandPool, VkResult, VkCommandPool, VkCommandBuffer, vkDestroyCommandPool}, command_buffer};
+use crate::vulkan::vk_bindgen::{VkCommandPoolCreateInfo, VkStructureType, VkCommandPoolCreateFlagBits, VkDevice, vkCreateCommandPool, VkResult, VkCommandPool};
 
 use std::ptr::null_mut as nullptr;
-
-use super::vk_command_buffer::CommandBuffer;
 
 pub struct CommandPoolBuilder
 {

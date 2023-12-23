@@ -6,7 +6,27 @@ mod exedra;
 
 mod vulkan;
 
-use detail_core::{rendering::{init::{init_window_handle, init_rendering_objects, init_pipelines, init_buffer_objects, init_rendering_assets}, draw::rendering_system3}, logic::{game_objects::{init_domatena_shtaiga_object, init_domatena_shtaiga_asset_prefabs}, game_logic::game_logic_system}, diagnostics::system::print_delta_time_system, phys::system::physics_system_2, input::system::input_system, components::misc::{StringComponent, DeltaTime, WindowComponent, MainLoopComponent, GlobalVariables, RaycastObject, RaycastObjectState}, camera::system::update_camera_system, misc_systems::raycast_aabb_pickup::raycast_aabb_pickup_system};
+use detail_core::{
+	rendering::{
+		init::{
+			init_window_handle, init_rendering_objects, init_pipelines, init_buffer_objects, init_rendering_assets
+		}, 
+		draw::rendering_system3
+	}, 
+	logic::{
+		game_objects::{
+			init_domatena_shtaiga_object, init_domatena_shtaiga_assets
+		}, 
+		game_logic::game_logic_system
+	}, 
+	diagnostics::system::print_delta_time_system, phys::system::physics_system_2, input::system::input_system, 
+	components::misc::{
+		StringComponent, DeltaTime, WindowComponent, MainLoopComponent, GlobalVariables, RaycastObject, RaycastObjectState
+	}, 
+	camera::system::update_camera_system, misc_systems::raycast_aabb_pickup::raycast_aabb_pickup_system
+};
+
+
 use vulkan::{
 	vk_bindgen::
 		vkDeviceWaitIdle,
@@ -29,7 +49,7 @@ fn main()
 
 		decs.add_init_system(init_rendering_assets);
 
-		decs.add_init_system(init_domatena_shtaiga_asset_prefabs);
+		decs.add_init_system(init_domatena_shtaiga_assets);
 		decs.add_init_system(init_domatena_shtaiga_object);
 		
 		// decs.add_system(physics_system);

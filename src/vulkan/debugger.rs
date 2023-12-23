@@ -23,6 +23,7 @@ pub unsafe extern "C" fn debug_callback(
 	}
 	
 	println!("Vk Validation Layer : '{}' \x1B[0m", CStr::from_ptr((*p_callback_data).pMessage).to_str().unwrap());
+	// panic!("Vk Validation Layer : '{}' \x1B[0m", CStr::from_ptr((*p_callback_data).pMessage).to_str().unwrap());
 
 	VK_FALSE
 }

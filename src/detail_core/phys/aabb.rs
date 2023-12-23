@@ -106,7 +106,11 @@ impl AABB
 				descriptor_sets: vec![],
 			};
 
-		create_uniform_buffers(&vk_handle, &mut mesh_data);
+		// create_uniform_buffers(&vk_handle, &mut mesh_data);
+		let uniform_buffers = create_uniform_buffers(&vk_handle, vk_handle.frames_in_flight).unwrap();
+		mesh_data.uniform_buffers = uniform_buffers.0;
+		mesh_data.uniform_buffers_memory = uniform_buffers.1;
+		mesh_data.uniform_buffers_mapped = uniform_buffers.2;
 
 		let descriptor_pool = create_descriptor_pool(&vk_handle).unwrap();
 		create_descriptor_sets_wireframe(&vk_handle, &mut mesh_data, &descriptor_pool).unwrap();
