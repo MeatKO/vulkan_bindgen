@@ -7,15 +7,12 @@ mod exedra;
 mod vulkan;
 
 use detail_core::{
-	rendering::{
-		init::{
-			init_window_handle, init_rendering_objects, init_pipelines, init_buffer_objects, init_rendering_assets
-		}, 
-		draw::rendering_system3
-	}, 
+	rendering::{init::{
+		init_window_handle, init_rendering_objects, init_pipelines, init_buffer_objects, init_rendering_assets
+	}, draw::rendering_system4}, 
 	logic::{
 		game_objects::{
-			init_domatena_shtaiga_object, init_domatena_shtaiga_assets
+			init_domatena_shtaiga_object, init_domatena_shtaiga_assets, init_domatena_shtaiga_assets_2
 		}, 
 		game_logic::game_logic_system
 	}, 
@@ -49,12 +46,14 @@ fn main()
 
 		decs.add_init_system(init_rendering_assets);
 
+		decs.add_init_system(init_domatena_shtaiga_assets_2);
+
 		decs.add_init_system(init_domatena_shtaiga_assets);
 		decs.add_init_system(init_domatena_shtaiga_object);
 		
 		// decs.add_system(physics_system);
 		decs.add_system(physics_system_2);
-		decs.add_system(rendering_system3);
+		decs.add_system(rendering_system4);
 		decs.add_system(input_system);
 		decs.add_system(game_logic_system);
 		decs.add_system(update_camera_system);

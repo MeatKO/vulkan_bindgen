@@ -30,6 +30,8 @@ pub struct LoadedTexture
 #[derive(Clone, Debug)]
 pub struct VulkanTexture
 {
+	pub path: String, 
+	
 	pub texture_image: VkImage,
 	pub texture_image_memory: VkDeviceMemory,
 	pub texture_image_view: VkImageView,
@@ -108,7 +110,8 @@ impl Texture<LoadedTexture>
 
 			Ok(
 				Texture (
-					VulkanTexture { 
+					VulkanTexture {
+						path: self.image.get_path().to_owned(), 
 						texture_image: texture_image, 
 						texture_image_memory: texture_image_memory, 
 						texture_image_view: texture_image_view, 

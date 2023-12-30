@@ -9,6 +9,7 @@ pub struct ImageDimensions
 
 pub struct GenericImage
 {
+	path: String,
 	data: Vec<u32>,
 	format: ImageFormat,
 	dimensions: ImageDimensions,
@@ -20,10 +21,10 @@ const fn size_of_item<T>(x: &[T]) -> usize {
 
 impl GenericImage
 {
-	pub fn new(data: Vec<u32>, format: ImageFormat, dimensions: ImageDimensions) -> Self
-	// pub fn new(data: Vec<u8>, format: ImageFormat, dimensions: ImageDimensions) -> Self
+	pub fn new(data: Vec<u32>, path: String, format: ImageFormat, dimensions: ImageDimensions) -> Self
 	{
 		GenericImage { 
+			path: path,
 			data: data, 
 			format: format, 
 			dimensions: dimensions 
@@ -63,6 +64,11 @@ impl GenericImage
 	pub fn get_format(&self) -> ImageFormat
 	{	
 		return self.format.clone()
+	}
+
+	pub fn get_path(&self) -> String
+	{
+		return self.path.clone()
 	}
 
 	pub fn get_dimensions(&self) -> ImageDimensions

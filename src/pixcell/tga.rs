@@ -33,6 +33,7 @@ struct TGAHeader
 
 pub struct TGAImage
 {
+	path: String,
 	header: TGAHeader,
 	format: ImageFormat,
 	// data: Vec<u8>,
@@ -72,6 +73,7 @@ impl TGAImage
 		return 
 			GenericImage::new( 
 				self.data, 
+				self.path,
 				self.format, 
 				ImageDimensions{
 					width: self.header.width as u32,
@@ -81,11 +83,11 @@ impl TGAImage
 	}
 	
 	pub fn new<P>(tga_path: P) -> Result<TGAImage, TextureLoadError>
-	where P : AsRef<Path>
+	where P : AsRef<Path> + Clone
 	{
 		let start = std::time::Instant::now();
 
-		let file_bytes = std::fs::read(tga_path).map_err(|err| TextureLoadError::IoError(err))?;
+		let file_bytes = std::fs::read(tga_path.clone()).map_err(|err| TextureLoadError::IoError(err))?;
 
 		if file_bytes.len() < TGA_HEADER_SIZE
 		{
@@ -197,6 +199,7 @@ impl TGAImage
 
 		return Ok(
 			TGAImage { 
+				path: tga_path.as_ref().to_str().unwrap().to_owned(),
 				header: header, 
 				format: ImageFormat::RGBA,
 				data:  final_image

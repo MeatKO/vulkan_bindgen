@@ -1,3 +1,4 @@
+use crate::cotangens::vecn::VecN;
 use crate::cotangens::{
 	vec2::*,
 	vec3::*,
@@ -14,8 +15,6 @@ use std::path::Path;
 pub fn load_obj<P>(model_path: P) -> Result<ModelDescriptor, ModelLoadError>
 where P : AsRef<Path>
 {
-	// let start = std::time::Instant::now();
-	
 	let obj_model_source = std::fs::read_to_string(model_path.as_ref())?;
 
 	let mut global_v_vec = vec![];
@@ -205,7 +204,8 @@ fn parse_vec2_line(tail: &str) -> Result<Vec2, ModelLoadError>
     })
 }
 
-fn parse_face_line(tail: &str) -> Result<Vec<Vec3>, ModelLoadError>
+// fn parse_face_line(tail: &str) -> Result<Vec<Vec3>, ModelLoadError>
+fn parse_face_line(tail: &str) -> Result<Vec<VecN<usize, 3>>, ModelLoadError>
 {
 	let tokens: Vec<&str> = tail.split_whitespace().collect();
     if tokens.len() != 3 
@@ -224,10 +224,12 @@ fn parse_face_line(tail: &str) -> Result<Vec<Vec3>, ModelLoadError>
 		}
 
 		out_face.push(
-			Vec3 { 
-				x: indices[0].parse().map_err(|_| ModelLoadError::ParseError)?, 
-				y: indices[1].parse().map_err(|_| ModelLoadError::ParseError)?, 
-				z: indices[2].parse().map_err(|_| ModelLoadError::ParseError)?
+			VecN { 
+				components: [
+					indices[0].parse().map_err(|_| ModelLoadError::ParseError)?, 
+					indices[1].parse().map_err(|_| ModelLoadError::ParseError)?, 
+					indices[2].parse().map_err(|_| ModelLoadError::ParseError)?
+				]
 			}
 		)
 	}

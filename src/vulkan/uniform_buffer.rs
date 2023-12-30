@@ -56,6 +56,12 @@ pub unsafe fn create_uniform_buffers<T>(
 				VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT as u32 | 
 				VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_HOST_COHERENT_BIT as u32
 			)?;
+
+		VkDescriptorPoolSize
+		{
+			type_: VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,
+			descriptorCount: 0,
+		};
 		
 		out_uniform_buffers[i] = buffer;
 		out_uniform_buffers_memory[i] = buffer_memory;
