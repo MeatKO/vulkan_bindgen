@@ -9,15 +9,16 @@ use crate::detail_core::model::component::VulkanModelComponent;
 use crate::detail_core::model::material::Material;
 use crate::detail_core::model::model::{Model, VulkanModel};
 use crate::detail_core::phys::aabb::AABB;
-use crate::vulkan::command_buffer::{record_command_buffer_ref, record_command_buffer_single};
+use crate::vulkan::command_buffer::{record_command_buffer_single};
 use crate::vulkan::command_buffer_wireframe::record_command_buffer_wireframe_ref;
 use crate::vulkan::handle::VkHandle;
 use crate::vulkan::swapchain::recreate_swapchain;
 use crate::vulkan::uniform_buffer::{update_uniform_buffer, UniformBufferObject};
 use crate::vulkan::uniform_buffer_wireframe::update_uniform_buffer_wireframe;
-use crate::vulkan::vk_bindgen::{vkWaitForFences, vkResetFences, vkAcquireNextImageKHR, VkResult, VK_TRUE, VkPipelineStageFlags, VkPipelineStageFlagBits, VkSubmitInfo, VkStructureType, vkQueueSubmit, VkPresentInfoKHR, vkDeviceWaitIdle, vkQueuePresentKHR};
+use crate::vulkan::vk_bindgen::{vkWaitForFences, vkResetFences, vkAcquireNextImageKHR, VkResult, VK_TRUE, VkPipelineStageFlags, VkPipelineStageFlagBits, VkSubmitInfo, VkStructureType, vkQueueSubmit, VkPresentInfoKHR, vkDeviceWaitIdle, vkQueuePresentKHR, VkDescriptorBufferInfo, VkWriteDescriptorSet, VkDescriptorType, vkUpdateDescriptorSets};
 
 use std::collections::HashMap;
+use std::mem::size_of;
 use std::ptr::null_mut as nullptr;
 use std::rc::Rc;
 
@@ -311,6 +312,36 @@ pub fn rendering_system4()
 					&Vec3::new(0.0f32), 
 					&aabb.color,
 				);
+
+				{
+					let buffer_info = 
+						VkDescriptorBufferInfo {
+							buffer: ubo_component.uniform_buffers[vk_handle.current_frame],
+							offset: 0,
+							range: size_of::<UniformBufferObject>() as u64
+						};
+
+					// default_material
+					let descriptor_writes = 
+						vec![
+							VkWriteDescriptorSet {
+								sType: VkStructureType::VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+								// dstSet: vk_handle.global_mesh_descriptor_sets[vk_handle.current_frame],
+								dstSet: ubo_component.descriptor_sets[vk_handle.current_frame],
+								dstBinding: 0,
+								dstArrayElement: 0,
+								descriptorType: VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+								descriptorCount: 1,
+								pBufferInfo: &buffer_info,
+								pImageInfo: nullptr(),
+								pTexelBufferView: nullptr(),
+								pNext: nullptr()
+							},
+						];
+
+					vkUpdateDescriptorSets(vk_handle.logical_device, descriptor_writes.len() as _, descriptor_writes.as_ptr(), 0, nullptr());
+		
+				}
 			}
 
 			// println!("total number of models to draw : {}", models.len());

@@ -3,7 +3,7 @@ use std::{ptr::null_mut as nullptr, ops::{Deref, DerefMut}, path::PathBuf};
 use decs::component_derive::component;
 use decs::component::Component;
 
-use crate::{cotangens::{vec3::*, vec2::Vec2}, exedra::{error::ModelLoadError, model_descriptor::ModelDescriptor, mesh_descriptor::MeshDescriptor}, detail_core::texture::texture::Texture, vulkan::{handle::VkHandle, vertex::{create_vertex_buffer, Vertex}, index::create_index_buffer, descriptor_set::{create_descriptor_sets, update_descriptor_sets}, descriptor_pool::create_descriptor_pool, uniform_buffer::create_uniform_buffers, vk_bindgen::VkFormat, wrappers::vk_buffer::VulkanBuffer, vk_buffer::create_buffer}};
+use crate::{cotangens::{vec3::*, vec2::Vec2}, exedra::{error::ModelLoadError, model_descriptor::ModelDescriptor, mesh_descriptor::MeshDescriptor}, detail_core::texture::texture::Texture, vulkan::{handle::VkHandle, vertex::{create_vertex_buffer, Vertex}, index::create_index_buffer, descriptor_set::{create_descriptor_sets, update_descriptor_sets}, uniform_buffer::create_uniform_buffers, vk_bindgen::{VkFormat, VkDescriptorType}, wrappers::{vk_buffer::VulkanBuffer, vk_descriptor_pool::VkDescriptorPoolBuilder}, vk_buffer::create_buffer}};
 
 use super::{mesh::{Mesh, VulkanMeshData}, material::Material, asset::{ModelAsset, MaterialAsset, MeshAsset, MeshVulkanBuffers, MeshBuffers}};
 
@@ -184,6 +184,7 @@ impl VulkanModel
 	{
 		unsafe 
 		{
+			// Ok(())
 			let mut total_bytes_loaded = 0usize;
 
 			for mesh in self.meshes.iter_mut()
@@ -223,22 +224,26 @@ impl VulkanModel
 	
 				mesh.material.albedo_map = Some(mesh_material_albedo_map.clone());
 				mesh.material.normal_map = Some(mesh_material_normal_map.clone());
-	
-				// create_uniform_buffers(&vk_handle, &mut mesh.vulkan_data.as_mut().unwrap());
 
 				let uniform_buffers = create_uniform_buffers(&vk_handle, vk_handle.frames_in_flight).unwrap();
 				let mesh_data = mesh.vulkan_data.as_mut().unwrap();
 				mesh_data.uniform_buffers = uniform_buffers.0;
 				mesh_data.uniform_buffers_memory = uniform_buffers.1;
 				mesh_data.uniform_buffers_mapped = uniform_buffers.2;
-	
-				let descriptor_pool = create_descriptor_pool(&vk_handle).unwrap();
-				let descriptor_sets = create_descriptor_sets(&vk_handle, &descriptor_pool).unwrap();
 
-				// mesh.vulkan_data.as_mut().unwrap().descriptor_pool = descriptor_pool;
+				// let descriptor_sets = create_descriptor_sets(&vk_handle, &descriptor_pool).unwrap();
+
+				let descriptor_sets = 
+					create_descriptor_sets(
+						&vk_handle, 
+						&vk_handle.global_descriptor_pool_material, 
+						&vk_handle.global_descriptor_set_layout_material, 
+						1
+					).unwrap();
+
 				mesh.vulkan_data.as_mut().unwrap().descriptor_sets = descriptor_sets;
 				
-				update_descriptor_sets(&vk_handle, mesh.vulkan_data.as_mut().unwrap(), &mesh_material_albedo_map, &mesh_material_normal_map).unwrap();
+				update_descriptor_sets(&vk_handle, &mesh.vulkan_data.as_mut().unwrap().descriptor_sets, &mesh_material_albedo_map, &mesh_material_normal_map).unwrap();
 
 				println!("Total texture size for model {} : {} bytes", self.name, total_bytes_loaded);
 			}
@@ -365,13 +370,13 @@ impl VulkanModel
 				// create_descriptor_sets(&vk_handle, &mut mesh_data, &mesh_material_albedo_map, &mesh_material_normal_map, &descriptor_pool).unwrap();
 				// mesh_data.descriptor_pool = descriptor_pool;
 
-				let descriptor_pool = create_descriptor_pool(&vk_handle).unwrap();
-				let descriptor_sets = create_descriptor_sets(&vk_handle, &descriptor_pool).unwrap();
+				// let descriptor_pool = create_descriptor_pool(&vk_handle).unwrap();
+				// let descriptor_sets = create_descriptor_sets(&vk_handle, &descriptor_pool).unwrap();
 
 				// mesh.vulkan_data.as_mut().unwrap().descriptor_pool = descriptor_pool;
-				mesh_data.descriptor_sets = descriptor_sets;
+				// mesh_data.descriptor_sets = descriptor_sets;
 				
-				update_descriptor_sets(&vk_handle, &mut mesh_data, &mesh_material_albedo_map, &mesh_material_normal_map).unwrap();
+				// update_descriptor_sets(&vk_handle, &mut mesh_data, &mesh_material_albedo_map, &mesh_material_normal_map).unwrap();
 
 				out_model.meshes.push(
 					Mesh{
@@ -382,7 +387,9 @@ impl VulkanModel
 							normal_path: mesh_descriptor.material.normal_path,
 							albedo_map: Some(mesh_material_albedo_map),
 							normal_map: Some(mesh_material_normal_map),
+							descriptor_set: nullptr(),
 						},
+						// material: Material::new(mesh_descriptor.mtl_name.clone()),
 						index_count: index_vec.len() as u32,
 						vulkan_data: Some(mesh_data)
 					}

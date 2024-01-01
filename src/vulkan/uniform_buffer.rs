@@ -8,6 +8,8 @@ use std::ffi::c_void;
 use std::mem::size_of;
 use std::ptr::null_mut as nullptr;
 
+use super::descriptor_set::create_descriptor_sets;
+
 // don't remember if this should be commented out : EDIT - its *not* needed because inner structs have 16B alignment
 #[repr(C)]
 #[repr(align(16))]
@@ -38,7 +40,7 @@ impl UniformBufferObject
 pub unsafe fn create_uniform_buffers<T>(
 	vk_handle: &VkHandle,
 	count: usize,
-) -> Result<(Vec<VkBuffer>, Vec<VkDeviceMemory>, Vec<*mut T>), String>
+) -> Result<(Vec<VkBuffer>, Vec<VkDeviceMemory>, Vec<*mut T>, Vec<VkDescriptorSet> ), String>
 {
 	let buffer_size = size_of::<T>() as u64;
 
@@ -79,7 +81,15 @@ pub unsafe fn create_uniform_buffers<T>(
 		out_uniform_buffers_mapped[i] = uniform_buffer_map as _;
 	}
 
-	Ok((out_uniform_buffers, out_uniform_buffers_memory, out_uniform_buffers_mapped))
+	let out_descriptor_sets = 
+		create_descriptor_sets(
+			&vk_handle, 
+			&vk_handle.global_descriptor_pool_ubo, 
+			&vk_handle.global_descriptor_set_layout_ubo, 
+			out_uniform_buffers.len()
+		).unwrap();
+
+	Ok((out_uniform_buffers, out_uniform_buffers_memory, out_uniform_buffers_mapped, out_descriptor_sets))
 }
 
 pub unsafe fn update_uniform_buffer(

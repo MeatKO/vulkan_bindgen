@@ -11,7 +11,8 @@ pub unsafe fn create_pipeline(
 	binding_description: VkVertexInputBindingDescription,
 	attribute_descriptions_vec: Vec<VkVertexInputAttributeDescription>,
 	polygon_mode: VkPolygonMode,
-	first_pass: bool, 
+	first_pass: bool,
+	descriptor_set_layout_vec: Vec<VkDescriptorSetLayout>,
 ) -> (VkPipelineLayout, VkRenderPass, VkPipeline)
 {
 	// Vertex input
@@ -151,8 +152,8 @@ pub unsafe fn create_pipeline(
 	let pipeline_layout_create_info = 
 		VkPipelineLayoutCreateInfo{
 			sType: VkStructureType::VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-			setLayoutCount: 1,
-			pSetLayouts: &vk_handle.descriptor_set_layout,
+			setLayoutCount: descriptor_set_layout_vec.len() as _,
+			pSetLayouts: descriptor_set_layout_vec.as_ptr(),
 			pushConstantRangeCount: 0,
 			pPushConstantRanges: nullptr(),
 			flags: 0,	

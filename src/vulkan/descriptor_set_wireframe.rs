@@ -6,23 +6,31 @@ use std::mem::size_of;
 use std::ptr::null_mut as nullptr;
 
 use super::uniform_buffer_wireframe::UniformBufferObjectWireframe;
+use super::wrappers::vk_descriptor_layout::VkDescriptorLayoutBuilder;
 
 pub unsafe fn create_descriptor_sets_wireframe(
 	vk_handle: &VkHandle,
 	mesh_data: &mut VulkanMeshData,
-	descriptor_pool: &VkDescriptorPool,
+	// descriptor_pool: &VkDescriptorPool,
 ) -> Result<(), String>
 {
+	let descriptor_set_layout = 
+		VkDescriptorLayoutBuilder::new()
+		.add_binding(VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
+		.build(vk_handle.logical_device)
+		.unwrap();
+
 	let layouts: Vec<VkDescriptorSetLayout> = 
 		vec![
-			vk_handle.descriptor_set_layout; 
+			// vk_handle.descriptor_set_layout;
+			descriptor_set_layout; 
 			vk_handle.frames_in_flight
 		];
 
 	let descriptor_set_allocate_info = 
 		VkDescriptorSetAllocateInfo {
 			sType: VkStructureType::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-			descriptorPool: *descriptor_pool,
+			descriptorPool: mesh_data.descriptor_pool,
 			descriptorSetCount: vk_handle.frames_in_flight as u32,
 			pSetLayouts: layouts.as_ptr(),
 			pNext: nullptr()

@@ -43,22 +43,17 @@ fn main()
 		decs.add_init_system(init_rendering_objects);
 		decs.add_init_system(init_pipelines);
 		decs.add_init_system(init_buffer_objects);
-
 		decs.add_init_system(init_rendering_assets);
-
 		decs.add_init_system(init_domatena_shtaiga_assets_2);
-
 		decs.add_init_system(init_domatena_shtaiga_assets);
 		decs.add_init_system(init_domatena_shtaiga_object);
 		
-		// decs.add_system(physics_system);
 		decs.add_system(physics_system_2);
 		decs.add_system(rendering_system4);
 		decs.add_system(input_system);
 		decs.add_system(game_logic_system);
 		decs.add_system(update_camera_system);
 		decs.add_system(raycast_aabb_pickup_system);
-
 		decs.add_system(print_delta_time_system);
 
 		let vk_handle_entity = decs.create_entity();
@@ -100,9 +95,7 @@ fn main()
 		loop
 		{
 			let update_start = std::time::Instant::now();
-
 			decs.update();
-
 			let update_end = std::time::Instant::now();
 
 			decs.modify_components_global::<DeltaTime>(

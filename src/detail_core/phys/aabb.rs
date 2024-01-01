@@ -3,7 +3,7 @@ use decs::component::Component;
 
 use std::ptr::null_mut as nullptr;
 
-use crate::{cotangens::vec3::Vec3, vulkan::{vertex::{Vertex, create_vertex_buffer}, handle::VkHandle, index::create_index_buffer, uniform_buffer::create_uniform_buffers, descriptor_pool::create_descriptor_pool, descriptor_set_wireframe::create_descriptor_sets_wireframe}, detail_core::model::mesh::VulkanMeshData};
+use crate::{cotangens::vec3::Vec3, vulkan::{vertex::{Vertex, create_vertex_buffer}, handle::VkHandle, index::create_index_buffer, uniform_buffer::create_uniform_buffers, descriptor_set_wireframe::create_descriptor_sets_wireframe, wrappers::vk_descriptor_pool::VkDescriptorPoolBuilder, vk_bindgen::VkDescriptorType}, detail_core::model::mesh::VulkanMeshData};
 
 #[component]
 pub struct AABB 
@@ -112,9 +112,16 @@ impl AABB
 		mesh_data.uniform_buffers_memory = uniform_buffers.1;
 		mesh_data.uniform_buffers_mapped = uniform_buffers.2;
 
-		let descriptor_pool = create_descriptor_pool(&vk_handle).unwrap();
-		create_descriptor_sets_wireframe(&vk_handle, &mut mesh_data, &descriptor_pool).unwrap();
+		// let descriptor_pool = create_descriptor_pool(&vk_handle).unwrap();
+
+		let descriptor_pool = 
+			VkDescriptorPoolBuilder::new()
+			.add_pool_type(VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, vk_handle.frames_in_flight)
+			.build(vk_handle.logical_device, vk_handle.frames_in_flight)
+			.unwrap();
+
 		mesh_data.descriptor_pool = descriptor_pool;
+		create_descriptor_sets_wireframe(&vk_handle, &mut mesh_data).unwrap();
 
 		self.aabb_vulkan_data = Some(mesh_data);
 		self.aabb_index_count = index_vec.len() as _;

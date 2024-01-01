@@ -39,7 +39,17 @@ pub struct VkHandle<'a>
 	pub present_mode: VkPresentModeKHR,
 	pub swapchain_extent: VkExtent2D,
 	pub swapchain_framebuffers: Vec<VkFramebuffer>,
-	pub descriptor_set_layout: VkDescriptorSetLayout,
+
+	// ---------------------------------------------------------------
+
+	// pub descriptor_set_layout: VkDescriptorSetLayout,
+	pub global_descriptor_set_layout_ubo: VkDescriptorSetLayout,
+	pub global_descriptor_set_layout_material: VkDescriptorSetLayout,
+
+	pub global_descriptor_pool_ubo: VkDescriptorPool,
+	pub global_descriptor_pool_material: VkDescriptorPool,
+
+	// ---------------------------------------------------------------
 
 	pub render_pass: VkRenderPass,
 	pub graphics_pipeline: VkPipeline,
@@ -148,7 +158,13 @@ impl<'a> VkHandle<'a>
 			swapchain_extent: VkExtent2D { width: 0, height: 0 },
 			swapchain_framebuffers: vec![],
 			queue_handle: QueueHandle::default(),
-			descriptor_set_layout: nullptr(),
+			// descriptor_set_layout: nullptr(),
+
+			global_descriptor_set_layout_material: nullptr(),
+			global_descriptor_set_layout_ubo: nullptr(),
+
+			global_descriptor_pool_material: nullptr(),
+			global_descriptor_pool_ubo: nullptr(),
 
 			render_pass: nullptr(),
 			graphics_pipeline: nullptr(),
@@ -263,7 +279,7 @@ impl<'a> VkHandle<'a>
 		// }
 
 		// vkDestroyDescriptorPool(self.logical_device, self.descriptor_pool, nullptr());
-		vkDestroyDescriptorSetLayout(self.logical_device, self.descriptor_set_layout, nullptr());
+		// vkDestroyDescriptorSetLayout(self.logical_device, self.descriptor_set_layout, nullptr());
 
 		for i in 0..self.frames_in_flight
 		{

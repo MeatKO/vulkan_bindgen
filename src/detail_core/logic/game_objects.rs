@@ -10,7 +10,6 @@ use crate::detail_core::model::component::VulkanModelComponent;
 use crate::detail_core::model::material::Material;
 use crate::detail_core::model::model::{Model, VulkanModel};
 use crate::detail_core::phys::aabb::AABB;
-use crate::vulkan::descriptor_pool::create_descriptor_pool;
 use crate::vulkan::descriptor_set::create_descriptor_sets;
 use crate::vulkan::handle::VkHandle;
 
@@ -87,13 +86,16 @@ pub fn init_domatena_shtaiga_object()
 		let shtaiga = decs.create_entity();
 
 		let mut model_component = VulkanModelComponent::new("tomato_crate".into());
-		model_component.descriptor_pool = unsafe { create_descriptor_pool(vk_handle).unwrap() };
-		model_component.descriptor_sets = unsafe { create_descriptor_sets(vk_handle, &model_component.descriptor_pool).unwrap() };
+		// model_component.descriptor_pool = unsafe { create_descriptor_pool(vk_handle).unwrap() };
+		// model_component.descriptor_sets = unsafe { create_descriptor_sets(vk_handle, &model_component.descriptor_pool).unwrap() };
 
 		decs.add_component(shtaiga, StringComponent{ string : format!("shtaiga_{}", index).to_owned() }).unwrap();
 		decs.add_component(shtaiga, aabb).unwrap();
 		// decs.add_component(shtaiga, ModelComponent{model_asset: shtaiga_asset.clone()}).unwrap();
 		decs.add_component(shtaiga, model_component).unwrap();
+		let mut ubo = UniformBufferComponent::new(vk_handle).unwrap();
+		
+
 		decs.add_component(shtaiga, UniformBufferComponent::new(vk_handle).unwrap()).unwrap();
 	}
 }

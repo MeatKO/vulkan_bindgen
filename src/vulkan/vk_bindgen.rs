@@ -1755,7 +1755,7 @@ pub struct VkSampler_T {
 }
 pub type VkSampler = *mut VkSampler_T;
 #[repr(C)]
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Default)]
 pub struct VkDescriptorSet_T {
     _unused: [u8; 0],
 }
