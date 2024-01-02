@@ -4,13 +4,14 @@ use decs::component::Component;
 use std::fmt::Debug;
 use std::rc::Weak;
 
-use crate::{detail_core::model::model::{Model, VulkanModel}, vulkan::{uniform_buffer::{UniformBufferObject, create_uniform_buffers}, vk_bindgen::{VkDeviceMemory, VkBuffer, VkDescriptorSet}, handle::VkHandle}};
+// use crate::{detail_core::model::model::{Model, VulkanModel}, vulkan::{uniform_buffer::{UniformBufferObject, create_uniform_buffers}, vk_bindgen::{VkDeviceMemory, VkBuffer, VkDescriptorSet}, handle::VkHandle}};
+use crate::vulkan::{uniform_buffer::{UniformBufferObject, create_uniform_buffers}, vk_bindgen::{VkDeviceMemory, VkBuffer, VkDescriptorSet}, handle::VkHandle};
 
-#[component]
-pub struct ModelComponent
-{
-	pub model_asset: Weak<Model<VulkanModel>>
-}
+// #[component]
+// pub struct ModelComponent
+// {
+// 	pub model_asset: Weak<Model<VulkanModel>>
+// }
 
 #[component]
 pub struct UniformBufferComponent

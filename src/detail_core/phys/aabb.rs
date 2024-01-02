@@ -1,9 +1,33 @@
 use decs::component_derive::component;
 use decs::component::Component;
 
+use crate::vulkan::{vk_bindgen::{
+	VkBuffer, 
+	VkDeviceMemory,
+	VkDescriptorPool, 
+	VkDescriptorSet,
+}, uniform_buffer::UniformBufferObject};
+
 use std::ptr::null_mut as nullptr;
 
-use crate::{cotangens::vec3::Vec3, vulkan::{vertex::{Vertex, create_vertex_buffer}, handle::VkHandle, index::create_index_buffer, uniform_buffer::create_uniform_buffers, descriptor_set_wireframe::create_descriptor_sets_wireframe, wrappers::vk_descriptor_pool::VkDescriptorPoolBuilder, vk_bindgen::VkDescriptorType}, detail_core::model::mesh::VulkanMeshData};
+use crate::{cotangens::vec3::Vec3, vulkan::{vertex::{Vertex, create_vertex_buffer}, handle::VkHandle, index::create_index_buffer, uniform_buffer::create_uniform_buffers, descriptor_set_wireframe::create_descriptor_sets_wireframe, wrappers::vk_descriptor_pool::VkDescriptorPoolBuilder, vk_bindgen::VkDescriptorType}};
+
+#[derive(Debug)]
+pub struct VulkanMeshData
+{
+	pub vertex_buffer: VkBuffer,
+	pub vertex_buffer_memory: VkDeviceMemory,
+
+	pub index_buffer: VkBuffer,
+	pub index_buffer_memory: VkDeviceMemory,
+
+	pub uniform_buffers: Vec<VkBuffer>,
+	pub uniform_buffers_memory: Vec<VkDeviceMemory>,
+	pub uniform_buffers_mapped: Vec<*mut UniformBufferObject>,
+
+	pub descriptor_pool: VkDescriptorPool,
+	pub descriptor_sets: Vec<VkDescriptorSet>,
+}
 
 #[component]
 pub struct AABB 

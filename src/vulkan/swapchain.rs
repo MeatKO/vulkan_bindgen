@@ -69,26 +69,27 @@ pub unsafe fn create_swapchain(vk_handle: &mut VkHandle)
 			vk_handle.queue_handle.presentation_queue.as_ref().unwrap().family_index
 		];
 
-	let mut swapchain_create_info = VkSwapchainCreateInfoKHR{
-		sType: VkStructureType::VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
-		surface: vk_handle.window_surface,
-		minImageCount: image_count,
-		imageFormat: vk_handle.surface_format.format,
-		imageColorSpace: vk_handle.surface_format.colorSpace,
-		imageExtent: vk_handle.swapchain_extent,
-		imageArrayLayers: 1,
-		imageSharingMode: VkSharingMode::VK_SHARING_MODE_EXCLUSIVE,
-		queueFamilyIndexCount: 0,
-		pQueueFamilyIndices: nullptr(),
-		imageUsage: VkImageUsageFlagBits::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT as u32,
-		preTransform: vk_handle.swapchain_support_details.capabilities.currentTransform,
-		compositeAlpha: VkCompositeAlphaFlagBitsKHR::VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
-		presentMode: vk_handle.present_mode,
-		clipped: VK_TRUE,
-		oldSwapchain: nullptr(),
-		flags: 0,
-		pNext: nullptr(),
-	};
+	let mut swapchain_create_info = 
+		VkSwapchainCreateInfoKHR{
+			sType: VkStructureType::VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
+			surface: vk_handle.window_surface,
+			minImageCount: image_count,
+			imageFormat: vk_handle.surface_format.format,
+			imageColorSpace: vk_handle.surface_format.colorSpace,
+			imageExtent: vk_handle.swapchain_extent,
+			imageArrayLayers: 1,
+			imageSharingMode: VkSharingMode::VK_SHARING_MODE_EXCLUSIVE,
+			queueFamilyIndexCount: 0,
+			pQueueFamilyIndices: nullptr(),
+			imageUsage: VkImageUsageFlagBits::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT as u32,
+			preTransform: vk_handle.swapchain_support_details.capabilities.currentTransform,
+			compositeAlpha: VkCompositeAlphaFlagBitsKHR::VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
+			presentMode: vk_handle.present_mode,
+			clipped: VK_TRUE,
+			oldSwapchain: nullptr(),
+			flags: 0,
+			pNext: nullptr(),
+		};
 	if vk_handle.graphics_queue != vk_handle.presentation_queue
 	{
 		swapchain_create_info.imageSharingMode = VkSharingMode::VK_SHARING_MODE_CONCURRENT;

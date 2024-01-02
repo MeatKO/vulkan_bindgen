@@ -1,4 +1,4 @@
-use crate::detail_core::model::mesh::VulkanMeshData;
+use crate::detail_core::phys::aabb::VulkanMeshData;
 use crate::vulkan::vk_bindgen::*;
 use crate::vulkan::handle::*;
 

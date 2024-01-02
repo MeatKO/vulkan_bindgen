@@ -2,8 +2,9 @@ use decs::component_derive::system;
 use decs::manager::dECS;
 
 use crate::detail_core::components::misc::WindowComponent;
+use crate::detail_core::model::asset::MaterialAsset;
 use crate::detail_core::model::material::Material;
-use crate::detail_core::model::model::Model;
+// use crate::detail_core::model::model::Model;
 use crate::detail_core::texture::texture::{VulkanTexture, Texture};
 use crate::detail_core::window::create_vulkan_surface;
 use crate::vulkan::descriptor_set::update_descriptor_sets;
@@ -79,18 +80,25 @@ pub fn init_rendering_assets()
 		).unwrap();
 	}
 
+	// let material_defaults =	
+	// 	Material {
+	// 		name: "default".into(),
+	// 		descriptor_set: material_defaults_descriptor_set[0],
+	// 		albedo_path: "./detail/textures/test.tga".into(),
+	// 		normal_path: "./detail/textures/smiley_normal.tga".into(),
+	// 		albedo_map: Some(default_albedo_map.clone()),
+	// 		normal_map: Some(default_normal_map.clone()),
+	// 		..Default::default()
+	// 	};
+
 	let material_defaults =	
-		Material {
+		MaterialAsset {
 			name: "default".into(),
+			smooth_shading: true,
 			descriptor_set: material_defaults_descriptor_set[0],
-			albedo_path: "./detail/textures/test.tga".into(),
-			normal_path: "./detail/textures/smiley_normal.tga".into(),
-			albedo_map: Some(default_albedo_map.clone()),
-			normal_map: Some(default_normal_map.clone()),
-			..Default::default()
 		};
 
-	decs.add_asset("material_defaults", material_defaults.clone()).unwrap();
+	decs.add_asset("material_defaults", material_defaults).unwrap();
 
 	// let mut error_model = Model::new("./detail/models/error/error.obj".into()).process_meshes(&vk_handle, material_defaults.clone());
 	// match error_model.process_textures(&vk_handle)

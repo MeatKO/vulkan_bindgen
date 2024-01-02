@@ -3,7 +3,7 @@ use decs::manager::{dECS, QueryResultMut};
 use parmack::window::event::{MouseCode, KeyCode};
 
 use crate::detail_core::components::misc::{DeltaTime, GlobalVariables, RaycastObject, RaycastObjectState};
-use crate::detail_core::model::model::{VulkanModel, Model};
+// use crate::detail_core::model::model::{VulkanModel, Model};
 use crate::detail_core::phys::aabb::AABB;
 use crate::vulkan::handle::VkHandle;
 

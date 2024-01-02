@@ -1,11 +1,10 @@
-use std::{ptr::null_mut as nullptr, ops::{Deref, DerefMut}, path::PathBuf};
+use std::{ptr::null_mut as nullptr, ops::{Deref, DerefMut}, path::PathBuf, collections::HashMap, rc::Rc};
 
 use decs::component_derive::component;
 use decs::component::Component;
 
-use crate::{cotangens::{vec3::*, vec2::Vec2}, exedra::{error::ModelLoadError, model_descriptor::ModelDescriptor, mesh_descriptor::MeshDescriptor}, detail_core::texture::texture::Texture, vulkan::{handle::VkHandle, vertex::{create_vertex_buffer, Vertex}, index::create_index_buffer, descriptor_set::{create_descriptor_sets, update_descriptor_sets}, uniform_buffer::create_uniform_buffers, vk_bindgen::{VkFormat, VkDescriptorType}, wrappers::{vk_buffer::VulkanBuffer, vk_descriptor_pool::VkDescriptorPoolBuilder}, vk_buffer::create_buffer}};
-
-use super::{mesh::{Mesh, VulkanMeshData}, material::Material, asset::{ModelAsset, MaterialAsset, MeshAsset, MeshVulkanBuffers, MeshBuffers}};
+use crate::{cotangens::{vec3::*, vec2::Vec2}, exedra::{error::ModelLoadError, model_descriptor::ModelDescriptor, mesh_descriptor::MeshDescriptor, material_descriptor::MaterialDescriptor}, detail_core::texture::texture::Texture, vulkan::{handle::VkHandle, vertex::{create_vertex_buffer, Vertex}, index::create_index_buffer, descriptor_set::{create_descriptor_sets, update_descriptor_sets}, uniform_buffer::create_uniform_buffers, vk_bindgen::VkFormat, wrappers::vk_buffer::VulkanBuffer}};
+use super::{mesh::{Mesh, VulkanMeshData}, material::Material, asset::{ModelAsset, MeshAsset, MeshVulkanBuffers, MeshBuffers, MaterialAsset}};
 
 #[derive(Debug)]
 pub struct Model<T>(T);
@@ -39,12 +38,12 @@ impl Model<ModelDescriptor>
 		)
 	}
 
-	pub fn process_meshes(self, vk_handle: &VkHandle, material_defaults: Material) -> Model<VulkanModel>
-	{
-		Model(
-			VulkanModel::new(vk_handle, self.0, material_defaults).unwrap()
-		)
-	}
+	// pub fn process_meshes(self, vk_handle: &VkHandle, material_defaults: Material) -> Model<VulkanModel>
+	// {
+	// 	Model(
+	// 		VulkanModel::new(vk_handle, self.0, material_defaults).unwrap()
+	// 	)
+	// }
 
 	pub fn to_asset(self, vk_handle: &VkHandle) -> Result<ModelAsset, ModelLoadError>
 	{
@@ -57,7 +56,7 @@ impl Model<ModelDescriptor>
 
 			current_mesh_asset.material_asset_name = "".to_owned();
 
-			let buffers = unsafe { create_geometry_buffers(vk_handle, &self.0, &mesh)? };
+			let buffers = unsafe { create_geometry_buffers(vk_handle, &self.0, mesh)? };
 
 			current_mesh_asset.mesh_vulkan_buffers = buffers.0;
 			current_mesh_asset.mesh_buffers = buffers.1;
@@ -67,6 +66,76 @@ impl Model<ModelDescriptor>
 
 		Ok(out_model_asset)
 	}
+
+	// pub fn to_asset_material(self, vk_handle: &VkHandle, default_material: Rc<MaterialAsset>) -> Result<(ModelAsset, Vec<MaterialAsset>), ModelLoadError>
+	pub fn to_asset_material(self, vk_handle: &VkHandle) -> Result<(ModelAsset, Vec<MaterialAsset>), ModelLoadError>
+	{
+		let mut out_model_asset = ModelAsset::new_empty(self.name.clone());
+		let mut out_material_assets = vec![];
+
+		// let mut used_materials_map: HashMap<String, MaterialDescriptor> = HashMap::new();
+		let mut used_materials_vec: Vec<MaterialDescriptor> = vec![];
+
+		// processing the meshes
+		for mesh in self.meshes.iter()
+		{
+			let mut current_mesh_asset = MeshAsset::new_empty(mesh.name.clone());
+
+			// current_mesh_asset.material_asset_name = "".to_owned();
+			current_mesh_asset.material_asset_name = mesh.material.name.clone();
+
+			used_materials_vec.push(mesh.material.clone());
+
+			let buffers = unsafe { create_geometry_buffers(vk_handle, &self.0, mesh)? };
+
+			current_mesh_asset.mesh_vulkan_buffers = buffers.0;
+			current_mesh_asset.mesh_buffers = buffers.1;
+
+			out_model_asset.meshes.push(current_mesh_asset);
+		}
+
+		// we need to sort and dedup the used_materials_vec
+		used_materials_vec.sort_by(|a, b| a.name.cmp(&b.name));
+		used_materials_vec.dedup_by(|a, b| a.name == b.name);
+
+		for material in used_materials_vec.iter_mut()
+		{
+			let mut current_material_asset = MaterialAsset::new_empty(material.name.clone());
+			// current_material_asset.descriptor_set = default_material.descriptor_set;
+
+			current_material_asset.smooth_shading = material.smooth_shading;
+
+			let albedo_texture = 
+				match Texture::new(material.albedo_path.clone().into()).load()
+				{
+					Ok(loaded_texture) => loaded_texture,
+					Err(err) => { return Err(ModelLoadError::TextureLoadingError(material.albedo_path.clone(), err.to_string())); }
+				};
+
+			let normal_texture = 
+				match Texture::new(material.normal_path.clone().into()).load()
+				{
+					Ok(loaded_texture) => loaded_texture,
+					Err(err) => { return Err(ModelLoadError::TextureLoadingError(material.normal_path.clone(), err.to_string())); }
+				};
+
+			// let normal_texture = Texture::new(material.normal_path.clone().into()).load().unwrap();
+			
+			let albedo_texture = albedo_texture.process_vk(vk_handle, VkFormat::VK_FORMAT_R8G8B8A8_SRGB).unwrap();
+			let normal_texture = normal_texture.process_vk(vk_handle, VkFormat::VK_FORMAT_R8G8B8A8_UNORM).unwrap();
+
+			let descriptor_set_layout = vk_handle.global_descriptor_set_layout_material;
+			let descriptor_set_vec = unsafe { create_descriptor_sets(vk_handle, &vk_handle.global_descriptor_pool_material, &descriptor_set_layout, 1).unwrap() };
+
+			unsafe { update_descriptor_sets(vk_handle, &descriptor_set_vec, &albedo_texture, &normal_texture).unwrap(); }
+
+			current_material_asset.descriptor_set = descriptor_set_vec[0];
+
+			out_material_assets.push(current_material_asset);
+		}
+		
+		Ok((out_model_asset, out_material_assets))
+	}
 }
 
 unsafe fn create_geometry_buffers(vk_handle: &VkHandle, model_descriptor: &ModelDescriptor, mesh_descriptor: &MeshDescriptor) -> Result<(MeshVulkanBuffers, MeshBuffers), ModelLoadError>
@@ -74,26 +143,26 @@ unsafe fn create_geometry_buffers(vk_handle: &VkHandle, model_descriptor: &Model
 	let mut vertex_vec: Vec<Vertex> = vec![];
 	let mut index_vec: Vec<u32> = vec![];
 		
-	let face_x_max_value = mesh_descriptor.face_vec.iter().map(|face| face[0]).max().unwrap();
-	let face_y_max_value = mesh_descriptor.face_vec.iter().map(|face| face[1]).max().unwrap();
-	let face_z_max_value = mesh_descriptor.face_vec.iter().map(|face| face[2]).max().unwrap();
+	let face_ver_max_index = mesh_descriptor.face_vtn_vec.iter().map(|face_vtn| face_vtn[0]).max().unwrap();
+	let face_uv_max_index = mesh_descriptor.face_vtn_vec.iter().map(|face_vtn| face_vtn[1]).max().unwrap();
+	let face_normal_max_index = mesh_descriptor.face_vtn_vec.iter().map(|face_vtn| face_vtn[2]).max().unwrap();
 
-	if  face_x_max_value > model_descriptor.vertex_vec.len() ||
-		face_y_max_value > model_descriptor.uv_vec.len() ||
-		face_z_max_value > model_descriptor.normal_vec.len()
+	if  face_ver_max_index > model_descriptor.vertex_vec.len() ||
+		face_uv_max_index > model_descriptor.uv_vec.len() ||
+		face_normal_max_index > model_descriptor.normal_vec.len()
 	{
 		return Err(
 			ModelLoadError::ValidationError(
 				format!(
 					"face vertex index out of bounds\nface_max_value: v{}, uv{}, n{}\nwith vector lengths: v{}, uv{}, n{}", 
-					face_x_max_value, face_y_max_value, face_z_max_value, 
+					face_ver_max_index, face_uv_max_index, face_normal_max_index, 
 					model_descriptor.vertex_vec.len(), model_descriptor.uv_vec.len(), model_descriptor.normal_vec.len()
 				)
 			)
 		);
 	}
 
-	for face in mesh_descriptor.face_vec.iter()
+	for face in mesh_descriptor.face_vtn_vec.iter()
 	{
 		let new_vertex = 
 			Vertex {
@@ -162,13 +231,6 @@ unsafe fn create_geometry_buffers(vk_handle: &VkHandle, model_descriptor: &Model
 			}
 		)
 	);
-}
-
-pub struct ModelAssetPack
-{
-	pub model_asset: ModelAsset,
-	pub material_assets: Vec<MaterialAsset>,
-	pub texture_paths: Vec<String>,
 }
 
 #[component]
@@ -274,9 +336,9 @@ impl VulkanModel
 				let mut vertex_vec: Vec<Vertex> = vec![];
 				let mut index_vec: Vec<u32> = vec![];
 					
-				let face_x_max_value = mesh_descriptor.face_vec.iter().map(|face| face[0]).max().unwrap();
-				let face_y_max_value = mesh_descriptor.face_vec.iter().map(|face| face[1]).max().unwrap();
-				let face_z_max_value = mesh_descriptor.face_vec.iter().map(|face| face[2]).max().unwrap();
+				let face_x_max_value = mesh_descriptor.face_vtn_vec.iter().map(|face| face[0]).max().unwrap();
+				let face_y_max_value = mesh_descriptor.face_vtn_vec.iter().map(|face| face[1]).max().unwrap();
+				let face_z_max_value = mesh_descriptor.face_vtn_vec.iter().map(|face| face[2]).max().unwrap();
 
 				if  face_x_max_value > model_descriptor.vertex_vec.len() ||
 					face_y_max_value > model_descriptor.uv_vec.len() ||
@@ -293,7 +355,7 @@ impl VulkanModel
 					);
 				}
 
-				for face in mesh_descriptor.face_vec
+				for face in mesh_descriptor.face_vtn_vec
 				{
 					let new_vertex = 
 						Vertex {

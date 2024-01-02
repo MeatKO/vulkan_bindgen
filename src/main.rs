@@ -12,7 +12,7 @@ use detail_core::{
 	}, draw::rendering_system4}, 
 	logic::{
 		game_objects::{
-			init_domatena_shtaiga_object, init_domatena_shtaiga_assets, init_domatena_shtaiga_assets_2
+			init_domatena_shtaiga_object, init_domatena_shtaiga_assets_2, init_misc_assets
 		}, 
 		game_logic::game_logic_system
 	}, 
@@ -44,8 +44,9 @@ fn main()
 		decs.add_init_system(init_pipelines);
 		decs.add_init_system(init_buffer_objects);
 		decs.add_init_system(init_rendering_assets);
+		decs.add_init_system(init_misc_assets);
 		decs.add_init_system(init_domatena_shtaiga_assets_2);
-		decs.add_init_system(init_domatena_shtaiga_assets);
+		// decs.add_init_system(init_domatena_shtaiga_assets);
 		decs.add_init_system(init_domatena_shtaiga_object);
 		
 		decs.add_system(physics_system_2);

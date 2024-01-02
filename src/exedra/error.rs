@@ -11,7 +11,7 @@ pub enum ModelLoadError
 	MaterialFileNotFound(String, std::io::Error),
 	MaterialNotFound(String),
 	MaterialWithoutMaps(String),
-	TextureLoadingError(String, String),
+	TextureLoadingError(String, String), // texture name, err
 	ValidationError(String),
 }
 

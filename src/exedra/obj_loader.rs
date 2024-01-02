@@ -40,11 +40,11 @@ where P : AsRef<Path>
 			"v" => global_v_vec.push(parse_vec3_line(tail)?),
 			"vt" => global_vt_vec.push(parse_vec2_line(tail)?),
 			"vn" => global_vn_vec.push(parse_vec3_line(tail)?),
-			"f" => current_mesh.face_vec.extend(parse_face_line(tail)?), // only triangle faces for now !
+			"f" => current_mesh.face_vtn_vec.extend(parse_face_line(tail)?), // only triangle faces for now !
 			"mtllib" => { global_mtllib_vec.push(tail.to_owned()) }
 			"usemtl" => 
 			{
-				if !current_mesh.face_vec.is_empty() && current_mesh.mtl_name != "".to_owned()
+				if !current_mesh.face_vtn_vec.is_empty() && current_mesh.mtl_name != "".to_owned()
 				{
 					current_mesh.name = tail.to_owned();
 					mesh_descriptor_vec.push(current_mesh);
@@ -65,7 +65,7 @@ where P : AsRef<Path>
 			"o" | "g" => 
 			{
 				let old_mtl_name = current_mesh.mtl_name.clone();
-				if !current_mesh.face_vec.is_empty()
+				if !current_mesh.face_vtn_vec.is_empty()
 				{
 					current_mesh.name = tail.to_owned();
 					mesh_descriptor_vec.push(current_mesh);
@@ -78,7 +78,7 @@ where P : AsRef<Path>
 			_ => { continue }
 		}
 	}
-	if !current_mesh.face_vec.is_empty()
+	if !current_mesh.face_vtn_vec.is_empty()
 	{
 		mesh_descriptor_vec.push(current_mesh)
 	}

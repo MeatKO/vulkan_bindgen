@@ -31,21 +31,3 @@ impl Default for Material
 		}
 	}
 }
-
-impl Material
-{
-	pub fn new(
-		name: String,
-	) -> Material
-	{
-		Material
-		{
-			name: name,
-			descriptor_set: nullptr(),
-			albedo_path: String::from(""),
-			normal_path: String::from(""),
-			albedo_map: None,
-			normal_map: None,
-		}
-	}
-}

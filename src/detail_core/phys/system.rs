@@ -5,7 +5,6 @@ use decs::manager::{dECS, QueryResultMut};
 
 use crate::cotangens::vec3::Vec3;
 use crate::detail_core::components::misc::{DeltaTime, RaycastObject, RaycastObjectState};
-use crate::detail_core::model::model::{Model, VulkanModel};
 use crate::vulkan::handle::VkHandle;
 
 use super::aabb::AABB;

@@ -1,4 +1,3 @@
-use crate::detail_core::model::mesh::VulkanMeshData;
 use crate::detail_core::texture::texture::Texture;
 use crate::detail_core::texture::texture::VulkanTexture;
 use crate::vulkan::vk_bindgen::*;

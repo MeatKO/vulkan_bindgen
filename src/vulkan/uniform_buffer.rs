@@ -1,6 +1,5 @@
 use crate::cotangens::mat4x4::Mat4x4;
 use crate::cotangens::vec3::Vec3;
-use crate::detail_core::model::mesh::VulkanMeshData;
 use crate::vulkan::vk_bindgen::*;
 use crate::vulkan::handle::*;
 use crate::vulkan::vk_buffer::*;
