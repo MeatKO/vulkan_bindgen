@@ -44,18 +44,26 @@ pub struct MainLoopComponent
 	pub should_quit: bool
 }
 
-#[derive(Debug)]
-pub enum RaycastObjectState
+#[derive(Debug, Clone)]
+pub struct CameraRaycastInfo
 {
-	Picked((usize, f32, Vec3)),
-	Thrown((usize, f32, Vec3)),
+	pub index: usize,
+	pub length: f32,
+	pub obj_relative_hit: Vec3,
+}
+
+#[derive(Debug, Clone)]
+pub enum CameraRaycastObjectState
+{
+	Picked(CameraRaycastInfo),
+	Thrown(CameraRaycastInfo),
 	None,
 }
 
 #[component]
-pub struct RaycastObject
+pub struct CameraRaycastObject
 {
-	pub state: RaycastObjectState
+	pub state: CameraRaycastObjectState
 }
 
 #[component]

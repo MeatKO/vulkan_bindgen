@@ -13,3 +13,5 @@ pub mod logic;
 pub mod components;
 pub mod diagnostics;
 pub mod misc_systems;
+
+pub mod asset_manager;

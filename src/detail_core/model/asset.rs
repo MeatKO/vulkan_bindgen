@@ -1,4 +1,4 @@
-use crate::vulkan::{wrappers::vk_buffer::VulkanBuffer, vertex::Vertex, vk_bindgen::VkDescriptorSet};
+use crate::{vulkan::{wrappers::vk_buffer::VulkanBuffer, vertex::Vertex, vk_bindgen::VkDescriptorSet}, detail_core::texture::texture::{VulkanTexture, Texture}};
 
 use std::ptr::null_mut as nullptr;
 
@@ -59,8 +59,8 @@ pub struct MaterialAsset
 	pub name: String,
 	pub smooth_shading: bool,
 	pub descriptor_set: VkDescriptorSet,
-	// pub albedo_asset_path: String,
-	// pub normal_asset_path: String,
+	pub albedo_map: Texture<VulkanTexture>,
+	pub normal_map: Texture<VulkanTexture>,
 }
 
 impl MaterialAsset
@@ -72,8 +72,8 @@ impl MaterialAsset
 			name: name,
 			smooth_shading: false,
 			descriptor_set: nullptr(),
-			// albedo_asset_path: String::new(),
-			// normal_asset_path: String::new(),
+			albedo_map: Texture::new_invalid(),
+			normal_map: Texture::new_invalid(),
 		}
 	}
 }

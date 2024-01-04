@@ -2,6 +2,7 @@ use decs::component_derive::system;
 use decs::manager::{dECS, QueryResult, QueryResultMut};
 
 use crate::cotangens::vec3::Vec3;
+use crate::detail_core::asset_manager::manager::AssetManager;
 use crate::detail_core::components::rendering::UniformBufferComponent;
 use crate::detail_core::model::asset::{ModelAsset, MaterialAsset};
 use crate::detail_core::model::component::VulkanModelComponent;
@@ -30,8 +31,13 @@ pub fn rendering_system4()
 			.unwrap().remove(0)
 			.component;
 
+		let asset_manager: &mut AssetManager =
+			decs.get_components_global_mut_unchecked::<AssetManager>()
+			.unwrap().remove(0)
+			.component;
+
 		let default_material =
-			decs.get_asset_rc::<MaterialAsset>("material_defaults")
+			asset_manager.get_asset_rc::<MaterialAsset>("material_defaults")
 			.unwrap();
 
 		vkWaitForFences(vk_handle.logical_device, 1, &vk_handle.in_flight_fence_vec[vk_handle.current_frame], VK_TRUE, u64::MAX);
@@ -103,11 +109,11 @@ pub fn rendering_system4()
 			for (index, (model_component, ubo_component, aabb)) in models.iter().enumerate()
 			{
 				let model_asset_ref =
-					decs.get_asset_rc::<ModelAsset>(&model_component.component.model_asset_name).unwrap();
+					asset_manager.get_asset_rc::<ModelAsset>(&model_component.component.model_asset_name).unwrap();
 
 				for mesh in model_asset_ref.meshes.iter()
 				{
-					match decs.get_asset_rc::<MaterialAsset>(&mesh.material_asset_name)
+					match asset_manager.get_asset_rc::<MaterialAsset>(&mesh.material_asset_name)
 					{
 						Ok(material_asset_ref) => 
 						{
@@ -194,7 +200,7 @@ pub fn rendering_system4()
 
 			// println!("total number of physboxes to draw : {}", aabb_vec.len());
 
-			record_command_buffer_wireframe_ref(vk_handle, image_index, &aabb_vec);
+			// record_command_buffer_wireframe_ref(vk_handle, image_index, &aabb_vec);
 		}
 
 		let wait_semaphore_vec = vec![vk_handle.image_available_semaphore_vec[vk_handle.current_frame]];
@@ -204,7 +210,7 @@ pub fn rendering_system4()
 		let command_buffers = 
 			vec![
 				vk_handle.command_buffer_vec[vk_handle.current_frame].get_command_buffer_ptr(),
-				vk_handle.command_buffer_wireframe_vec[vk_handle.current_frame].get_command_buffer_ptr(),
+				// vk_handle.command_buffer_wireframe_vec[vk_handle.current_frame].get_command_buffer_ptr(),
 			];
 
 		let submit_info = 

@@ -12,15 +12,15 @@ use detail_core::{
 	}, draw::rendering_system4}, 
 	logic::{
 		game_objects::{
-			init_domatena_shtaiga_object, init_domatena_shtaiga_assets_2, init_misc_assets
+			init_domatena_shtaiga_object, init_domatena_shtaiga_assets_2, init_misc_assets, init_misc_objects
 		}, 
 		game_logic::game_logic_system
 	}, 
 	diagnostics::system::print_delta_time_system, phys::system::physics_system_2, input::system::input_system, 
 	components::misc::{
-		StringComponent, DeltaTime, WindowComponent, MainLoopComponent, GlobalVariables, RaycastObject, RaycastObjectState
+		StringComponent, DeltaTime, WindowComponent, MainLoopComponent, GlobalVariables, CameraRaycastObject, CameraRaycastObjectState
 	}, 
-	camera::system::update_camera_system, misc_systems::raycast_aabb_pickup::raycast_aabb_pickup_system
+	camera::system::update_camera_system, misc_systems::raycast_aabb_pickup::raycast_aabb_pickup_system, asset_manager::manager::AssetManager
 };
 
 
@@ -39,12 +39,21 @@ fn main()
 	{
 		let mut decs = decs::manager::dECS::new();
 
+		let vk_handle_entity = decs.create_entity();
+		decs.add_component(vk_handle_entity, StringComponent{ string : String::from("vk_handle") }).unwrap();
+		decs.add_component(vk_handle_entity, VkHandle::new_empty()).unwrap();
+
+		let asset_manager_entity = decs.create_entity();
+		decs.add_component(vk_handle_entity, StringComponent{ string : String::from("asset_manager") }).unwrap();
+		decs.add_component(vk_handle_entity, AssetManager::new()).unwrap();
+
 		decs.add_init_system(init_window_handle);
 		decs.add_init_system(init_rendering_objects);
 		decs.add_init_system(init_pipelines);
 		decs.add_init_system(init_buffer_objects);
 		decs.add_init_system(init_rendering_assets);
 		decs.add_init_system(init_misc_assets);
+		decs.add_init_system(init_misc_objects);
 		decs.add_init_system(init_domatena_shtaiga_assets_2);
 		// decs.add_init_system(init_domatena_shtaiga_assets);
 		decs.add_init_system(init_domatena_shtaiga_object);
@@ -56,10 +65,6 @@ fn main()
 		decs.add_system(update_camera_system);
 		decs.add_system(raycast_aabb_pickup_system);
 		decs.add_system(print_delta_time_system);
-
-		let vk_handle_entity = decs.create_entity();
-		decs.add_component(vk_handle_entity, StringComponent{ string : String::from("vk_handle") }).unwrap();
-		decs.add_component(vk_handle_entity, VkHandle::new_empty()).unwrap();
 
 		let main_loop_entity = decs.create_entity();
 		decs.add_component(main_loop_entity, StringComponent{ string : String::from("main_loop") }).unwrap();
@@ -90,7 +95,7 @@ fn main()
 		let global_vars = decs.create_entity();
 		decs.add_component(global_vars, StringComponent{ string : String::from("global_vars") }).unwrap();
 		decs.add_component(global_vars, GlobalVariables{ should_run_physics: false, focus_on_gui: false }).unwrap();
-		decs.add_component(global_vars, RaycastObject{ state: RaycastObjectState::None }).unwrap();
+		decs.add_component(global_vars, CameraRaycastObject{ state: CameraRaycastObjectState::None }).unwrap();
 
 		'main_loop: 
 		loop

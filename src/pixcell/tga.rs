@@ -162,9 +162,7 @@ impl TGAImage
 				final_image = 
 					image_data
 					.chunks(4)
-					// .map(|rgba| [rgba[2], rgba[1], rgba[0], rgba[3]])
-					// .flatten()
-					// .collect::<Vec<u8>>();
+					.map(|rgba| [rgba[2], rgba[1], rgba[0], rgba[3]])
 					.map(|chunk| u32::from_le_bytes(chunk.try_into().unwrap_or([0u8; 4])))
 					.collect::<Vec<u32>>();
 			}

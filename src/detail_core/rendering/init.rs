@@ -1,10 +1,9 @@
 use decs::component_derive::system;
 use decs::manager::dECS;
 
+use crate::detail_core::asset_manager::manager::AssetManager;
 use crate::detail_core::components::misc::WindowComponent;
 use crate::detail_core::model::asset::MaterialAsset;
-use crate::detail_core::model::material::Material;
-// use crate::detail_core::model::model::Model;
 use crate::detail_core::texture::texture::{VulkanTexture, Texture};
 use crate::detail_core::window::create_vulkan_surface;
 use crate::vulkan::descriptor_set::update_descriptor_sets;
@@ -37,8 +36,11 @@ use std::vec;
 pub fn init_rendering_assets()
 {
 	let vk_handle: &mut VkHandle =
-		unsafe { decs.get_components_global_mut_unchecked::<VkHandle>() }.unwrap().remove(0).component;
+		unsafe { decs.get_components_global_mut_unchecked::<VkHandle>().unwrap().remove(0).component };
 
+	let asset_manager: &mut AssetManager =
+		unsafe { decs.get_components_global_mut_unchecked::<AssetManager>().unwrap().remove(0).component };
+	
 	let default_normal_map: Texture<VulkanTexture> = 
 		Texture::new("./detail/textures/smiley_normal.tga".into())
 		.load()
@@ -80,95 +82,16 @@ pub fn init_rendering_assets()
 		).unwrap();
 	}
 
-	// let material_defaults =	
-	// 	Material {
-	// 		name: "default".into(),
-	// 		descriptor_set: material_defaults_descriptor_set[0],
-	// 		albedo_path: "./detail/textures/test.tga".into(),
-	// 		normal_path: "./detail/textures/smiley_normal.tga".into(),
-	// 		albedo_map: Some(default_albedo_map.clone()),
-	// 		normal_map: Some(default_normal_map.clone()),
-	// 		..Default::default()
-	// 	};
-
 	let material_defaults =	
 		MaterialAsset {
 			name: "default".into(),
 			smooth_shading: true,
 			descriptor_set: material_defaults_descriptor_set[0],
+			albedo_map: default_albedo_map.clone(),
+			normal_map: default_normal_map.clone(),
 		};
 
-	decs.add_asset("material_defaults", material_defaults).unwrap();
-
-	// let mut error_model = Model::new("./detail/models/error/error.obj".into()).process_meshes(&vk_handle, material_defaults.clone());
-	// match error_model.process_textures(&vk_handle)
-	// {
-	// 	Ok(()) => {},
-	// 	Err(err) => { println!("couldn't parse textures for model '{}' err : '{}'", error_model.name, err) }
-	// }
-
-	// decs.add_asset("error_model", error_model).expect("couldnt add error_model asset");
-
-	// unsafe 
-	// {
-	// 	// let descriptor_pool = create_descriptor_pool(&vk_handle).unwrap();
-	// 	// let descriptor_pool = 
-	// 	// 	VkDescriptorPoolBuilder::new()
-	// 	// 	.add_pool_type(VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, vk_handle.frames_in_flight)
-	// 	// 	.build(vk_handle.logical_device, vk_handle.frames_in_flight)
-	// 	// 	.unwrap();
-
-	// 	let descriptor_sets = create_descriptor_sets(&vk_handle, &descriptor_pool).unwrap();		
-
-	// 	vk_handle.global_mesh_descriptor_pool = descriptor_pool;
-	// 	vk_handle.global_mesh_descriptor_sets = descriptor_sets;
-
-	// 	// {
-	// 	// 	let albedo_image_info = 
-	// 	// 		VkDescriptorImageInfo {
-	// 	// 			imageLayout: VkImageLayout::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-	// 	// 			imageView: default_albedo_map.texture_image_view,
-	// 	// 			sampler: default_albedo_map.texture_sampler
-	// 	// 		};
-
-	// 	// 	let normal_image_info = 
-	// 	// 		VkDescriptorImageInfo {
-	// 	// 			imageLayout: VkImageLayout::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-	// 	// 			imageView: default_normal_map.texture_image_view,
-	// 	// 			sampler: default_normal_map.texture_sampler
-	// 	// 	};
-
-	// 	// 	let descriptor_writes = 
-	// 	// 		vec![
-	// 	// 			VkWriteDescriptorSet {
-	// 	// 				sType: VkStructureType::VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-	// 	// 				dstSet: vk_handle.global_mesh_descriptor_sets[vk_handle.current_frame],
-	// 	// 				dstBinding: 1,
-	// 	// 				dstArrayElement: 0,
-	// 	// 				descriptorType: VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-	// 	// 				descriptorCount: 1,
-	// 	// 				pBufferInfo: nullptr(),
-	// 	// 				pImageInfo: &albedo_image_info,
-	// 	// 				pTexelBufferView: nullptr(),
-	// 	// 				pNext: nullptr()
-	// 	// 			},
-	// 	// 			VkWriteDescriptorSet {
-	// 	// 				sType: VkStructureType::VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-	// 	// 				dstSet: vk_handle.global_mesh_descriptor_sets[vk_handle.current_frame],
-	// 	// 				dstBinding: 2,
-	// 	// 				dstArrayElement: 0,
-	// 	// 				descriptorType: VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-	// 	// 				descriptorCount: 1,
-	// 	// 				pBufferInfo: nullptr(),
-	// 	// 				pImageInfo: &normal_image_info,
-	// 	// 				pTexelBufferView: nullptr(),
-	// 	// 				pNext: nullptr()
-	// 	// 			},
-	// 	// 		];
-
-	// 	// 	vkUpdateDescriptorSets(vk_handle.logical_device, descriptor_writes.len() as _, descriptor_writes.as_ptr(), 0, nullptr());
-	// 	// }
-	// }	
+	asset_manager.add_asset("material_defaults", material_defaults).unwrap();	
 }
 
 #[system]
@@ -179,7 +102,6 @@ pub fn init_window_handle()
 
 	let vk_handle: &mut VkHandle =
 		unsafe { decs.get_components_global_mut_unchecked::<VkHandle>() }.unwrap().remove(0).component;
-
 
 	let surface = create_vulkan_surface(&window.window, vk_handle);
 
@@ -220,16 +142,6 @@ pub fn init_rendering_objects()
 			.unwrap();
 		vk_handle.command_pool = Some(command_pool);
 	
-		// vk_handle.descriptor_set_layout = create_descriptor_set_layout(&vk_handle.logical_device).unwrap();
-	
-		// vk_handle.descriptor_set_layout = 
-		// 	VkDescriptorLayoutBuilder::new()
-		// 	.add_binding(VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
-		// 	.add_binding(VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
-		// 	.add_binding(VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
-		// 	.build(vk_handle.logical_device)
-		// 	.unwrap();
-
 		vk_handle.global_descriptor_set_layout_ubo =
 			VkDescriptorLayoutBuilder::new()
 				.add_binding(VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)

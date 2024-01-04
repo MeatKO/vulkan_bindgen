@@ -1,11 +1,11 @@
 use std::ops::{Deref, DerefMut};
 use std::path::PathBuf;
+use std::ptr::null_mut as nullptr;
+
 use crate::pixcell::error::*;
 
-// use crate::pixcell::image::Image;
 
-use crate::pixcell::format::ImageFormat;
-use crate::pixcell::image::{GenericImage, ImageDimensions};
+use crate::pixcell::image::GenericImage;
 use crate::pixcell::tga::TGAImage;
 use crate::vulkan::handle::VkHandle;
 use crate::vulkan::texture::create_texture_image;
@@ -153,4 +153,21 @@ impl Texture<LoadedTexture>
 
 	// 	self
 	// }
+}
+
+impl Texture<VulkanTexture>
+{
+	pub fn new_invalid() -> Self
+	{
+		Texture (
+			VulkanTexture {
+				path: String::new(), 
+				texture_image: nullptr(),
+				texture_image_memory: nullptr(),
+				texture_image_view: nullptr(),
+				texture_sampler: nullptr(),
+				byte_size: 0,
+			}
+		)
+	}
 }

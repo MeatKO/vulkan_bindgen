@@ -3,7 +3,7 @@ use std::{ptr::null_mut as nullptr, ops::{Deref, DerefMut}, path::PathBuf, colle
 use decs::component_derive::component;
 use decs::component::Component;
 
-use crate::{cotangens::{vec3::*, vec2::Vec2}, exedra::{error::ModelLoadError, model_descriptor::ModelDescriptor, mesh_descriptor::MeshDescriptor, material_descriptor::MaterialDescriptor}, detail_core::texture::texture::Texture, vulkan::{handle::VkHandle, vertex::{create_vertex_buffer, Vertex}, index::create_index_buffer, descriptor_set::{create_descriptor_sets, update_descriptor_sets}, uniform_buffer::create_uniform_buffers, vk_bindgen::VkFormat, wrappers::vk_buffer::VulkanBuffer}};
+use crate::{cotangens::{vec3::*, vec2::Vec2}, exedra::{error::ModelLoadError, model_descriptor::ModelDescriptor, mesh_descriptor::MeshDescriptor, material_descriptor::MaterialDescriptor}, detail_core::texture::texture::{Texture, VulkanTexture}, vulkan::{handle::VkHandle, vertex::{create_vertex_buffer, Vertex}, index::create_index_buffer, descriptor_set::{create_descriptor_sets, update_descriptor_sets}, uniform_buffer::create_uniform_buffers, vk_bindgen::VkFormat, wrappers::vk_buffer::VulkanBuffer}};
 use super::{mesh::{Mesh, VulkanMeshData}, material::Material, asset::{ModelAsset, MeshAsset, MeshVulkanBuffers, MeshBuffers, MaterialAsset}};
 
 #[derive(Debug)]
@@ -67,8 +67,7 @@ impl Model<ModelDescriptor>
 		Ok(out_model_asset)
 	}
 
-	// pub fn to_asset_material(self, vk_handle: &VkHandle, default_material: Rc<MaterialAsset>) -> Result<(ModelAsset, Vec<MaterialAsset>), ModelLoadError>
-	pub fn to_asset_material(self, vk_handle: &VkHandle) -> Result<(ModelAsset, Vec<MaterialAsset>), ModelLoadError>
+	pub fn to_asset_material(self, vk_handle: &VkHandle, material_defaults: &Rc<MaterialAsset>) -> Result<(ModelAsset, Vec<MaterialAsset>), ModelLoadError>
 	{
 		let mut out_model_asset = ModelAsset::new_empty(self.name.clone());
 		let mut out_material_assets = vec![];
@@ -108,21 +107,32 @@ impl Model<ModelDescriptor>
 			let albedo_texture = 
 				match Texture::new(material.albedo_path.clone().into()).load()
 				{
-					Ok(loaded_texture) => loaded_texture,
-					Err(err) => { return Err(ModelLoadError::TextureLoadingError(material.albedo_path.clone(), err.to_string())); }
+					Ok(loaded_texture) => 
+					{
+						loaded_texture.process_vk(vk_handle, VkFormat::VK_FORMAT_R8G8B8A8_SRGB).unwrap()
+						// loaded_texture.process_vk(vk_handle, VkFormat::VK_FORMAT_B8G8R8A8_SRGB).unwrap()
+					}
+					Err(err) => 
+					{ 
+						// return Err(ModelLoadError::TextureLoadingError(material.albedo_path.clone(), err.to_string())); 
+						material_defaults.albedo_map.clone()
+					}
 				};
 
 			let normal_texture = 
 				match Texture::new(material.normal_path.clone().into()).load()
 				{
-					Ok(loaded_texture) => loaded_texture,
-					Err(err) => { return Err(ModelLoadError::TextureLoadingError(material.normal_path.clone(), err.to_string())); }
+					Ok(loaded_texture) => 
+					{
+						loaded_texture.process_vk(vk_handle, VkFormat::VK_FORMAT_R8G8B8A8_UNORM).unwrap()
+					}
+					,
+					Err(err) => 
+					{ 
+						// return Err(ModelLoadError::TextureLoadingError(material.normal_path.clone(), err.to_string())); 
+						material_defaults.normal_map.clone()
+					}
 				};
-
-			// let normal_texture = Texture::new(material.normal_path.clone().into()).load().unwrap();
-			
-			let albedo_texture = albedo_texture.process_vk(vk_handle, VkFormat::VK_FORMAT_R8G8B8A8_SRGB).unwrap();
-			let normal_texture = normal_texture.process_vk(vk_handle, VkFormat::VK_FORMAT_R8G8B8A8_UNORM).unwrap();
 
 			let descriptor_set_layout = vk_handle.global_descriptor_set_layout_material;
 			let descriptor_set_vec = unsafe { create_descriptor_sets(vk_handle, &vk_handle.global_descriptor_pool_material, &descriptor_set_layout, 1).unwrap() };

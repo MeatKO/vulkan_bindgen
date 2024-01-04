@@ -2,7 +2,8 @@ use decs::component_derive::system;
 use decs::manager::{dECS, QueryResultMut};
 use parmack::window::event::{MouseCode, KeyCode};
 
-use crate::detail_core::components::misc::{DeltaTime, GlobalVariables, RaycastObject, RaycastObjectState};
+use crate::detail_core::asset_manager::manager::AssetManager;
+use crate::detail_core::components::misc::{DeltaTime, GlobalVariables, CameraRaycastObject, CameraRaycastObjectState, CameraRaycastInfo};
 // use crate::detail_core::model::model::{VulkanModel, Model};
 use crate::detail_core::phys::aabb::AABB;
 use crate::vulkan::handle::VkHandle;
@@ -16,11 +17,14 @@ pub fn raycast_aabb_pickup_system()
 	let vk_handle: &mut VkHandle =
 		unsafe { decs.get_components_global_mut_unchecked::<VkHandle>() }.unwrap().remove(0).component;
 
+	let asset_manager: &mut AssetManager =
+		unsafe { decs.get_components_global_mut_unchecked::<AssetManager>().unwrap().remove(0).component };
+	
 	let global_variables: &mut GlobalVariables =
 		unsafe { decs.get_components_global_mut_unchecked::<GlobalVariables>() }.unwrap().remove(0).component;
 
-	let raycast_object: &mut RaycastObject =
-		unsafe { decs.get_components_global_mut_unchecked::<RaycastObject>() }.unwrap().remove(0).component;
+	let raycast_object: &mut CameraRaycastObject =
+		unsafe { decs.get_components_global_mut_unchecked::<CameraRaycastObject>() }.unwrap().remove(0).component;
 
 	// let mut aabb_vector: Vec<&mut AABB> = 
 	// 	unsafe {decs.get_components_global_mut_unchecked::<Model<VulkanModel>>().unwrap().into_iter().map(|model| &mut model.component.aabb).collect::<Vec<&mut AABB>>() };
@@ -32,23 +36,23 @@ pub fn raycast_aabb_pickup_system()
 	// rewrite this so it uses click and release events because its getting ridiculous
 	if vk_handle.mouse_input_buffer.is_pressed(MouseCode::Left as u8)
 	{
-		match raycast_object.state
+		match raycast_object.state.clone()
 		{
-			RaycastObjectState::Thrown(_) => {}
-			RaycastObjectState::Picked((index, length, obj_relative_hit)) => 
+			CameraRaycastObjectState::Thrown(_) => {}
+			CameraRaycastObjectState::Picked(raycast_info) => 
 			{
 				if vk_handle.input_buffer.is_pressed(KeyCode::Space as u8)
 				{
 					println!("throwing");
-					raycast_object.state = RaycastObjectState::Thrown((index, length, obj_relative_hit));
+					raycast_object.state = CameraRaycastObjectState::Thrown(raycast_info.clone());
 
-					let aabb_pos = aabb_vector[index].component.translation;
+					let aabb_pos = aabb_vector[raycast_info.index].component.translation;
 
-					aabb_vector[index].component.velocity += 
+					aabb_vector[raycast_info.index].component.velocity += 
 						(aabb_pos - vk_handle.camera.get_position()).normalize() / 1.0f32;
 				}
 			}
-			RaycastObjectState::None => 
+			CameraRaycastObjectState::None => 
 			{
 				let mut hit_points: Vec<(usize, f32)> = 
 				aabb_vector
@@ -81,7 +85,14 @@ pub fn raycast_aabb_pickup_system()
 					let hit_world_pos = vk_handle.camera.get_position() + (vk_handle.camera.get_front() * camera_front_scale);
 					let aabb_center_hit_vec3 = aabb_vector[aabb_index].component.translation - hit_world_pos;
 
-					raycast_object.state = RaycastObjectState::Picked((aabb_index, camera_front_scale, aabb_center_hit_vec3));
+					let raycast_info = 
+						CameraRaycastInfo
+						{
+							index: aabb_index,
+							length: camera_front_scale,
+							obj_relative_hit: aabb_center_hit_vec3,
+						};
+					raycast_object.state = CameraRaycastObjectState::Picked(raycast_info);
 					// break;
 				}
 			}
@@ -89,6 +100,6 @@ pub fn raycast_aabb_pickup_system()
 	}
 	else 
 	{
-		raycast_object.state = RaycastObjectState::None;
+		raycast_object.state = CameraRaycastObjectState::None;
 	}
 }

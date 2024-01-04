@@ -5,7 +5,7 @@ use decs::manager::dECS;
 use parmack::handle::Handle;
 use parmack::window::event::{WindowEvent, WindowActions, KeyCode, MouseCode};
 
-use crate::detail_core::components::misc::{WindowComponent, DeltaTime, MainLoopComponent, GlobalVariables, RaycastObject, RaycastObjectState};
+use crate::detail_core::components::misc::{WindowComponent, DeltaTime, MainLoopComponent, GlobalVariables, CameraRaycastObject, CameraRaycastObjectState};
 use crate::vulkan::handle::VkHandle;
 
 #[system]
@@ -20,8 +20,8 @@ pub fn input_system()
 	let vk_handle: &mut VkHandle =
 		unsafe { decs.get_components_global_mut_unchecked::<VkHandle>() }.unwrap().remove(0).component;
 
-	let raycast_object: &mut RaycastObject =
-		unsafe { decs.get_components_global_mut_unchecked::<RaycastObject>() }.unwrap().remove(0).component;
+	let raycast_object: &mut CameraRaycastObject =
+		unsafe { decs.get_components_global_mut_unchecked::<CameraRaycastObject>() }.unwrap().remove(0).component;
 
 	let process_start_time = std::time::Instant::now();
 	let absolute_current_time_stamp_ms = process_start_time.duration_since(vk_handle.start_time).as_secs_f32() * 1000.0f32;
@@ -36,15 +36,15 @@ pub fn input_system()
 			{
 				match raycast_object.state.borrow_mut()
 				{
-					RaycastObjectState::Picked((index, length, obj_relative_hit)) =>
+					CameraRaycastObjectState::Picked(raycast_info) =>
 					{
 						if mouse_code == MouseCode::ScrollDown
 						{
-							*length -= 1000.0f32 * (delta_time.last_delta_time / 1000.0f32);
+							raycast_info.length -= 1000.0f32 * (delta_time.last_delta_time / 1000.0f32);
 						}
 						if mouse_code == MouseCode::ScrollUp
 						{
-							*length += 1000.0f32 * (delta_time.last_delta_time / 1000.0f32);
+							raycast_info.length += 1000.0f32 * (delta_time.last_delta_time / 1000.0f32);
 						}
 					}
 					_ => {}
