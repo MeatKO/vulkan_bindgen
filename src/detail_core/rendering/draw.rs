@@ -3,6 +3,7 @@ use decs::manager::{dECS, QueryResult, QueryResultMut};
 
 use crate::cotangens::vec3::Vec3;
 use crate::detail_core::asset_manager::manager::AssetManager;
+use crate::detail_core::components::misc::GlobalVariables;
 use crate::detail_core::components::rendering::UniformBufferComponent;
 use crate::detail_core::model::asset::{ModelAsset, MaterialAsset};
 use crate::detail_core::model::component::VulkanModelComponent;
@@ -40,6 +41,11 @@ pub fn rendering_system4()
 			asset_manager.get_asset_rc::<MaterialAsset>("material_defaults")
 			.unwrap();
 
+		let global_variables =
+			decs.get_components_global_mut_unchecked::<GlobalVariables>()
+			.unwrap().remove(0)
+			.component;
+
 		vkWaitForFences(vk_handle.logical_device, 1, &vk_handle.in_flight_fence_vec[vk_handle.current_frame], VK_TRUE, u64::MAX);
 		vkResetFences(vk_handle.logical_device, 1, &vk_handle.in_flight_fence_vec[vk_handle.current_frame]);
 
@@ -55,6 +61,8 @@ pub fn rendering_system4()
 		}
 
 		vk_handle.command_buffer_vec[vk_handle.current_frame].reset(None);
+
+		let mut command_buffers = vec![];
 
 		'model_rendering:
 		{
@@ -169,10 +177,17 @@ pub fn rendering_system4()
 			// println!("total number of models to draw : {}", models.len());
 
 			record_command_buffer(vk_handle, image_index, &models, &used_model_assets, &used_material_assets, default_material);
+
+			command_buffers.push(vk_handle.command_buffer_vec[vk_handle.current_frame].get_command_buffer_ptr());
 		}
 
 		'physbox_rendering:
 		{
+			if !global_variables.render_wireframe 
+			{
+				break 'physbox_rendering;
+			}
+
 			let aabb_vec: Vec<QueryResult<AABB>> =
 				match decs.get_components_global_unchecked::<AABB>()
 				{
@@ -200,18 +215,20 @@ pub fn rendering_system4()
 
 			// println!("total number of physboxes to draw : {}", aabb_vec.len());
 
-			// record_command_buffer_wireframe_ref(vk_handle, image_index, &aabb_vec);
+			record_command_buffer_wireframe_ref(vk_handle, image_index, &aabb_vec);
+
+			command_buffers.push(vk_handle.command_buffer_wireframe_vec[vk_handle.current_frame].get_command_buffer_ptr());
 		}
 
 		let wait_semaphore_vec = vec![vk_handle.image_available_semaphore_vec[vk_handle.current_frame]];
 		let wait_stages_vec : Vec<VkPipelineStageFlags> = vec![VkPipelineStageFlagBits::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT as u32];
 		let signal_semaphores_vec = vec![vk_handle.rendering_finished_semaphore_vec[vk_handle.current_frame]];
 
-		let command_buffers = 
-			vec![
-				vk_handle.command_buffer_vec[vk_handle.current_frame].get_command_buffer_ptr(),
-				// vk_handle.command_buffer_wireframe_vec[vk_handle.current_frame].get_command_buffer_ptr(),
-			];
+		// let command_buffers = 
+		// 	vec![
+		// 		vk_handle.command_buffer_vec[vk_handle.current_frame].get_command_buffer_ptr(),
+		// 		vk_handle.command_buffer_wireframe_vec[vk_handle.current_frame].get_command_buffer_ptr(),
+		// 	];
 
 		let submit_info = 
 			VkSubmitInfo{

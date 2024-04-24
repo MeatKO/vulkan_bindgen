@@ -107,6 +107,16 @@ pub fn input_system()
 							}
 						).unwrap();
 					}
+					KeyCode::X => 
+					{ 
+						decs.modify_components_global::<GlobalVariables>(
+							|global_variables|
+							{
+								global_variables.render_wireframe = !global_variables.render_wireframe;
+								Ok(())
+							}
+						).unwrap();
+					}
 					_ => {}
 				}
 			}

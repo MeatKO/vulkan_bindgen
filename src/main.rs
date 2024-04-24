@@ -44,8 +44,8 @@ fn main()
 		decs.add_component(vk_handle_entity, VkHandle::new_empty()).unwrap();
 
 		let asset_manager_entity = decs.create_entity();
-		decs.add_component(vk_handle_entity, StringComponent{ string : String::from("asset_manager") }).unwrap();
-		decs.add_component(vk_handle_entity, AssetManager::new()).unwrap();
+		decs.add_component(asset_manager_entity, StringComponent{ string : String::from("asset_manager") }).unwrap();
+		decs.add_component(asset_manager_entity, AssetManager::new()).unwrap();
 
 		decs.add_init_system(init_window_handle);
 		decs.add_init_system(init_rendering_objects);
@@ -94,7 +94,7 @@ fn main()
 
 		let global_vars = decs.create_entity();
 		decs.add_component(global_vars, StringComponent{ string : String::from("global_vars") }).unwrap();
-		decs.add_component(global_vars, GlobalVariables{ should_run_physics: false, focus_on_gui: false }).unwrap();
+		decs.add_component(global_vars, GlobalVariables{ should_run_physics: false, focus_on_gui: false, render_wireframe: true }).unwrap();
 		decs.add_component(global_vars, CameraRaycastObject{ state: CameraRaycastObjectState::None }).unwrap();
 
 		'main_loop: 

@@ -71,4 +71,5 @@ pub struct GlobalVariables
 {
 	pub should_run_physics: bool,
 	pub focus_on_gui: bool,
+	pub render_wireframe: bool,
 }

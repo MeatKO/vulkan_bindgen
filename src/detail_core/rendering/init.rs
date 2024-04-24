@@ -4,6 +4,7 @@ use decs::manager::dECS;
 use crate::detail_core::asset_manager::manager::AssetManager;
 use crate::detail_core::components::misc::WindowComponent;
 use crate::detail_core::model::asset::MaterialAsset;
+use crate::detail_core::phys::aabb::AABB;
 use crate::detail_core::texture::texture::{VulkanTexture, Texture};
 use crate::detail_core::window::create_vulkan_surface;
 use crate::vulkan::descriptor_set::update_descriptor_sets;
@@ -193,13 +194,13 @@ pub fn init_pipelines()
 			let attribute_descriptions_vec = Vertex::get_attribute_descriptions();
 			//
 
-			let descriptor_set_layout = 
-				VkDescriptorLayoutBuilder::new()
-				.add_binding(VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
-				.add_binding(VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
-				.add_binding(VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
-				.build(vk_handle.logical_device)
-				.unwrap();
+			// let descriptor_set_layout = 
+			// 	VkDescriptorLayoutBuilder::new()
+			// 	.add_binding(VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
+			// 	.add_binding(VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
+			// 	.add_binding(VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
+			// 	.build(vk_handle.logical_device)
+			// 	.unwrap();
 
 			let (pipeline_layout, render_pass, pipeline) = 
 				create_pipeline(
