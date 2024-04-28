@@ -5,8 +5,11 @@ use decs::manager::dECS;
 use parmack::handle::Handle;
 use parmack::window::event::{WindowEvent, WindowActions, KeyCode, MouseCode};
 
-use crate::detail_core::components::misc::{WindowComponent, DeltaTime, MainLoopComponent, GlobalVariables, CameraRaycastObject, CameraRaycastObjectState};
+use crate::detail_core::components::misc::{CameraRaycastObject, CameraRaycastObjectState, DeltaTime, GlobalVariables, MainLoopComponent, StringComponent, WindowComponent};
 use crate::vulkan::handle::VkHandle;
+
+use super::input::InputState;
+use super::input_buffer::InputBuffer;
 
 #[system]
 pub fn input_system()
@@ -23,10 +26,15 @@ pub fn input_system()
 	let raycast_object: &mut CameraRaycastObject =
 		unsafe { decs.get_components_global_mut_unchecked::<CameraRaycastObject>() }.unwrap().remove(0).component;
 
+	let input_state: &mut InputState =
+		unsafe { decs.get_components_global_mut_unchecked::<InputState>() }.unwrap().remove(0).component;
+
 	let process_start_time = std::time::Instant::now();
 	let absolute_current_time_stamp_ms = process_start_time.duration_since(vk_handle.start_time).as_secs_f32() * 1000.0f32;
 
 	let window = &mut window.window;
+
+	input_state.update();
 
 	for event in window.get_events()
 	{
@@ -65,15 +73,15 @@ pub fn input_system()
 				// 	None => {}
 				// }
 
-				vk_handle.mouse_input_buffer.set_key(mouse_code as u8, absolute_current_time_stamp_ms);
+				input_state.current_mouse_state.set_key(mouse_code as u8, absolute_current_time_stamp_ms);
 			}
 			WindowEvent::MouseRelease(mouse_code, x, y) =>
 			{
-				vk_handle.mouse_input_buffer.unset_key(mouse_code as u8);
+				input_state.current_mouse_state.unset_key(mouse_code as u8);
 			}
 			WindowEvent::KeyPress(key_code) => 
 			{
-				vk_handle.input_buffer.set_key(key_code as u8, absolute_current_time_stamp_ms);
+				input_state.current_keyboard_state.set_key(key_code as u8, absolute_current_time_stamp_ms);
 
 				match key_code 
 				{
@@ -122,7 +130,7 @@ pub fn input_system()
 			}
 			WindowEvent::KeyRelease(key_code) => 
 			{
-				vk_handle.input_buffer.unset_key(key_code as u8);
+				input_state.current_keyboard_state.unset_key(key_code as u8);
 			}
 			WindowEvent::WindowAction(val) => 
 			{

@@ -3,7 +3,9 @@ use decs::manager::{dECS, QueryResultMut};
 use parmack::window::event::{MouseCode, KeyCode};
 
 use crate::detail_core::asset_manager::manager::AssetManager;
-use crate::detail_core::components::misc::{DeltaTime, GlobalVariables, CameraRaycastObject, CameraRaycastObjectState, CameraRaycastInfo};
+use crate::detail_core::components::misc::{CameraRaycastInfo, CameraRaycastObject, CameraRaycastObjectState, DeltaTime, GlobalVariables, StringComponent};
+use crate::detail_core::input::input::InputState;
+use crate::detail_core::input::input_buffer::InputBuffer;
 // use crate::detail_core::model::model::{VulkanModel, Model};
 use crate::detail_core::phys::aabb::AABB;
 use crate::vulkan::handle::VkHandle;
@@ -11,6 +13,19 @@ use crate::vulkan::handle::VkHandle;
 #[system]
 pub fn raycast_aabb_pickup_system()
 {
+	// let input_buffer_keyboard_index: usize = 
+	// 	unsafe { decs.get_entity_with_components_filter::<StringComponent>(|string_component| {string_component.string == "input_buffer_keyboard"} ).unwrap() };
+	// let input_buffer_keyboard: &mut InputBuffer = 
+	// 	unsafe { decs.get_components_mut_unchecked::<InputBuffer>(input_buffer_keyboard_index) }.unwrap().remove(0).component;
+
+	// let input_buffer_mouse_index: usize = 
+	// 	unsafe { decs.get_entity_with_components_filter::<StringComponent>(|string_component| {string_component.string == "input_buffer_mouse"} ).unwrap() };
+	// let input_buffer_mouse: &mut InputBuffer = 
+	// 	unsafe { decs.get_components_mut_unchecked::<InputBuffer>(input_buffer_mouse_index) }.unwrap().remove(0).component;
+	
+	let input_state: &mut InputState =
+		unsafe { decs.get_components_global_mut_unchecked::<InputState>() }.unwrap().remove(0).component;
+
 	let delta_time: &mut DeltaTime =
 		unsafe { decs.get_components_global_mut_unchecked::<DeltaTime>() }.unwrap().remove(0).component;
 
@@ -34,14 +49,17 @@ pub fn raycast_aabb_pickup_system()
 		unsafe {decs.get_components_global_mut_unchecked::<AABB>() }.unwrap();
 
 	// rewrite this so it uses click and release events because its getting ridiculous
-	if vk_handle.mouse_input_buffer.is_pressed(MouseCode::Left as u8)
+	// if vk_handle.mouse_input_buffer.is_pressed(MouseCode::Left as u8)
+	// if input_buffer_mouse.is_pressed(MouseCode::Left as u8)
+	if input_state.current_mouse_state.is_pressed(MouseCode::Left as u8)
 	{
 		match raycast_object.state.clone()
 		{
 			CameraRaycastObjectState::Thrown(_) => {}
 			CameraRaycastObjectState::Picked(raycast_info) => 
 			{
-				if vk_handle.input_buffer.is_pressed(KeyCode::Space as u8)
+				// if vk_handle.input_buffer.is_pressed(KeyCode::Space as u8)
+				if input_state.current_keyboard_state.is_pressed(KeyCode::Space as u8)
 				{
 					println!("throwing");
 					raycast_object.state = CameraRaycastObjectState::Thrown(raycast_info.clone());

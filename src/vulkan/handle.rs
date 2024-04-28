@@ -11,7 +11,7 @@ use crate::vulkan::{
 	debugger::*,
 };
 
-use crate::detail_core::input::input_buffer::InputBuffer;
+// use crate::detail_core::input::input_buffer::InputBuffer;
 
 use std::ptr::null_mut as nullptr;
 use std::vec;
@@ -26,8 +26,8 @@ use decs::component::Component;
 pub struct VkHandle<'a>
 {
 	pub camera: Camera,
-	pub input_buffer: InputBuffer,
-	pub mouse_input_buffer: InputBuffer,
+	// pub input_buffer: InputBuffer,
+	// pub mouse_input_buffer: InputBuffer,
 
 	pub instance: VkInstance,
 	pub physical_device: VkPhysicalDevice,
@@ -142,8 +142,8 @@ impl<'a> VkHandle<'a>
 				0.0f32,
 				0.0f32
 			),
-			input_buffer: InputBuffer::new(250.0f32),
-			mouse_input_buffer: InputBuffer::new(250.0f32),
+			// input_buffer: InputBuffer::new(250.0f32),
+			// mouse_input_buffer: InputBuffer::new(250.0f32),
 			instance: nullptr(),
 			physical_device: nullptr(),
 			logical_device: nullptr(),

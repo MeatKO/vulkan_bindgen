@@ -7,20 +7,15 @@ mod exedra;
 mod vulkan;
 
 use detail_core::{
-	rendering::{init::{
-		init_window_handle, init_rendering_objects, init_pipelines, init_buffer_objects, init_rendering_assets
-	}, draw::rendering_system4}, 
-	logic::{
-		game_objects::{
-			init_domatena_shtaiga_object, init_domatena_shtaiga_assets_2, init_misc_assets, init_misc_objects
-		}, 
-		game_logic::game_logic_system
-	}, 
-	diagnostics::system::print_delta_time_system, phys::system::physics_system_2, input::system::input_system, 
-	components::misc::{
-		StringComponent, DeltaTime, WindowComponent, MainLoopComponent, GlobalVariables, CameraRaycastObject, CameraRaycastObjectState
-	}, 
-	camera::system::update_camera_system, misc_systems::raycast_aabb_pickup::raycast_aabb_pickup_system, asset_manager::manager::AssetManager
+	asset_manager::manager::AssetManager, camera::system::update_camera_system, components::misc::{
+		CameraRaycastObject, CameraRaycastObjectState, DeltaTime, GlobalVariables, MainLoopComponent, StringComponent, WindowComponent
+	}, diagnostics::system::print_delta_time_system, input::{init::init_input_system, system::input_system}, logic::{
+		game_logic::game_logic_system, game_objects::{
+			init_domatena_shtaiga_assets_2, init_domatena_shtaiga_object, init_misc_assets, init_misc_objects
+		}
+	}, misc_systems::raycast_aabb_pickup::raycast_aabb_pickup_system, phys::system::physics_system_2, rendering::{draw::rendering_system4, init::{
+		init_buffer_objects, init_pipelines, init_rendering_assets, init_rendering_objects, init_window_handle
+	}}
 };
 
 
@@ -35,8 +30,6 @@ mod detail_core;
 
 fn main() 
 {
-	unsafe
-	{
 		let mut decs = decs::manager::dECS::new();
 
 		let vk_handle_entity = decs.create_entity();
@@ -47,6 +40,7 @@ fn main()
 		decs.add_component(asset_manager_entity, StringComponent{ string : String::from("asset_manager") }).unwrap();
 		decs.add_component(asset_manager_entity, AssetManager::new()).unwrap();
 
+		decs.add_init_system(init_input_system);
 		decs.add_init_system(init_window_handle);
 		decs.add_init_system(init_rendering_objects);
 		decs.add_init_system(init_pipelines);
@@ -64,6 +58,7 @@ fn main()
 		decs.add_system(game_logic_system);
 		decs.add_system(update_camera_system);
 		decs.add_system(raycast_aabb_pickup_system);
+		decs.add_system(print_delta_time_system);
 		decs.add_system(print_delta_time_system);
 
 		let main_loop_entity = decs.create_entity();
@@ -85,7 +80,7 @@ fn main()
 		decs.modify_components_global::<VkHandle>(
 			|vk_handle| 
 			{
-				create_instance(vk_handle);
+				unsafe { create_instance(vk_handle); }
 				Ok(())
 			}
 		).expect("vk_handle not found");
@@ -125,10 +120,12 @@ fn main()
 			|vk_handle|
 			{
 				println!("Destroying vk objects...");
-				vkDeviceWaitIdle(vk_handle.logical_device);
-				vk_handle.destroy_vk_resources();
+				unsafe 
+				{
+					vkDeviceWaitIdle(vk_handle.logical_device);
+					vk_handle.destroy_vk_resources();
+				}
 				Ok(())
 			}
 		).expect("vk_handle not found");
-	}
 }

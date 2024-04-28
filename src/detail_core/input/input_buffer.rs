@@ -5,7 +5,7 @@ pub struct ButtonInfo
 	press_timestamp_ms: f32
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct InputBuffer
 {
 	key_states: [ButtonInfo; u8::MAX as usize + 1],
@@ -37,7 +37,7 @@ impl InputBuffer
 	{
 		return 
 		self.key_states[key_code as usize].is_pressed &&
-		(absolute_current_time_stamp_ms - self.key_states[key_code as usize].press_timestamp_ms) > self.hold_threshold_ms;
+		((absolute_current_time_stamp_ms - self.key_states[key_code as usize].press_timestamp_ms) > self.hold_threshold_ms);
 	}
 
 	pub fn set_key(&mut self, key_code: u8, absolute_current_time_stamp_ms: f32)
