@@ -136,11 +136,13 @@ impl<'a> VkHandle<'a>
 	{
 		return  VkHandle {
 			camera: Camera::new(
-				Vec3{ x: 0.0f32, y: 0.0f32, z: 0.0f32 },
+				// Vec3{ x: 0.0f32, y: 0.0f32, z: 0.0f32 }, // in_pos
+				Vec3{ x: 100.0f32, y: 20.0f32, z: 100.0f32 }, // in_pos
 				Vec3{ x: 0.0f32, y: 1.0f32, z: 0.0f32 },
 				// -90.0f32,
 				0.0f32,
-				0.0f32
+				0.0f32,
+				0.05f32,
 			),
 			// input_buffer: InputBuffer::new(250.0f32),
 			// mouse_input_buffer: InputBuffer::new(250.0f32),

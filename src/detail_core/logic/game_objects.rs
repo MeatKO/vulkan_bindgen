@@ -24,7 +24,7 @@ pub fn init_domatena_shtaiga_assets_2()
 		asset_manager.get_asset_rc::<MaterialAsset>("material_defaults")
 		.unwrap();
 	
-	let (tomato_crate, tomato_crate_materials) = Model::new("./detail/models/tomato_crate/tomato_crate_high_geometry.obj".into()).to_asset_material(&vk_handle, &default_material).unwrap();
+	let (tomato_crate, tomato_crate_materials) = Model::new("./detail/models/tomato_crate/tomato_crate_high_geometry.obj".into()).to_asset_with_material(&vk_handle, &default_material).unwrap();
 
 	asset_manager.add_asset("tomato_crate", tomato_crate).expect("couldnt add tomato_crate asset");
 
@@ -95,12 +95,13 @@ pub fn init_misc_assets()
 	let model_name_vec =
 		vec![
 			"valkyrie".to_owned(),
+			// "de_inferno".to_owned(),
 		];
 
 	for model_name in model_name_vec.into_iter()
 	{
 		let (model, materials) = 
-			Model::new(format!("./detail/models/{}/{}.obj", model_name, model_name).into()).to_asset_material(&vk_handle, &default_material).unwrap();
+			Model::new(format!("./detail/models/{}/{}.obj", model_name, model_name).into()).to_asset_with_material(&vk_handle, &default_material).unwrap();
 			// match Model::new(format!("./detail/models/{}/{}.obj", model_name, model_name).into()).to_asset_material(&vk_handle)
 			// {
 			// 	Ok((model, materials)) => (model, materials),
@@ -132,13 +133,21 @@ pub fn init_misc_objects()
 	let vk_handle: &mut VkHandle =
 		unsafe { decs.get_components_global_mut_unchecked::<VkHandle>() }.unwrap().remove(0).component;
 
-	let shtaiga = decs.create_entity();
-
 	let mut aabb = AABB::new_nonverbose(Vec3::new(3.0f32), Vec3::new(1.0f32), false);
 	unsafe { aabb.process_vulkan(vk_handle) };
 
+	let shtaiga = decs.create_entity();
 	decs.add_component(shtaiga, StringComponent{ string : "valkyrie".to_owned()}).unwrap();
 	decs.add_component(shtaiga, VulkanModelComponent::new("valkyrie".into())).unwrap();
 	decs.add_component(shtaiga, aabb).unwrap();
 	decs.add_component(shtaiga, UniformBufferComponent::new(vk_handle).unwrap()).unwrap();
+
+	let mut aabb = AABB::new_nonverbose(Vec3::new(3.0f32), Vec3::new(1.0f32), false);
+	unsafe { aabb.process_vulkan(vk_handle) };
+
+	// let inferno = decs.create_entity();
+	// decs.add_component(inferno, StringComponent{ string : "de_inferno".to_owned()}).unwrap();
+	// decs.add_component(inferno, VulkanModelComponent::new("de_inferno".into())).unwrap();
+	// decs.add_component(inferno, aabb).unwrap();
+	// decs.add_component(inferno, UniformBufferComponent::new(vk_handle).unwrap()).unwrap();
 }

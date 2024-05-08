@@ -14,12 +14,6 @@ pub fn update_camera_system()
 	let input_state: &mut InputState =
 		unsafe { decs.get_components_global_mut_unchecked::<InputState>() }.unwrap().remove(0).component;
 
-	// let input_buffer_keyboard_index: usize = 
-	// 	unsafe { decs.get_entity_with_components_filter::<StringComponent>(|string_component| {string_component.string == "input_buffer_keyboard"} ).unwrap() };
-	// let input_buffer_keyboard: &mut InputBuffer = 
-	// 	unsafe { decs.get_components_mut_unchecked::<InputBuffer>(input_buffer_keyboard_index) }.unwrap().remove(0).component;
-
-
 	decs.modify_components_global::<VkHandle>(
 		|vk_handle|
 		{

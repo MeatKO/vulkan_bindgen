@@ -67,7 +67,7 @@ impl Model<ModelDescriptor>
 		Ok(out_model_asset)
 	}
 
-	pub fn to_asset_material(self, vk_handle: &VkHandle, material_defaults: &Rc<MaterialAsset>) -> Result<(ModelAsset, Vec<MaterialAsset>), ModelLoadError>
+	pub fn to_asset_with_material(self, vk_handle: &VkHandle, material_defaults: &Rc<MaterialAsset>) -> Result<(ModelAsset, Vec<MaterialAsset>), ModelLoadError>
 	{
 		let mut out_model_asset = ModelAsset::new_empty(self.name.clone());
 		let mut out_material_assets = vec![];
@@ -157,6 +157,8 @@ unsafe fn create_geometry_buffers(vk_handle: &VkHandle, model_descriptor: &Model
 	let face_uv_max_index = mesh_descriptor.face_vtn_vec.iter().map(|face_vtn| face_vtn[1]).max().unwrap();
 	let face_normal_max_index = mesh_descriptor.face_vtn_vec.iter().map(|face_vtn| face_vtn[2]).max().unwrap();
 
+	// not doing >= here because objs are indexed from 1 afaik
+	// this is corrected at the for-loop below with the "face[n] - 1"
 	if  face_ver_max_index > model_descriptor.vertex_vec.len() ||
 		face_uv_max_index > model_descriptor.uv_vec.len() ||
 		face_normal_max_index > model_descriptor.normal_vec.len()

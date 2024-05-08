@@ -64,7 +64,6 @@ impl<T: Copy + Default + Add<Output = T> + Sub<Output = T> + Mul<Output = T> + N
         result
     }
 
-    // Negate function
     pub fn negate(&self) -> Self 
 	{
         let mut result = *self;

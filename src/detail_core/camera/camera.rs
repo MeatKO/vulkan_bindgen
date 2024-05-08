@@ -40,6 +40,7 @@ impl Camera
 		in_world_up: Vec3,
 		in_yaw: f32,
 		in_pitch: f32,
+		in_speed: f32,
 	) -> Camera
 	{
 		return Camera{
@@ -50,7 +51,8 @@ impl Camera
 			world_up: in_world_up,
 			yaw: in_yaw,
 			pitch: in_pitch,
-			movement_speed: 0.005f32,
+			// movement_speed: 0.005f32,
+			movement_speed: in_speed,
 			mouse_sensitivity: 0.001f32,
 			zoom: 1.0f32,
 		}
