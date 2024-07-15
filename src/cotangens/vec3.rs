@@ -1,5 +1,5 @@
 use std::ops::{
-	Mul, AddAssign, SubAssign, Add, Sub, MulAssign, Div,
+	Mul, AddAssign, SubAssign, Add, Sub, MulAssign, Div, Index, IndexMut,
 };
 use std::cmp::{Eq, Ordering};
 use std::hash::{
@@ -207,4 +207,28 @@ impl SubAssign<Vec3> for Vec3
 		self.y -= rhs.y;
 		self.z -= rhs.z;
 	}
+}
+
+impl Index<usize> for Vec3 {
+    type Output = f32;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        match index {
+            0 => &self.x,
+            1 => &self.y,
+            2 => &self.z,
+            _ => panic!("Index out of bounds for Vec3"),
+        }
+    }
+}
+
+impl IndexMut<usize> for Vec3 {
+    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+        match index {
+            0 => &mut self.x,
+            1 => &mut self.y,
+            2 => &mut self.z,
+            _ => panic!("Index out of bounds for Vec3"),
+        }
+    }
 }

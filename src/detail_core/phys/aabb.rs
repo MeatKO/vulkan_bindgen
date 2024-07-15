@@ -13,6 +13,17 @@ use std::ptr::null_mut as nullptr;
 use crate::{cotangens::vec3::Vec3, vulkan::{vertex::{Vertex, create_vertex_buffer}, handle::VkHandle, index::create_index_buffer, uniform_buffer::create_uniform_buffers, descriptor_set_wireframe::create_descriptor_sets_wireframe, wrappers::vk_descriptor_pool::VkDescriptorPoolBuilder, vk_bindgen::VkDescriptorType}};
 
 #[derive(Debug)]
+pub struct VulkanUniformData
+{
+	pub uniform_buffers: Vec<VkBuffer>,
+	pub uniform_buffers_memory: Vec<VkDeviceMemory>,
+	pub uniform_buffers_mapped: Vec<*mut UniformBufferObject>,
+
+	pub descriptor_pool: VkDescriptorPool,
+	pub descriptor_sets: Vec<VkDescriptorSet>,
+}
+
+#[derive(Debug)]
 pub struct VulkanMeshData
 {
 	pub vertex_buffer: VkBuffer,
@@ -21,12 +32,46 @@ pub struct VulkanMeshData
 	pub index_buffer: VkBuffer,
 	pub index_buffer_memory: VkDeviceMemory,
 
-	pub uniform_buffers: Vec<VkBuffer>,
-	pub uniform_buffers_memory: Vec<VkDeviceMemory>,
-	pub uniform_buffers_mapped: Vec<*mut UniformBufferObject>,
+	pub index_count: u32,
+	pub vertex_count: u32,
+}
 
-	pub descriptor_pool: VkDescriptorPool,
-	pub descriptor_sets: Vec<VkDescriptorSet>,
+impl VulkanMeshData
+{
+	pub fn new_empty() -> Self
+	{
+		return 
+			VulkanMeshData {
+				vertex_buffer: nullptr(),
+				vertex_buffer_memory: nullptr(),
+				index_buffer: nullptr(),
+				index_buffer_memory: nullptr(),
+				index_count: 0,
+				vertex_count: 0,
+			}
+	}
+
+	pub unsafe fn process_vulkan(&mut self, vk_handle: &VkHandle)
+	{
+		let (vertex_vec, index_vec) = AABB::new_empty().get_geometry();
+
+		let (vertex_buffer, vertex_buffer_memory) =
+			create_vertex_buffer(&vk_handle, &vertex_vec)
+			.unwrap();
+
+		let (index_buffer, index_buffer_memory) =
+			create_index_buffer(&vk_handle, &index_vec)
+			.unwrap();
+
+		self.index_buffer = index_buffer;
+		self.index_buffer_memory = index_buffer_memory;
+
+		self.vertex_buffer = vertex_buffer;
+		self.vertex_buffer_memory = vertex_buffer_memory;
+
+		self.index_count = index_vec.len() as _;
+		self.vertex_count = vertex_vec.len() as _;
+	}
 }
 
 #[component]
@@ -43,31 +88,31 @@ pub struct AABB
     pub damping: f32,
     pub restitution: f32, // The bounciness of the object
 
-	pub aabb_vulkan_data: Option<VulkanMeshData>,
+	pub aabb_uniform_data: Option<VulkanUniformData>,
 	pub aabb_index_count: u32,
 }
 
 impl AABB 
 {
     // Constructor that also initializes the half-size
-    pub fn new(translation: &Vec3, size: &Vec3, velocity: Vec3, pressure: Vec3, mass: f32, is_static: bool, damping: f32, restitution: f32) -> AABB 
-    {
-        AABB 
-        {
-			color: Vec3::new(1.0f32),
-            translation: translation.clone(),
-            scale: size.clone(),
-            velocity: velocity,
-            pressure_force: pressure,
-            mass: mass,
-            is_static: is_static,
-            damping: damping,
-            restitution: restitution,
-            aabb_vulkan_data: None,
-            aabb_index_count: 0,
+    // pub fn new(translation: &Vec3, size: &Vec3, velocity: Vec3, pressure: Vec3, mass: f32, is_static: bool, damping: f32, restitution: f32) -> AABB 
+    // {
+    //     AABB 
+    //     {
+	// 		color: Vec3::new(1.0f32),
+    //         translation: translation.clone(),
+    //         scale: size.clone(),
+    //         velocity: velocity,
+    //         pressure_force: pressure,
+    //         mass: mass,
+    //         is_static: is_static,
+    //         damping: damping,
+    //         restitution: restitution,
+    //         aabb_vulkan_data: None,
+    //         aabb_index_count: 0,
 			
-        }
-    }
+    //     }
+    // }
 
 	pub fn new_empty() -> AABB 
     {
@@ -82,7 +127,7 @@ impl AABB
             is_static: false,
             damping: 0.5,
             restitution: 0.9,
-			aabb_vulkan_data: None,
+			aabb_uniform_data: None,
             aabb_index_count: 0,
         }
     }
@@ -100,29 +145,15 @@ impl AABB
             is_static: is_static,
             damping: 0.5,
             restitution: 0.9,
-			aabb_vulkan_data: None,
+			aabb_uniform_data: None,
             aabb_index_count: 0,
         }
     }
 
 	pub unsafe fn process_vulkan(&mut self, vk_handle: &VkHandle)
 	{
-		let (vertex_vec, index_vec) = AABB::new_empty().get_geometry();
-
-		let (vertex_buffer, vertex_buffer_memory) =
-			create_vertex_buffer(&vk_handle, &vertex_vec)
-			.unwrap();
-
-		let (index_buffer, index_buffer_memory) =
-			create_index_buffer(&vk_handle, &index_vec)
-			.unwrap();
-
-		let mut mesh_data =
-			VulkanMeshData{
-				vertex_buffer: vertex_buffer,
-				vertex_buffer_memory: vertex_buffer_memory,
-				index_buffer: index_buffer,
-				index_buffer_memory: index_buffer_memory,
+		let mut uniform_data =
+			VulkanUniformData{
 				uniform_buffers: vec![],
 				uniform_buffers_memory: vec![],
 				uniform_buffers_mapped: vec![],
@@ -130,13 +161,10 @@ impl AABB
 				descriptor_sets: vec![],
 			};
 
-		// create_uniform_buffers(&vk_handle, &mut mesh_data);
 		let uniform_buffers = create_uniform_buffers(&vk_handle, vk_handle.frames_in_flight).unwrap();
-		mesh_data.uniform_buffers = uniform_buffers.0;
-		mesh_data.uniform_buffers_memory = uniform_buffers.1;
-		mesh_data.uniform_buffers_mapped = uniform_buffers.2;
-
-		// let descriptor_pool = create_descriptor_pool(&vk_handle).unwrap();
+		uniform_data.uniform_buffers = uniform_buffers.0;
+		uniform_data.uniform_buffers_memory = uniform_buffers.1;
+		uniform_data.uniform_buffers_mapped = uniform_buffers.2;
 
 		let descriptor_pool = 
 			VkDescriptorPoolBuilder::new()
@@ -144,11 +172,10 @@ impl AABB
 			.build(vk_handle.logical_device, vk_handle.frames_in_flight)
 			.unwrap();
 
-		mesh_data.descriptor_pool = descriptor_pool;
-		create_descriptor_sets_wireframe(&vk_handle, &mut mesh_data).unwrap();
+		uniform_data.descriptor_pool = descriptor_pool;
+		create_descriptor_sets_wireframe(&vk_handle, &mut uniform_data).unwrap();
 
-		self.aabb_vulkan_data = Some(mesh_data);
-		self.aabb_index_count = index_vec.len() as _;
+		self.aabb_uniform_data = Some(uniform_data);
 	}
 
 	pub fn get_geometry(&self) -> (Vec<Vertex>, Vec<u32>)
@@ -188,11 +215,18 @@ impl AABB
     // fn compute_penetration(&self, other: &AABB) -> Vec3 
     pub fn compute_penetration(&self, other: &AABB) -> Vec3 
     {
-        Vec3 
+        // Vec3 
+        // {
+        //     x: (other.translation.x - self.translation.x).abs() - self.scale.x - other.scale.x,
+        //     y: (other.translation.y - self.translation.y).abs() - self.scale.y - other.scale.y,
+        //     z: (other.translation.z - self.translation.z).abs() - self.scale.z - other.scale.z,
+        // }.negate()
+
+		Vec3 
         {
-            x: (other.translation.x - self.translation.x).abs() - self.scale.x - other.scale.x,
-            y: (other.translation.y - self.translation.y).abs() - self.scale.y - other.scale.y,
-            z: (other.translation.z - self.translation.z).abs() - self.scale.z - other.scale.z,
+            x: (other.translation.x - self.translation.x).abs() - (self.scale.x + other.scale.x).abs(),
+            y: (other.translation.y - self.translation.y).abs() - (self.scale.y + other.scale.y).abs(),
+            z: (other.translation.z - self.translation.z).abs() - (self.scale.z + other.scale.z).abs(),
         }.negate()
     }
 

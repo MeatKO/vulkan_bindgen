@@ -45,11 +45,11 @@ pub fn input_processor_system()
 					{
 						if *mouse_code == MouseCode::ScrollDown
 						{
-							raycast_info.length -= 1000.0f32 * (delta_time.last_delta_time / 1000.0f32);
+							raycast_info.length -= 1000.0f32 * (delta_time.last_delta_time_sec / 1000.0f32);
 						}
 						if *mouse_code == MouseCode::ScrollUp
 						{
-							raycast_info.length += 1000.0f32 * (delta_time.last_delta_time / 1000.0f32);
+							raycast_info.length += 1000.0f32 * (delta_time.last_delta_time_sec / 1000.0f32);
 						}
 					}
 					_ => {}
@@ -102,7 +102,7 @@ pub fn input_processor_system()
 							}
 						).unwrap();
 					}
-					KeyCode::V => 
+					KeyCode::P => 
 					{ 
 						decs.modify_components_global::<GlobalVariables>(
 							|global_variables|
@@ -113,7 +113,7 @@ pub fn input_processor_system()
 						).unwrap();
 					}
 					KeyCode::X => 
-					{ 
+					{
 						decs.modify_components_global::<GlobalVariables>(
 							|global_variables|
 							{

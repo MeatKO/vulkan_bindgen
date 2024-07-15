@@ -1,4 +1,4 @@
-use crate::detail_core::phys::aabb::VulkanMeshData;
+use crate::detail_core::phys::aabb::VulkanUniformData;
 use crate::vulkan::vk_bindgen::*;
 use crate::vulkan::handle::*;
 
@@ -10,7 +10,7 @@ use super::wrappers::vk_descriptor_layout::VkDescriptorLayoutBuilder;
 
 pub unsafe fn create_descriptor_sets_wireframe(
 	vk_handle: &VkHandle,
-	mesh_data: &mut VulkanMeshData,
+	mesh_data: &mut VulkanUniformData,
 	// descriptor_pool: &VkDescriptorPool,
 ) -> Result<(), String>
 {

@@ -9,7 +9,7 @@ pub unsafe fn create_texture_image_view(
 ) -> VkImageView
 {
 	create_image_view(
-		vk_handle, 
+		&vk_handle.logical_device, 
 		texture_image,
 		// VkFormat::VK_FORMAT_R8G8B8A8_SRGB, 
 		vk_format,
@@ -18,7 +18,7 @@ pub unsafe fn create_texture_image_view(
 }
 
 pub unsafe fn create_image_view(
-	vk_handle: &VkHandle,
+	device: &VkDevice,
 	image: &VkImage,
 	format: VkFormat,
 	aspect_flags: VkImageAspectFlags,
@@ -48,7 +48,7 @@ pub unsafe fn create_image_view(
 		};
 
 	let mut image_view: VkImageView = nullptr();
-	match vkCreateImageView(vk_handle.logical_device, &image_view_create_info, nullptr(), &mut image_view)
+	match vkCreateImageView(*device, &image_view_create_info, nullptr(), &mut image_view)
 	{
 		VkResult::VK_SUCCESS => { println!("✔️ vkCreateImageView()"); }
 		err => { panic!("✗ vkCreateImageView() failed with code {:?}.", err); }

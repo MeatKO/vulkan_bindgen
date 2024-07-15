@@ -1,17 +1,16 @@
 use crate::vulkan::vk_bindgen::*;
 use crate::vulkan::handle::*;
 use crate::vulkan::depth_buffer::*;
-use crate::ffi::strings::*;
 use std::ptr::null_mut as nullptr;
 
 pub unsafe fn create_pipeline(
 	vk_handle: &mut VkHandle,
 	vertex_shader_module: VkShaderModule,
 	fragment_shader_module: VkShaderModule,
-	binding_description: VkVertexInputBindingDescription,
+	binding_descriptions: Vec<VkVertexInputBindingDescription>,
 	attribute_descriptions_vec: Vec<VkVertexInputAttributeDescription>,
 	polygon_mode: VkPolygonMode,
-	first_pass: bool,
+	is_first_pass: bool,
 	descriptor_set_layout_vec: Vec<VkDescriptorSetLayout>,
 ) -> (VkPipelineLayout, VkRenderPass, VkPipeline)
 {
@@ -19,8 +18,8 @@ pub unsafe fn create_pipeline(
 	let vertex_input_create_info = 
 		VkPipelineVertexInputStateCreateInfo{
 			sType: VkStructureType::VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
-			vertexBindingDescriptionCount: 1,
-			pVertexBindingDescriptions: &binding_description,
+			vertexBindingDescriptionCount: binding_descriptions.len() as _,
+			pVertexBindingDescriptions: binding_descriptions.as_ptr(),
 			vertexAttributeDescriptionCount: attribute_descriptions_vec.len() as u32,
 			pVertexAttributeDescriptions: attribute_descriptions_vec.as_ptr(),
 			flags: 0,	
@@ -86,13 +85,10 @@ pub unsafe fn create_pipeline(
 			sType: VkStructureType::VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
 			depthClampEnable: VK_FALSE,
 			rasterizerDiscardEnable: VK_FALSE,
-			// polygonMode: VkPolygonMode::VK_POLYGON_MODE_FILL,
 			polygonMode: polygon_mode,
 			lineWidth: 1.0f32,
-			// cullMode: VkCullModeFlagBits::VK_CULL_MODE_BACK_BIT as u32,
 			cullMode: VkCullModeFlagBits::VK_CULL_MODE_NONE as u32,
 			frontFace: VkFrontFace::VK_FRONT_FACE_CLOCKWISE,
-			// frontFace: VkFrontFace::VK_FRONT_FACE_COUNTER_CLOCKWISE,
 			depthBiasEnable: VK_FALSE,
 			depthBiasConstantFactor: 0.0f32,
 			depthBiasClamp: 0.0f32,
@@ -118,11 +114,8 @@ pub unsafe fn create_pipeline(
 	// Color blending
 	let color_blend_attachment_state = 
 		VkPipelineColorBlendAttachmentState{
-			// blendEnable: VK_FALSE,
 			blendEnable: VK_TRUE,
-			// srcColorBlendFactor: VkBlendFactor::VK_BLEND_FACTOR_ONE,
 			srcColorBlendFactor: VkBlendFactor::VK_BLEND_FACTOR_SRC_ALPHA,
-			// dstColorBlendFactor: VkBlendFactor::VK_BLEND_FACTOR_ZERO,
 			dstColorBlendFactor: VkBlendFactor::VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
 			colorBlendOp: VkBlendOp::VK_BLEND_OP_ADD,
 			srcAlphaBlendFactor: VkBlendFactor::VK_BLEND_FACTOR_ONE,
@@ -162,37 +155,33 @@ pub unsafe fn create_pipeline(
 
 
 	//// Render pass creation
-	let color_attachment_descriptor = 
-		{
-			if first_pass
-			{
-				VkAttachmentDescription{
-					format: vk_handle.surface_format.format,
-					samples: VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT,
-					loadOp: VkAttachmentLoadOp::VK_ATTACHMENT_LOAD_OP_CLEAR, // diff
-					storeOp: VkAttachmentStoreOp::VK_ATTACHMENT_STORE_OP_STORE,
-					stencilLoadOp: VkAttachmentLoadOp::VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-					stencilStoreOp: VkAttachmentStoreOp::VK_ATTACHMENT_STORE_OP_DONT_CARE,
-					initialLayout: VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED, // diff
-					finalLayout: VkImageLayout::VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-					flags: 0
-				}
-			}
-			else 
-			{
-				VkAttachmentDescription{
-					format: vk_handle.surface_format.format,
-					samples: VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT,
-					loadOp: VkAttachmentLoadOp::VK_ATTACHMENT_LOAD_OP_LOAD, // diff
-					storeOp: VkAttachmentStoreOp::VK_ATTACHMENT_STORE_OP_STORE,
-					stencilLoadOp: VkAttachmentLoadOp::VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-					stencilStoreOp: VkAttachmentStoreOp::VK_ATTACHMENT_STORE_OP_DONT_CARE,
-					initialLayout: VkImageLayout::VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, // diff
-					finalLayout: VkImageLayout::VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-					flags: 0
-				}
-			}
+	let mut color_attachment_descriptor = 
+		VkAttachmentDescription{
+			format: vk_handle.surface_format.format,
+			samples: VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT,
+			loadOp: VkAttachmentLoadOp::VK_ATTACHMENT_LOAD_OP_CLEAR, // diff
+			storeOp: VkAttachmentStoreOp::VK_ATTACHMENT_STORE_OP_STORE,
+			stencilLoadOp: VkAttachmentLoadOp::VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+			stencilStoreOp: VkAttachmentStoreOp::VK_ATTACHMENT_STORE_OP_DONT_CARE,
+			initialLayout: VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED, // diff
+			finalLayout: VkImageLayout::VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+			flags: 0
 		};
+	if !is_first_pass
+	{
+		color_attachment_descriptor = 
+			VkAttachmentDescription{
+				format: vk_handle.surface_format.format,
+				samples: VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT,
+				loadOp: VkAttachmentLoadOp::VK_ATTACHMENT_LOAD_OP_LOAD, // diff
+				storeOp: VkAttachmentStoreOp::VK_ATTACHMENT_STORE_OP_STORE,
+				stencilLoadOp: VkAttachmentLoadOp::VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+				stencilStoreOp: VkAttachmentStoreOp::VK_ATTACHMENT_STORE_OP_DONT_CARE,
+				initialLayout: VkImageLayout::VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, // diff
+				finalLayout: VkImageLayout::VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+				flags: 0
+			}
+	}
 
 	let depth_attachment_descriptor = 
 		VkAttachmentDescription{
@@ -221,40 +210,48 @@ pub unsafe fn create_pipeline(
 		};
 
 	// Subpass
-	let subpass = 
-		VkSubpassDescription{
-			pipelineBindPoint: VkPipelineBindPoint::VK_PIPELINE_BIND_POINT_GRAPHICS,
-			colorAttachmentCount: 1,
-			pColorAttachments: &color_attachment_reference,
-
-			inputAttachmentCount: 0,
-			pInputAttachments: nullptr(),
-			preserveAttachmentCount: 0,
-			pPreserveAttachments: nullptr(),
-			pDepthStencilAttachment: &depth_attachment_reference,
-			pResolveAttachments: nullptr(),
-			flags: 0
-		};
+	let subpasses = 
+		vec![
+			VkSubpassDescription{
+				pipelineBindPoint: VkPipelineBindPoint::VK_PIPELINE_BIND_POINT_GRAPHICS,
+				colorAttachmentCount: 1,
+				pColorAttachments: &color_attachment_reference,
+	
+				inputAttachmentCount: 0,
+				pInputAttachments: nullptr(),
+				preserveAttachmentCount: 0,
+				pPreserveAttachments: nullptr(),
+				pDepthStencilAttachment: &depth_attachment_reference,
+				pResolveAttachments: nullptr(),
+				flags: 0
+			}
+		];
 
 	// render pass dependencies
-	let subpass_dependency = 
-		VkSubpassDependency{
-			srcSubpass: VK_SUBPASS_EXTERNAL as u32,
-			dstSubpass: 0,
-			srcStageMask: 
-				VkPipelineStageFlagBits::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT as u32 |
-				VkPipelineStageFlagBits::VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT as u32,
-			srcAccessMask: 0,
-			dstStageMask: 
-				VkPipelineStageFlagBits::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT as u32 |
-				VkPipelineStageFlagBits::VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT as u32,
-			dstAccessMask: 
-				VkAccessFlagBits::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT as u32 |
-				VkAccessFlagBits::VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT as u32,
-			dependencyFlags: 0,
-		};
+	let subpass_dependencies = 
+		vec![
+			VkSubpassDependency{
+				srcSubpass: VK_SUBPASS_EXTERNAL as u32,
+				dstSubpass: 0,
+				srcStageMask: 
+					VkPipelineStageFlagBits::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT as u32 |
+					VkPipelineStageFlagBits::VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT as u32,
+				srcAccessMask: 0,
+				dstStageMask: 
+					VkPipelineStageFlagBits::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT as u32 |
+					VkPipelineStageFlagBits::VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT as u32,
+				dstAccessMask: 
+					VkAccessFlagBits::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT as u32 |
+					VkAccessFlagBits::VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT as u32,
+				dependencyFlags: 0,
+			}
+		];
 
-	let attachment_descriptors = vec![color_attachment_descriptor, depth_attachment_descriptor];
+	let attachment_descriptors = 
+		vec![
+			color_attachment_descriptor, 
+			depth_attachment_descriptor
+		];
 
 	// the actual Render pass creation
 	let render_pass_create_info = 
@@ -262,10 +259,10 @@ pub unsafe fn create_pipeline(
 			sType: VkStructureType::VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
 			attachmentCount: attachment_descriptors.len() as _,
 			pAttachments: attachment_descriptors.as_ptr(),
-			subpassCount: 1,
-			pSubpasses: &subpass,
-			dependencyCount: 1,
-			pDependencies: &subpass_dependency,
+			subpassCount: subpasses.len() as _,
+			pSubpasses: subpasses.as_ptr(),
+			dependencyCount: subpass_dependencies.len() as _,
+			pDependencies: subpass_dependencies.as_ptr(),
 			flags: 0,	
 			pNext: nullptr(),
 		};
@@ -291,9 +288,8 @@ pub unsafe fn create_pipeline(
 			VkPipelineShaderStageCreateInfo{
 				sType: VkStructureType::VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
 				stage: VkShaderStageFlagBits::VK_SHADER_STAGE_VERTEX_BIT,
-				// module: vk_handle.vertex_shader_module,
 				module: vertex_shader_module,
-				pName: to_c_string("main"),
+				pName: "main\0".as_ptr() as _,
 				pSpecializationInfo: nullptr(),
 				flags: 0,	
 				pNext: nullptr(),
@@ -301,9 +297,8 @@ pub unsafe fn create_pipeline(
 			VkPipelineShaderStageCreateInfo{
 				sType: VkStructureType::VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
 				stage: VkShaderStageFlagBits::VK_SHADER_STAGE_FRAGMENT_BIT,
-				// module: vk_handle.fragment_shader_module,
 				module: fragment_shader_module,
-				pName: to_c_string("main"),
+				pName: "main\0".as_ptr() as _,
 				pSpecializationInfo: nullptr(),
 				flags: 0,	
 				pNext: nullptr(),
@@ -315,14 +310,12 @@ pub unsafe fn create_pipeline(
 	let mut pipeline: VkPipeline = nullptr();
 
 	match vkCreatePipelineLayout(vk_handle.logical_device, &pipeline_layout_create_info, nullptr(), &mut pipeline_layout)
-	// match vkCreatePipelineLayout(vk_handle.logical_device, &pipeline_layout_create_info, nullptr(), &mut vk_handle.pipeline_layout)
 	{
 		VkResult::VK_SUCCESS => { println!("✔️ vkCreatePipelineLayout()"); }
 		err => { panic!("✗ vkCreatePipelineLayout() failed with code {:?}.", err); }
 	}	
 
 	match vkCreateRenderPass(vk_handle.logical_device, &render_pass_create_info, nullptr(), &mut render_pass)
-	// match vkCreateRenderPass(vk_handle.logical_device, &render_pass_create_info, nullptr(), &mut vk_handle.render_pass)
 	{
 		VkResult::VK_SUCCESS => { println!("✔️ vkCreateRenderPass()"); }
 		err => { panic!("✗ vkCreateRenderPass() failed with code {:?}.", err); }
@@ -340,12 +333,9 @@ pub unsafe fn create_pipeline(
 			pRasterizationState: &rasterizer_create_info,
 			pMultisampleState: &multisampling_create_info,
 			pDepthStencilState: &depth_stencil_create_info,
-			// pDepthStencilState: nullptr(),
 			pColorBlendState: &color_blend_create_info,
 			pDynamicState: &dynamic_state_create_info,
-			// layout: vk_handle.pipeline_layout,
 			layout: pipeline_layout,
-			// renderPass: vk_handle.render_pass,
 			renderPass: render_pass,
 			subpass: 0,
 			basePipelineHandle: nullptr(),
@@ -356,7 +346,6 @@ pub unsafe fn create_pipeline(
 		};
 
 	match vkCreateGraphicsPipelines(vk_handle.logical_device, nullptr(), 1, &pipeline_create_info, nullptr(), &mut pipeline)
-	// match vkCreateGraphicsPipelines(vk_handle.logical_device, nullptr(), 1, &pipeline_create_info, nullptr(), &mut vk_handle.graphics_pipeline)
 	{
 		VkResult::VK_SUCCESS => { println!("✔️ vkCreateGraphicsPipelines()"); }
 		err => { panic!("✗ vkCreateGraphicsPipelines() failed with code {:?}.", err); }

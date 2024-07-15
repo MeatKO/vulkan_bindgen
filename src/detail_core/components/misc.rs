@@ -30,7 +30,7 @@ pub struct Time
 #[component]
 pub struct DeltaTime
 {
-	pub last_delta_time: f32,
+	pub last_delta_time_sec: f32,
 	pub last_time_stamp: std::time::Instant
 }
 

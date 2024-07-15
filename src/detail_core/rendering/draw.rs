@@ -8,14 +8,14 @@ use crate::detail_core::components::rendering::UniformBufferComponent;
 use crate::detail_core::model::asset::{ModelAsset, MaterialAsset};
 use crate::detail_core::model::component::VulkanModelComponent;
 use crate::detail_core::model::material::Material;
-use crate::detail_core::phys::aabb::AABB;
-use crate::vulkan::command_buffer::record_command_buffer;
+use crate::detail_core::phys::aabb::{VulkanMeshData, AABB};
+use crate::vulkan::command_buffer::{record_command_buffer};
 use crate::vulkan::command_buffer_wireframe::record_command_buffer_wireframe_ref;
 use crate::vulkan::handle::VkHandle;
 use crate::vulkan::swapchain::recreate_swapchain;
 use crate::vulkan::uniform_buffer::{update_uniform_buffer, UniformBufferObject};
 use crate::vulkan::uniform_buffer_wireframe::update_uniform_buffer_wireframe;
-use crate::vulkan::vk_bindgen::{vkWaitForFences, vkResetFences, vkAcquireNextImageKHR, VkResult, VK_TRUE, VkPipelineStageFlags, VkPipelineStageFlagBits, VkSubmitInfo, VkStructureType, vkQueueSubmit, VkPresentInfoKHR, vkDeviceWaitIdle, vkQueuePresentKHR, VkDescriptorBufferInfo, VkWriteDescriptorSet, VkDescriptorType, vkUpdateDescriptorSets};
+use crate::vulkan::vk_bindgen::{vkAcquireNextImageKHR, vkBeginCommandBuffer, vkDeviceWaitIdle, vkQueuePresentKHR, vkQueueSubmit, vkResetFences, vkUpdateDescriptorSets, vkWaitForFences, VkCommandBufferBeginInfo, VkDescriptorBufferInfo, VkDescriptorType, VkPipelineStageFlagBits, VkPipelineStageFlags, VkPresentInfoKHR, VkResult, VkStructureType, VkSubmitInfo, VkWriteDescriptorSet, VK_TRUE};
 
 use std::collections::HashMap;
 use std::mem::size_of;
@@ -177,6 +177,7 @@ pub fn rendering_system4()
 			// println!("total number of models to draw : {}", models.len());
 
 			record_command_buffer(vk_handle, image_index, &models, &used_model_assets, &used_material_assets, default_material);
+			// record_command_buffer_gpt(vk_handle, image_index, &models, &used_model_assets, &used_material_assets, default_material);
 
 			command_buffers.push(vk_handle.command_buffer_vec[vk_handle.current_frame].get_command_buffer_ptr());
 		}
@@ -187,6 +188,9 @@ pub fn rendering_system4()
 			{
 				break 'physbox_rendering;
 			}
+
+			let default_aabb_mesh_data =
+				asset_manager.get_asset_rc::<VulkanMeshData>("default_aabb_mesh_data").expect("'default_aabb_mesh_data' asset not found.");
 
 			let aabb_vec: Vec<QueryResult<AABB>> =
 				match decs.get_components_global_unchecked::<AABB>()
@@ -204,7 +208,7 @@ pub fn rendering_system4()
 			{
 				update_uniform_buffer_wireframe(
 					vk_handle, 
-					aabb.aabb_vulkan_data.as_ref().unwrap(), 
+					aabb.aabb_uniform_data.as_ref().unwrap(), 
 					&aabb.scale,
 					// &model.translation, 
 					&aabb.translation, 
@@ -215,7 +219,7 @@ pub fn rendering_system4()
 
 			// println!("total number of physboxes to draw : {}", aabb_vec.len());
 
-			record_command_buffer_wireframe_ref(vk_handle, image_index, &aabb_vec);
+			record_command_buffer_wireframe_ref(vk_handle, image_index, &aabb_vec, &default_aabb_mesh_data);
 
 			command_buffers.push(vk_handle.command_buffer_wireframe_vec[vk_handle.current_frame].get_command_buffer_ptr());
 		}

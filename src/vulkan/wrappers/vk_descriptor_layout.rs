@@ -7,7 +7,7 @@ pub struct VkDescriptorLayoutBuilder
 
 impl VkDescriptorLayoutBuilder 
 {
-	pub fn new() -> VkDescriptorLayoutBuilder
+	pub fn new() -> Self
 	{
 		VkDescriptorLayoutBuilder
 		{
@@ -15,7 +15,7 @@ impl VkDescriptorLayoutBuilder
 		}
 	}
 
-	pub fn add_binding(mut self, binding: VkDescriptorType) -> VkDescriptorLayoutBuilder
+	pub fn add_binding(mut self, binding: VkDescriptorType) -> Self
 	{
 		self.builder_descriptor_types.push(binding);
 		self
@@ -34,19 +34,19 @@ impl VkDescriptorLayoutBuilder
 					descriptorCount: 1,
 					stageFlags: VkShaderStageFlagBits::VK_SHADER_STAGE_FRAGMENT_BIT as u32 |
 								VkShaderStageFlagBits::VK_SHADER_STAGE_VERTEX_BIT as u32,
-					pImmutableSamplers: std::ptr::null()
+					pImmutableSamplers: nullptr()
 				}
 			);
 		}
 
 		let descriptor_set_layout_create_info = 
-		VkDescriptorSetLayoutCreateInfo{
-			sType: VkStructureType::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-			bindingCount: bindings_vec.len() as u32,
-			pBindings: bindings_vec.as_ptr(),
-			flags: 0,	
-			pNext: nullptr(),
-		};
+			VkDescriptorSetLayoutCreateInfo{
+				sType: VkStructureType::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+				bindingCount: bindings_vec.len() as u32,
+				pBindings: bindings_vec.as_ptr(),
+				flags: 0,	
+				pNext: nullptr(),
+			};
 
 		let mut descriptor_set_layout = nullptr();
 		match unsafe{ vkCreateDescriptorSetLayout(logical_device, &descriptor_set_layout_create_info, nullptr(), &mut descriptor_set_layout) }

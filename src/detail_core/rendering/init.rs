@@ -4,7 +4,7 @@ use decs::manager::dECS;
 use crate::detail_core::asset_manager::manager::AssetManager;
 use crate::detail_core::components::misc::WindowComponent;
 use crate::detail_core::model::asset::MaterialAsset;
-use crate::detail_core::phys::aabb::AABB;
+use crate::detail_core::phys::aabb::VulkanMeshData;
 use crate::detail_core::texture::texture::{VulkanTexture, Texture};
 use crate::detail_core::window::create_vulkan_surface;
 use crate::vulkan::descriptor_set::update_descriptor_sets;
@@ -93,6 +93,13 @@ pub fn init_rendering_assets()
 		};
 
 	asset_manager.add_asset("material_defaults", material_defaults).unwrap();	
+
+	let mut default_aabb_mesh_data =
+		VulkanMeshData::new_empty();
+
+	unsafe { default_aabb_mesh_data.process_vulkan(vk_handle) }
+
+	asset_manager.add_asset("default_aabb_mesh_data", default_aabb_mesh_data).unwrap();	
 }
 
 #[system]
@@ -104,7 +111,7 @@ pub fn init_window_handle()
 	let vk_handle: &mut VkHandle =
 		unsafe { decs.get_components_global_mut_unchecked::<VkHandle>() }.unwrap().remove(0).component;
 
-	let surface = create_vulkan_surface(&window.window, vk_handle);
+	let surface = create_vulkan_surface(&window.window, &vk_handle.instance);
 
 	let vk_handle = 
 		match decs.get_components_global_mut::<VkHandle>()
@@ -138,7 +145,7 @@ pub fn init_rendering_objects()
 		let command_pool = 
 			CommandPoolBuilder::new()
 			.with_flag(VkCommandPoolCreateFlagBits::VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT)
-			.with_queue_family_index(vk_handle.queue_family_indices[0])
+			.with_queue_family_index(vk_handle.queue_handle.graphics_queue.as_ref().unwrap().family_index)
 			.build(&vk_handle.logical_device)
 			.unwrap();
 		vk_handle.command_pool = Some(command_pool);
@@ -148,7 +155,6 @@ pub fn init_rendering_objects()
 				.add_binding(VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
 				.build(vk_handle.logical_device)
 				.unwrap();
-
 		vk_handle.global_descriptor_set_layout_material =
 			VkDescriptorLayoutBuilder::new()
 				.add_binding(VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
@@ -156,17 +162,18 @@ pub fn init_rendering_objects()
 				.build(vk_handle.logical_device)
 				.unwrap();
 
-		vk_handle.global_descriptor_pool_material =
-			VkDescriptorPoolBuilder::new()
-			.add_pool_type(VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000)
-			.build(vk_handle.logical_device, 1000)
-			.unwrap();
-
 		vk_handle.global_descriptor_pool_ubo =
 			VkDescriptorPoolBuilder::new()
-			.add_pool_type(VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1000)
-			.build(vk_handle.logical_device, 1000)
+			.add_pool_type(VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 10000)
+			.build(vk_handle.logical_device, 10000)
 			.unwrap();
+		vk_handle.global_descriptor_pool_material =
+			VkDescriptorPoolBuilder::new()
+			.add_pool_type(VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 10000)
+			.build(vk_handle.logical_device, 10000)
+			.unwrap();
+
+		
 	}
 }
 
@@ -190,7 +197,7 @@ pub fn init_pipelines()
 			let vertex_shader_module = create_shader_module(&vk_handle, vertex_shader_source);
 			let fragment_shader_module = create_shader_module(&vk_handle, fragment_shader_source);
 			//
-			let binding_description = Vertex::get_binding_description();
+			let binding_descriptions = Vertex::get_binding_descriptions();
 			let attribute_descriptions_vec = Vertex::get_attribute_descriptions();
 			//
 
@@ -207,7 +214,7 @@ pub fn init_pipelines()
 					vk_handle, 
 					vertex_shader_module, 
 					fragment_shader_module, 
-					binding_description, 
+					binding_descriptions, 
 					attribute_descriptions_vec, 
 					VkPolygonMode::VK_POLYGON_MODE_FILL,
 					true,
@@ -231,7 +238,7 @@ pub fn init_pipelines()
 			let vertex_shader_module = create_shader_module(&vk_handle, vertex_shader_source);
 			let fragment_shader_module = create_shader_module(&vk_handle, fragment_shader_source);
 			//
-			let binding_description = Vertex::get_binding_description();
+			let binding_descriptions = Vertex::get_binding_descriptions();
 			let attribute_descriptions_vec = Vertex::get_attribute_descriptions();
 			//
 
@@ -248,7 +255,7 @@ pub fn init_pipelines()
 					vk_handle, 
 					vertex_shader_module, 
 					fragment_shader_module, 
-					binding_description, 
+					binding_descriptions, 
 					attribute_descriptions_vec,
 					VkPolygonMode::VK_POLYGON_MODE_LINE, 
 					false,
@@ -271,7 +278,7 @@ pub fn init_pipelines()
 			let vertex_shader_module = create_shader_module(&vk_handle, vertex_shader_source);
 			let fragment_shader_module = create_shader_module(&vk_handle, fragment_shader_source);
 			//
-			let binding_description = Vertex::get_binding_description();
+			let binding_descriptions = Vertex::get_binding_descriptions();
 			let attribute_descriptions_vec = Vertex::get_attribute_descriptions();
 			//
 
@@ -288,7 +295,7 @@ pub fn init_pipelines()
 					vk_handle, 
 					vertex_shader_module, 
 					fragment_shader_module, 
-					binding_description, 
+					binding_descriptions, 
 					attribute_descriptions_vec,
 					VkPolygonMode::VK_POLYGON_MODE_FILL, 
 					false,
@@ -328,30 +335,30 @@ pub fn init_buffer_objects()
 
 		{
 			let command_buffer_graphics =
-			CommandBufferBuilder::new()
-			.with_command_pool(&vk_handle.command_pool.as_ref().unwrap())
-			.with_count(command_buffer_count)
-			.build(&vk_handle.logical_device)
-			.unwrap();
-			vk_handle.command_buffer_vec = command_buffer_graphics;
+				CommandBufferBuilder::new()
+				.with_command_pool(&vk_handle.command_pool.as_ref().unwrap())
+				.with_count(command_buffer_count)
+				.build(&vk_handle.logical_device)
+				.unwrap();
+				vk_handle.command_buffer_vec = command_buffer_graphics;
 		}
 		{
 			let command_buffer_hud =
-			CommandBufferBuilder::new()
-			.with_command_pool(&vk_handle.command_pool.as_ref().unwrap())
-			.with_count(command_buffer_count)
-			.build(&vk_handle.logical_device)
-			.unwrap();
-			vk_handle.command_buffer_hud_vec = command_buffer_hud;
+				CommandBufferBuilder::new()
+				.with_command_pool(&vk_handle.command_pool.as_ref().unwrap())
+				.with_count(command_buffer_count)
+				.build(&vk_handle.logical_device)
+				.unwrap();
+				vk_handle.command_buffer_hud_vec = command_buffer_hud;
 		}
 		{
 			let command_buffer_wireframe =
-			CommandBufferBuilder::new()
-			.with_command_pool(&vk_handle.command_pool.as_ref().unwrap())
-			.with_count(command_buffer_count)
-			.build(&vk_handle.logical_device)
-			.unwrap();
-			vk_handle.command_buffer_wireframe_vec = command_buffer_wireframe;
+				CommandBufferBuilder::new()
+				.with_command_pool(&vk_handle.command_pool.as_ref().unwrap())
+				.with_count(command_buffer_count)
+				.build(&vk_handle.logical_device)
+				.unwrap();
+				vk_handle.command_buffer_wireframe_vec = command_buffer_wireframe;
 		}	
 	}
 }

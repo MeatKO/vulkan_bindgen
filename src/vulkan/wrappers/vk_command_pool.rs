@@ -1,6 +1,6 @@
 use crate::vulkan::vk_bindgen::{VkCommandPoolCreateInfo, VkStructureType, VkCommandPoolCreateFlagBits, VkDevice, vkCreateCommandPool, VkResult, VkCommandPool};
 
-use std::ptr::null_mut as nullptr;
+use std::ptr::{null_mut as nullptr};
 
 pub struct CommandPoolBuilder
 {
@@ -38,13 +38,13 @@ impl CommandPoolBuilder
 	{
 		unsafe 
 		{
-			let mut command_pool_ptr = nullptr();
+			let mut command_pool_ptr: VkCommandPool = nullptr();
 			match vkCreateCommandPool(*logical_device, &self.create_info, nullptr(), &mut command_pool_ptr)
 			{
 				VkResult::VK_SUCCESS => 
 				{ 
 					Ok(
-						CommandPool { 
+						CommandPool {
 							command_pool_ptr: command_pool_ptr,
 						}
 					)

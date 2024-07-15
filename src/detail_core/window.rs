@@ -10,7 +10,7 @@ use crate::loseit::xcb_functions::*;
 use std::ptr::null_mut as nullptr;
 
 #[cfg(target_os = "linux")]
-pub fn create_vulkan_surface(window: &WindowHandle, vk_handle: &VkHandle) -> Result<*mut VkSurfaceKHR_T, String>
+pub fn create_vulkan_surface(window: &WindowHandle, vk_instance: &VkInstance) -> Result<*mut VkSurfaceKHR_T, String>
 {
 	let handle = window as &LinuxHandle;
 
@@ -18,7 +18,7 @@ pub fn create_vulkan_surface(window: &WindowHandle, vk_handle: &VkHandle) -> Res
 
 	unsafe
 	{
-		match create_xcb_surface_function(&vk_handle.instance)
+		match create_xcb_surface_function(&vk_instance)
 		{
 			None => { Err("couldn't find vkCreateXcbSurfaceKHR() function.".to_owned()) }
 			Some(function) => 
@@ -31,7 +31,7 @@ pub fn create_vulkan_surface(window: &WindowHandle, vk_handle: &VkHandle) -> Res
 					pNext: nullptr()
 				};
 	
-				match function(vk_handle.instance, &surface_create_info, nullptr(), &mut surface)
+				match function(*vk_instance, &surface_create_info, nullptr(), &mut surface)
 				{
 					VkResult::VK_SUCCESS => { Ok(surface) }
 					err => { Err(format!("vulkan is not supported on given X window. vkCreateXcbSurfaceKHR() resulted in {:?}", err)) }

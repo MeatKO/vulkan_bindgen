@@ -6,13 +6,6 @@ use crate::vulkan::queue::*;
 use crate::ffi::strings::*;
 use std::ptr::null_mut as nullptr;
 
-#[derive(Default)]
-pub struct QueueFamilyIndices
-{
-	pub presentation_family: Option<u32>,
-	pub graphics_family: Option<u32>
-}
-
 pub unsafe fn create_logical_device(vk_handle: &mut VkHandle)
 {
 	// a stupid hack, fix later !
@@ -74,13 +67,15 @@ pub unsafe fn create_logical_device(vk_handle: &mut VkHandle)
 	vkGetDeviceQueue( 
 		vk_handle.logical_device, 
 		vk_handle.queue_handle.graphics_queue.as_ref().unwrap().family_index, 
-		vk_handle.queue_handle.graphics_queue.as_ref().unwrap().queue_index, 
+		// vk_handle.queue_handle.graphics_queue.as_ref().unwrap().queue_index, 
+		0,
 		&mut vk_handle.graphics_queue
 	);
 	vkGetDeviceQueue( 
 		vk_handle.logical_device, 
 		vk_handle.queue_handle.presentation_queue.as_ref().unwrap().family_index, 
-		vk_handle.queue_handle.presentation_queue.as_ref().unwrap().queue_index, 
+		// vk_handle.queue_handle.presentation_queue.as_ref().unwrap().queue_index, 
+		0,
 		&mut vk_handle.presentation_queue
 	);
 }
@@ -135,7 +130,7 @@ pub unsafe fn is_device_suitable(vk_handle: &VkHandle, physical_device: VkPhysic
 
 	let swapchain_support_details = query_swapchain_support(physical_device, vk_handle.window_surface);
 
-	if !(swapchain_support_details.formats.len() > 0) || !(swapchain_support_details.present_modes.len() > 0)
+	if swapchain_support_details.formats.is_empty() || swapchain_support_details.present_modes.is_empty()
 	{
 		println!("incompatible due to lack of swapchain support details");
 		return false

@@ -34,6 +34,11 @@ pub fn game_logic_system()
 			}
 		};
 
+	if last_index >= 30
+	{
+		return
+	}
+
 	let last_random_object_time = global_variables.global_env_map.get_mut("random_object_time");
 
 	match last_random_object_time
@@ -42,7 +47,7 @@ pub fn game_logic_system()
 		{
 			let last_time = time_obj.downcast_ref::<std::time::Instant>().unwrap();
 
-			if last_time.elapsed() >= std::time::Duration::from_secs_f32(0.1f32)
+			if last_time.elapsed() >= std::time::Duration::from_secs_f32(0.03f32)
 			{
 				let random_translation = 
 					Vec3 {
@@ -51,12 +56,21 @@ pub fn game_logic_system()
 						z: rand(-50..50) as f32,
 					};
 
+				// let random_translation = 
+				// 	Vec3 {
+				// 		x: 0 as f32,
+				// 		y: ((last_index * 3) + 5) as f32,
+				// 		z: 0 as f32,
+				// 	};
+
 				let mut aabb = AABB::new_nonverbose(random_translation, Vec3::new(1.0f32), false);
+				aabb.mass = 1.0f32;
 				unsafe { aabb.process_vulkan(vk_handle) };
 
 				let shtaiga = decs.create_entity();
 				decs.add_component(shtaiga, StringComponent{ string : format!("valkyrie_{}", last_index).to_owned()}).unwrap();
-				decs.add_component(shtaiga, VulkanModelComponent::new("valkyrie".to_owned())).unwrap();
+				// decs.add_component(shtaiga, VulkanModelComponent::new("valkyrie".to_owned())).unwrap();
+				decs.add_component(shtaiga, VulkanModelComponent::new("tomato_crate".to_owned())).unwrap();
 				decs.add_component(shtaiga, aabb).unwrap();
 				decs.add_component(shtaiga, UniformBufferComponent::new(vk_handle).unwrap()).unwrap();
 

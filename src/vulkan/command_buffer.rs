@@ -46,6 +46,7 @@ pub unsafe fn record_command_buffer(
 			VkClearValue{
 				color: VkClearColorValue{
 					float32: [0.3f32, 0.5f32, 0.4f32, 1.0f32]
+					// float32: [0.0f32, 0.0f32, 0.0f32, 1.0f32]
 				}
 			},
 			VkClearValue{
@@ -100,7 +101,7 @@ pub unsafe fn record_command_buffer(
 	);
 
 	let scissor = 
-		VkRect2D{
+		VkRect2D {
 			offset: VkOffset2D { 
 				x: 0, 
 				y: 0 
@@ -154,7 +155,8 @@ pub unsafe fn record_command_buffer(
 						ubo_component.descriptor_sets[vk_handle.current_frame],
 						material_asset_ref.descriptor_set,
 					];
-
+				
+				// optimization issue : this doesn't NEED to be re-bound every frame...
 				vkCmdBindDescriptorSets(
 					current_command_buffer, 
 					VkPipelineBindPoint::VK_PIPELINE_BIND_POINT_GRAPHICS, 
@@ -175,6 +177,8 @@ pub unsafe fn record_command_buffer(
 				0, 
 				0
 			);
+
+			// vkCmdDrawIndirect(commandBuffer, buffer, offset, drawCount, stride)
 		}
 	}
 

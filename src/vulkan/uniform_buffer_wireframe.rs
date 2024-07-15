@@ -1,6 +1,6 @@
 use crate::cotangens::mat4x4::Mat4x4;
 use crate::cotangens::vec3::Vec3;
-use crate::detail_core::phys::aabb::VulkanMeshData;
+use crate::detail_core::phys::aabb::VulkanUniformData;
 use crate::vulkan::vk_bindgen::*;
 use crate::vulkan::handle::*;
 use crate::vulkan::vk_buffer::*;
@@ -21,7 +21,7 @@ pub struct UniformBufferObjectWireframe
 
 pub unsafe fn create_uniform_buffers_wireframe(
 	vk_handle: &VkHandle,
-	mesh_data: &mut VulkanMeshData
+	mesh_data: &mut VulkanUniformData
 ) 
 {
 	let buffer_size = size_of::<UniformBufferObjectWireframe>() as u64;
@@ -64,7 +64,7 @@ pub unsafe fn create_uniform_buffers_wireframe(
 
 pub unsafe fn update_uniform_buffer_wireframe(
 	vk_handle: &VkHandle,
-	mesh_data: &VulkanMeshData,
+	uniform_data: &VulkanUniformData,
 	scale: &Vec3,
 	translation: &Vec3,
 	rotation: &Vec3,
@@ -88,5 +88,5 @@ pub unsafe fn update_uniform_buffer_wireframe(
 			color: color.clone(),
 		};
 	
-	std::ptr::copy_nonoverlapping(&ubo, mesh_data.uniform_buffers_mapped[vk_handle.current_frame] as _, 1);
+	std::ptr::copy_nonoverlapping(&ubo, uniform_data.uniform_buffers_mapped[vk_handle.current_frame] as _, 1);
 }	

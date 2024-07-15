@@ -125,17 +125,18 @@ pub unsafe fn copy_buffer(
 	vkCmdCopyBuffer(command_buffer, source_buffer, destination_buffer, 1, &buffer_copy_region);
 	vkEndCommandBuffer(command_buffer);
 
-	let submit_info = VkSubmitInfo{
-		sType: VkStructureType::VK_STRUCTURE_TYPE_SUBMIT_INFO,
-		commandBufferCount: 1,
-		pCommandBuffers: &command_buffer,
-		waitSemaphoreCount: 0,
-		pWaitSemaphores: nullptr(),
-		signalSemaphoreCount: 0,
-		pSignalSemaphores: nullptr(),
-		pWaitDstStageMask: nullptr(),
-		pNext: nullptr(),
-	};
+	let submit_info = 
+		VkSubmitInfo{
+			sType: VkStructureType::VK_STRUCTURE_TYPE_SUBMIT_INFO,
+			commandBufferCount: 1,
+			pCommandBuffers: &command_buffer,
+			waitSemaphoreCount: 0,
+			pWaitSemaphores: nullptr(),
+			signalSemaphoreCount: 0,
+			pSignalSemaphores: nullptr(),
+			pWaitDstStageMask: nullptr(),
+			pNext: nullptr(),
+		};
 
 	vkQueueSubmit(vk_handle.graphics_queue, 1, &submit_info, nullptr());
 	vkQueueWaitIdle(vk_handle.graphics_queue);

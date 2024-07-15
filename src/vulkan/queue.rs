@@ -6,7 +6,7 @@ use std::ptr::null_mut as nullptr;
 pub struct QueueDescriptor
 {
 	pub family_index: u32,
-	pub queue_index: u32
+	// pub queue_index: u32
 }
 
 #[derive(Default, Debug)]
@@ -91,13 +91,13 @@ impl QueueHandle
 					self.graphics_queue = Some(
 						QueueDescriptor { 
 							family_index: family_index as u32, 
-							queue_index: 0
+							// queue_index: 0
 						}
 					);
 					self.presentation_queue = Some(
 						QueueDescriptor { 
 							family_index: family_index as u32, 
-							queue_index: 0
+							// queue_index: 0
 						}
 					);
 					return Some(self)
@@ -108,7 +108,7 @@ impl QueueHandle
 				self.graphics_queue = Some(
 					QueueDescriptor { 
 						family_index: family_index as u32, 
-						queue_index: 0
+						// queue_index: 0
 					}
 				);
 				return Some(self)

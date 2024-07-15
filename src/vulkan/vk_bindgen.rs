@@ -1851,6 +1851,20 @@ pub enum VkResult {
     VK_ERROR_COMPRESSION_EXHAUSTED_EXT = -1000338000,
     VK_RESULT_MAX_ENUM = 2147483647,
 }
+
+impl VkResult
+{
+	pub fn unwrap<S>(&self, fn_name: S)
+		where S: ToString
+	{
+		match self
+		{
+			VkResult::VK_SUCCESS => { println!("{} VK_SUCCESS", fn_name.to_string()) }
+			err => { panic!("{} unwrap failed with code {:?}.", fn_name.to_string(), err); }
+		}
+	}
+}
+
 impl VkStructureType {
     pub const VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTER_FEATURES: VkStructureType =
         VkStructureType::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTERS_FEATURES;

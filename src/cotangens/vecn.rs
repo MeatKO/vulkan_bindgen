@@ -1,21 +1,37 @@
 use std::ops::{Add, Sub, Mul, Neg};
 use std::ops::{Index, IndexMut};
 
+use super::vec3::Vec3;
+
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct VecN<T, const N: usize> {
     pub components: [T; N],
 }
 
+impl VecN<f32, 3>
+{
+	pub fn to_vec3(&self) -> Vec3
+	{
+		return Vec3 { 
+			x: self.components[0], 
+			y: self.components[1], 
+			z: self.components[2] 
+		}
+	}
+}
+
 impl<T: Copy + Default + Add<Output = T> + Sub<Output = T> + Mul<Output = T> + PartialOrd, const N: usize> Index<usize> for VecN<T, N> {
     type Output = T;
 
-    fn index(&self, index: usize) -> &Self::Output {
+    fn index(&self, index: usize) -> &Self::Output 
+	{
         &self.components[index]
     }
 }
 
 impl<T: Copy + Default + Add<Output = T> + Sub<Output = T> + Mul<Output = T> + PartialOrd, const N: usize> IndexMut<usize> for VecN<T, N> {
-    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+    fn index_mut(&mut self, index: usize) -> &mut Self::Output 
+	{
         &mut self.components[index]
     }
 }
@@ -23,7 +39,8 @@ impl<T: Copy + Default + Add<Output = T> + Sub<Output = T> + Mul<Output = T> + P
 impl<T: Copy + Default + Add<Output = T> + Sub<Output = T> + Mul<Output = T> + Neg<Output = T> + PartialOrd + Into<f32> + From<f32>, const N: usize> VecN<T, N> 
 {
 
-    pub fn normalize(&self) -> Self {
+    pub fn normalize(&self) -> Self 
+	{
         let len = self.len();
         let mut result = *self;
         if len != 0.0 {

@@ -63,11 +63,40 @@ pub unsafe fn create_swapchain(vk_handle: &mut VkHandle)
 		);
 
 	// queue stuff for the swapchain creation : 
-	vk_handle.queue_family_indices = 
+	// vk_handle.queue_family_indices = 
+	let queue_family_indices = 
 		vec![
 			vk_handle.queue_handle.graphics_queue.as_ref().unwrap().family_index, 
 			vk_handle.queue_handle.presentation_queue.as_ref().unwrap().family_index
 		];
+
+	// let mut swapchain_create_info = 
+	// 	VkSwapchainCreateInfoKHR{
+	// 		sType: VkStructureType::VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
+	// 		surface: vk_handle.window_surface,
+	// 		minImageCount: image_count,
+	// 		imageFormat: vk_handle.surface_format.format,
+	// 		imageColorSpace: vk_handle.surface_format.colorSpace,
+	// 		imageExtent: vk_handle.swapchain_extent,
+	// 		imageArrayLayers: 1,
+	// 		imageSharingMode: VkSharingMode::VK_SHARING_MODE_EXCLUSIVE,
+	// 		queueFamilyIndexCount: 0,
+	// 		pQueueFamilyIndices: nullptr(),
+	// 		imageUsage: VkImageUsageFlagBits::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT as u32,
+	// 		preTransform: vk_handle.swapchain_support_details.capabilities.currentTransform,
+	// 		compositeAlpha: VkCompositeAlphaFlagBitsKHR::VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
+	// 		presentMode: vk_handle.present_mode,
+	// 		clipped: VK_TRUE,
+	// 		oldSwapchain: nullptr(),
+	// 		flags: 0,
+	// 		pNext: nullptr(),
+	// 	};
+	// if vk_handle.graphics_queue != vk_handle.presentation_queue
+	// {
+	// 	swapchain_create_info.imageSharingMode = VkSharingMode::VK_SHARING_MODE_CONCURRENT;
+	// 	swapchain_create_info.queueFamilyIndexCount = 2;
+	// 	swapchain_create_info.pQueueFamilyIndices = queue_family_indices.as_ptr();
+	// }
 
 	let mut swapchain_create_info = 
 		VkSwapchainCreateInfoKHR{
@@ -78,9 +107,9 @@ pub unsafe fn create_swapchain(vk_handle: &mut VkHandle)
 			imageColorSpace: vk_handle.surface_format.colorSpace,
 			imageExtent: vk_handle.swapchain_extent,
 			imageArrayLayers: 1,
-			imageSharingMode: VkSharingMode::VK_SHARING_MODE_EXCLUSIVE,
-			queueFamilyIndexCount: 0,
-			pQueueFamilyIndices: nullptr(),
+			imageSharingMode: VkSharingMode::VK_SHARING_MODE_CONCURRENT,
+			queueFamilyIndexCount: 2,
+			pQueueFamilyIndices: queue_family_indices.as_ptr(),
 			imageUsage: VkImageUsageFlagBits::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT as u32,
 			preTransform: vk_handle.swapchain_support_details.capabilities.currentTransform,
 			compositeAlpha: VkCompositeAlphaFlagBitsKHR::VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
@@ -90,12 +119,6 @@ pub unsafe fn create_swapchain(vk_handle: &mut VkHandle)
 			flags: 0,
 			pNext: nullptr(),
 		};
-	if vk_handle.graphics_queue != vk_handle.presentation_queue
-	{
-		swapchain_create_info.imageSharingMode = VkSharingMode::VK_SHARING_MODE_CONCURRENT;
-		swapchain_create_info.queueFamilyIndexCount = 2;
-		swapchain_create_info.pQueueFamilyIndices = vk_handle.queue_family_indices.as_ptr();
-	}
 
 	match vkCreateSwapchainKHR(vk_handle.logical_device, &swapchain_create_info, nullptr(), &mut vk_handle.swapchain)
 	{
@@ -119,7 +142,7 @@ pub unsafe fn create_swapchain_image_views(vk_handle: &mut VkHandle)
 	{
 		vk_handle.swapchain_image_views_vec[i] = 
 			create_image_view(
-				vk_handle, 
+				&vk_handle.logical_device, 
 				&swapchain_images_vec[i],
 				vk_handle.surface_format.format, 
 				VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT as u32,

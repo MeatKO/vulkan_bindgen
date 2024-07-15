@@ -63,6 +63,7 @@ pub fn init_domatena_shtaiga_object()
 		let h = i - 3;
 		phys_boxes[i].translation = Vec3{ x: 0.0f32, y: (h * h) as f32, z: 0.0f32 };
 		phys_boxes[i].mass = (h ) as f32;
+		// phys_boxes[i].mass = 10.0f32;
 	}
 
 	for (index, aabb) in phys_boxes.into_iter().enumerate()

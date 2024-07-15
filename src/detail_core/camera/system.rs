@@ -17,7 +17,7 @@ pub fn update_camera_system()
 	decs.modify_components_global::<VkHandle>(
 		|vk_handle|
 		{
-			vk_handle.camera.process_movement(delta_time.last_delta_time, &input_state.current_keyboard_state);
+			vk_handle.camera.process_movement(delta_time.last_delta_time_sec, &input_state.current_keyboard_state);
 			vk_handle.camera.update_camera_vectors();
 			Ok(())
 		}

@@ -65,7 +65,7 @@ pub struct VkHandle<'a>
 
 	pub queue_handle: QueueHandle,
 
-	pub queue_family_indices: Vec<u32>,
+	// pub queue_family_indices: Vec<u32>,
 
 	pub swapchain: VkSwapchainKHR,
 	pub swapchain_image_views_vec: Vec<VkImageView>,
@@ -180,7 +180,7 @@ impl<'a> VkHandle<'a>
 			graphics_pipeline_wireframe: nullptr(),
 			pipeline_layout_wireframe: nullptr(),
 
-			queue_family_indices: vec![],
+			// queue_family_indices: vec![],
 			graphics_queue: nullptr(),
 			presentation_queue: nullptr(),
 			// command_pool: unsafe { std::mem::MaybeUninit::zeroed },

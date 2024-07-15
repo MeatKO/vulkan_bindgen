@@ -32,13 +32,16 @@ impl Vertex
 		}
 	}
 
-	pub fn get_binding_description() -> VkVertexInputBindingDescription
+	pub fn get_binding_descriptions() -> Vec<VkVertexInputBindingDescription>
 	{
-		return VkVertexInputBindingDescription{
-			binding: 0,
-			stride: size_of::<Vertex>() as u32,
-			inputRate: VkVertexInputRate::VK_VERTEX_INPUT_RATE_VERTEX
-		}
+		return 
+			vec![
+				VkVertexInputBindingDescription{
+					binding: 0,
+					stride: size_of::<Vertex>() as u32,
+					inputRate: VkVertexInputRate::VK_VERTEX_INPUT_RATE_VERTEX
+				},
+			]
 	}
 
 	// pub fn get_attribute_descriptions() -> [VkVertexInputAttributeDescription; 3]
