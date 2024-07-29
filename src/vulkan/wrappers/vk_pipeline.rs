@@ -52,30 +52,31 @@ impl VkPipelineBuilder
 		self
 	}
 
-	pub fn build(self, logical_device: &VkDevice) -> Result<VkPipeline, String>
+	pub unsafe fn build(self, logical_device: &VkDevice) -> Result<VkPipeline, String>
 	{
-		let pipeline_create_info = 
-			VkGraphicsPipelineCreateInfo{
-				sType: VkStructureType::VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
-				stageCount: shader_stages_create_info_vec.len() as _,
-				pStages: shader_stages_create_info_vec.as_ptr(),
-				pVertexInputState: &vertex_input_create_info,
-				pInputAssemblyState: &input_assembly_state_create_info,
-				pViewportState: &viewport_state_create_info,
-				pRasterizationState: &rasterizer_create_info,
-				pMultisampleState: &multisampling_create_info,
-				pDepthStencilState: &depth_stencil_create_info,
-				pColorBlendState: &color_blend_create_info,
-				pDynamicState: &dynamic_state_create_info,
-				layout: pipeline_layout,
-				renderPass: self.render_pass,
-				subpass: 0,
-				basePipelineHandle: nullptr(),
-				basePipelineIndex: -1,
-				pTessellationState: nullptr(),
-				flags: 0,	
-				pNext: nullptr(),
-			};
+		let pipeline_create_info = std::mem::zeroed();
+		// let pipeline_create_info = 
+		// 	VkGraphicsPipelineCreateInfo{
+		// 		sType: VkStructureType::VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
+		// 		stageCount: shader_stages_create_info_vec.len() as _,
+		// 		pStages: shader_stages_create_info_vec.as_ptr(),
+		// 		pVertexInputState: &vertex_input_create_info,
+		// 		pInputAssemblyState: &input_assembly_state_create_info,
+		// 		pViewportState: &viewport_state_create_info,
+		// 		pRasterizationState: &rasterizer_create_info,
+		// 		pMultisampleState: &multisampling_create_info,
+		// 		pDepthStencilState: &depth_stencil_create_info,
+		// 		pColorBlendState: &color_blend_create_info,
+		// 		pDynamicState: &dynamic_state_create_info,
+		// 		layout: pipeline_layout,
+		// 		renderPass: self.render_pass,
+		// 		subpass: 0,
+		// 		basePipelineHandle: nullptr(),
+		// 		basePipelineIndex: -1,
+		// 		pTessellationState: nullptr(),
+		// 		flags: 0,	
+		// 		pNext: nullptr(),
+		// 	};
 
 		let mut pipeline: VkPipeline = nullptr();
 

@@ -1,9 +1,8 @@
 use super::vk_bindgen::*;
-use super::handle::VkHandle;
 
 use std::ptr::null_mut as nullptr;
 
-pub fn create_shader_module(vk_handle: &VkHandle , shader_source: &[u8]) -> VkShaderModule
+pub fn create_shader_module(logical_device: VkDevice , shader_source: &[u8]) -> VkShaderModule
 {
 	let shader_create_info = 
 		VkShaderModuleCreateInfo{
@@ -16,9 +15,8 @@ pub fn create_shader_module(vk_handle: &VkHandle , shader_source: &[u8]) -> VkSh
 
 	unsafe
 	{
-		// let mut shader_module = std::mem::zeroed();
 		let mut shader_module = nullptr();
-		match vkCreateShaderModule(vk_handle.logical_device, &shader_create_info, nullptr(), &mut shader_module)
+		match vkCreateShaderModule(logical_device, &shader_create_info, nullptr(), &mut shader_module)
 		{
 			VkResult::VK_SUCCESS => { println!("✔️ vkCreateShaderModule()"); }
 			err => { panic!("✗ vkCreateShaderModule() failed with code {:?}.", err); }

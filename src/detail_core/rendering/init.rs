@@ -194,8 +194,8 @@ pub fn init_pipelines()
 			let vertex_shader_source = include_bytes!("../../../detail/shaders/normal_new_layout/vert.spv");
 			let fragment_shader_source = include_bytes!("../../../detail/shaders/normal_new_layout/frag.spv");
 			//
-			let vertex_shader_module = create_shader_module(&vk_handle, vertex_shader_source);
-			let fragment_shader_module = create_shader_module(&vk_handle, fragment_shader_source);
+			let vertex_shader_module = create_shader_module(vk_handle.logical_device, vertex_shader_source);
+			let fragment_shader_module = create_shader_module(vk_handle.logical_device, fragment_shader_source);
 			//
 			let binding_descriptions = Vertex::get_binding_descriptions();
 			let attribute_descriptions_vec = Vertex::get_attribute_descriptions();
@@ -211,7 +211,10 @@ pub fn init_pipelines()
 
 			let (pipeline_layout, render_pass, pipeline) = 
 				create_pipeline(
-					vk_handle, 
+					vk_handle.physical_device,
+					vk_handle.logical_device,
+					vk_handle.swapchain_extent,
+					vk_handle.surface_format, 
 					vertex_shader_module, 
 					fragment_shader_module, 
 					binding_descriptions, 
@@ -235,8 +238,8 @@ pub fn init_pipelines()
 			let vertex_shader_source = include_bytes!("../../../detail/shaders/wireframe_hitbox/vert.spv");
 			let fragment_shader_source = include_bytes!("../../../detail/shaders/wireframe_hitbox/frag.spv");
 			//
-			let vertex_shader_module = create_shader_module(&vk_handle, vertex_shader_source);
-			let fragment_shader_module = create_shader_module(&vk_handle, fragment_shader_source);
+			let vertex_shader_module = create_shader_module(vk_handle.logical_device, vertex_shader_source);
+			let fragment_shader_module = create_shader_module(vk_handle.logical_device, fragment_shader_source);
 			//
 			let binding_descriptions = Vertex::get_binding_descriptions();
 			let attribute_descriptions_vec = Vertex::get_attribute_descriptions();
@@ -252,7 +255,10 @@ pub fn init_pipelines()
 
 			let (pipeline_layout, render_pass, pipeline) = 
 				create_pipeline(
-					vk_handle, 
+					vk_handle.physical_device,
+					vk_handle.logical_device,
+					vk_handle.swapchain_extent,
+					vk_handle.surface_format,
 					vertex_shader_module, 
 					fragment_shader_module, 
 					binding_descriptions, 
@@ -275,8 +281,8 @@ pub fn init_pipelines()
 			let vertex_shader_source = include_bytes!("../../../detail/shaders/hud/vert.spv");
 			let fragment_shader_source = include_bytes!("../../../detail/shaders/hud/frag.spv");
 			//
-			let vertex_shader_module = create_shader_module(&vk_handle, vertex_shader_source);
-			let fragment_shader_module = create_shader_module(&vk_handle, fragment_shader_source);
+			let vertex_shader_module = create_shader_module(vk_handle.logical_device, vertex_shader_source);
+			let fragment_shader_module = create_shader_module(vk_handle.logical_device, fragment_shader_source);
 			//
 			let binding_descriptions = Vertex::get_binding_descriptions();
 			let attribute_descriptions_vec = Vertex::get_attribute_descriptions();
@@ -292,7 +298,10 @@ pub fn init_pipelines()
 
 			let (pipeline_layout_hud, render_pass_hud, pipeline_hud) = 
 				create_pipeline(
-					vk_handle, 
+					vk_handle.physical_device,
+					vk_handle.logical_device,
+					vk_handle.swapchain_extent,
+					vk_handle.surface_format,
 					vertex_shader_module, 
 					fragment_shader_module, 
 					binding_descriptions, 
@@ -326,7 +335,17 @@ pub fn init_buffer_objects()
 
 	unsafe
 	{
-		create_depth_buffer(vk_handle);
+		let (image, image_memory, depth_image_view) = 
+			create_depth_buffer(
+				&vk_handle.logical_device,
+				&vk_handle.physical_device,
+				&vk_handle.command_pool.as_ref().unwrap().get_command_pool_ptr(),
+				&vk_handle.graphics_queue,
+				&vk_handle.swapchain_extent,
+			);
+		vk_handle.depth_image = image;
+		vk_handle.depth_image_memory = image_memory;
+		vk_handle.depth_image_view = depth_image_view;
 		create_framebuffers(vk_handle);
 
 		create_synchronization_structures(vk_handle);

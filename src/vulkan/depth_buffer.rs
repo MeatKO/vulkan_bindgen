@@ -3,39 +3,52 @@ use crate::vulkan::handle::*;
 use crate::vulkan::texture::*;
 use crate::vulkan::texture_view::*;
 
-pub unsafe fn create_depth_buffer(vk_handle: &mut VkHandle)
+pub unsafe fn create_depth_buffer(
+	device: &VkDevice,
+	physical_device: &VkPhysicalDevice,
+	command_pool: &VkCommandPool,
+	queue: &VkQueue,
+	swapchain_extent: &VkExtent2D,
+) -> (VkImage, VkDeviceMemory, VkImageView)
 {
-	let depth_format = find_depth_format(vk_handle);
+	let depth_format = find_depth_format(physical_device);
 
 	let (image, image_memory) = 
 		create_image(
-			vk_handle, 
-			vk_handle.swapchain_extent.width, 
-			vk_handle.swapchain_extent.height, 
+			device,
+			physical_device,
+			swapchain_extent.width, 
+			swapchain_extent.height, 
 			depth_format, 
 			VkImageTiling::VK_IMAGE_TILING_OPTIMAL, 
 			VkImageUsageFlagBits::VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT as u32, 
 			VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT as u32,
 		).unwrap();
 
-	vk_handle.depth_image = image;
-	vk_handle.depth_image_memory = image_memory;
-	vk_handle.depth_image_view = 
+	let depth_image_view = 
 		create_image_view(
-			&vk_handle.logical_device, 
-			&vk_handle.depth_image,
+			device, 
+			// &vk_handle.depth_image,
+			&image,
 			depth_format, 
 			VkImageAspectFlagBits::VK_IMAGE_ASPECT_DEPTH_BIT as u32
 		);
 
 	transition_image_layout(
-		vk_handle, 
+		device,
+		command_pool,
+		queue,
 		depth_format,
-		vk_handle.depth_image, 
+		image, 
 		VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED, 
 		VkImageLayout::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
 	);
 
+	// vk_handle.depth_image = image;
+	// vk_handle.depth_image_memory = image_memory;
+	// vk_handle.depth_image_view = depth_image_view;
+
+	(image, image_memory, depth_image_view)
 }
 
 pub unsafe fn has_stencil_component(
@@ -47,11 +60,11 @@ pub unsafe fn has_stencil_component(
 }
 
 pub unsafe fn find_depth_format(
-	vk_handle: &mut VkHandle
+	physical_device: &VkPhysicalDevice
 ) -> VkFormat
 {
 	return find_supported_format(
-		vk_handle, 
+		physical_device, 
 		&vec![
 			VkFormat::VK_FORMAT_D32_SFLOAT,
 			VkFormat::VK_FORMAT_D32_SFLOAT_S8_UINT,
@@ -63,7 +76,7 @@ pub unsafe fn find_depth_format(
 }
 
 unsafe fn find_supported_format(
-	vk_handle: &mut VkHandle,
+	physical_device: &VkPhysicalDevice,
 	candidates: &Vec<VkFormat>,
 	tiling: VkImageTiling,
 	features: VkFormatFeatureFlags
@@ -74,7 +87,7 @@ unsafe fn find_supported_format(
 	for format in candidates.iter().copied()
 	{
 		let mut properties: VkFormatProperties = std::mem::zeroed();
-		vkGetPhysicalDeviceFormatProperties(vk_handle.physical_device, format, &mut properties);
+		vkGetPhysicalDeviceFormatProperties(*physical_device, format, &mut properties);
 
 		if tiling == VkImageTiling::VK_IMAGE_TILING_LINEAR &&
 			(properties.linearTilingFeatures & features) == features

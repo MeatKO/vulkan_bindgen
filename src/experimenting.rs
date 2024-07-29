@@ -1,7 +1,8 @@
 use std::{cmp::min, ptr::null_mut as nullptr, thread::sleep, time::Duration};
 
-use crate::{detail_core::window::create_vulkan_surface, ffi::strings::{from_c_string, from_c_string_ptr, to_c_string}, main, vulkan::{c_macros::{vk_make_api_version, vk_make_version}, command_pool, physical_device, pipeline::create_pipeline, swapchain::{choose_swap_extent, choose_swap_present_mode, choose_swap_surface_format, query_swapchain_support}, texture_view::create_image_view, vk_bindgen::{vkCreateDevice, vkCreateSwapchainKHR, vkEnumeratePhysicalDevices, vkGetDeviceQueue, vkGetPhysicalDeviceMemoryProperties, vkGetPhysicalDeviceProperties, vkGetPhysicalDeviceQueueFamilyProperties, vkGetSwapchainImagesKHR, PFN_vkCmdSetLogicOpEnableEXT, VkApplicationInfo, VkCommandPoolCreateFlagBits, VkCompositeAlphaFlagBitsKHR, VkDescriptorType, VkDeviceCreateInfo, VkDeviceQueueCreateInfo, VkImage, VkImageAspectFlagBits, VkImageUsageFlagBits, VkImageView, VkInstance, VkInstanceCreateFlagBits, VkInstanceCreateInfo, VkPhysicalDevice, VkPhysicalDeviceFeatures, VkPhysicalDeviceProperties, VkPhysicalDeviceType, VkQueueFlagBits, VkSharingMode, VkStructureType, VkSwapchainCreateInfoKHR, VK_TRUE}, wrappers::{vk_command_pool::CommandPoolBuilder, vk_descriptor_layout::VkDescriptorLayoutBuilder, vk_descriptor_pool::VkDescriptorPoolBuilder}}};
+use crate::{detail_core::window::create_vulkan_surface, ffi::strings::{from_c_string, from_c_string_ptr, to_c_string}, main, vulkan::{c_macros::{vk_make_api_version, vk_make_version}, command_pool, physical_device, pipeline::create_pipeline, swapchain::{choose_swap_extent, choose_swap_present_mode, choose_swap_surface_format, query_swapchain_support}, texture_view::create_image_view, vertex::Vertex, vk_bindgen::{vkCreateDevice, vkCreateSwapchainKHR, vkEnumeratePhysicalDevices, vkGetDeviceQueue, vkGetPhysicalDeviceMemoryProperties, vkGetPhysicalDeviceProperties, vkGetPhysicalDeviceQueueFamilyProperties, vkGetSwapchainImagesKHR, PFN_vkCmdSetLogicOpEnableEXT, VkApplicationInfo, VkCommandPoolCreateFlagBits, VkCompositeAlphaFlagBitsKHR, VkDescriptorType, VkDeviceCreateInfo, VkDeviceQueueCreateInfo, VkImage, VkImageAspectFlagBits, VkImageUsageFlagBits, VkImageView, VkInstance, VkInstanceCreateFlagBits, VkInstanceCreateInfo, VkPhysicalDevice, VkPhysicalDeviceFeatures, VkPhysicalDeviceProperties, VkPhysicalDeviceType, VkPolygonMode, VkQueueFlagBits, VkSharingMode, VkStructureType, VkSwapchainCreateInfoKHR, VK_TRUE}, wrappers::{vk_command_pool::CommandPoolBuilder, vk_descriptor_layout::VkDescriptorLayoutBuilder, vk_descriptor_pool::VkDescriptorPoolBuilder}}};
 
+use crate::vulkan::shader::create_shader_module;
 use crate::vulkan::vk_bindgen::vkCreateInstance;
 use crate::vulkan::vk_bindgen::VkResult;
 
@@ -204,11 +205,13 @@ pub unsafe fn init_everything()
 
 	let swapchain_image_views = 
 		swapchain_image_vec.iter()
-		.map(|current_swapchain_image|
+		.map(
+			|current_swapchain_image|
 			{
 				create_image_view(&device, current_swapchain_image, surface_format.format, VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT as u32)
 			}
-		).collect::<Vec<VkImageView>>();
+		)
+		.collect::<Vec<VkImageView>>();
 
 	println!("Image views created...");
 
@@ -230,8 +233,39 @@ pub unsafe fn init_everything()
 		.add_pool_type(VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 10000)
 		.build(device, 10000)
 		.unwrap();
-		
-	// let pipeline = create_pipeline(vk_handle, vertex_shader_module, fragment_shader_module, binding_descriptions, attribute_descriptions_vec, polygon_mode, is_first_pass, descriptor_set_layout_vec)
+
+	let descriptor_set_layout = 
+		VkDescriptorLayoutBuilder::new()
+		.add_binding(VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
+		.build(device)
+		.unwrap();
+
+	let vertex_shader_source = include_bytes!("../detail/shaders/normal_new_layout/vert.spv");
+	let fragment_shader_source = include_bytes!("../detail/shaders/normal_new_layout/frag.spv");
+	//
+	let vertex_shader_module = create_shader_module(device, vertex_shader_source);
+	let fragment_shader_module = create_shader_module(device, fragment_shader_source);
+	//
+	let binding_descriptions = Vertex::get_binding_descriptions();
+	let attribute_descriptions_vec = Vertex::get_attribute_descriptions();
+	
+	let (pipeline_layout, render_pass, pipeline) = 
+		create_pipeline(
+			picked_device,
+			device,
+			swapchain_extent,
+			surface_format,
+			vertex_shader_module, 
+			fragment_shader_module, 
+			binding_descriptions, 
+			attribute_descriptions_vec,
+			VkPolygonMode::VK_POLYGON_MODE_FILL, 
+			true,
+			vec![
+				descriptor_set_layout
+			]
+		);
+
 	
 }
 

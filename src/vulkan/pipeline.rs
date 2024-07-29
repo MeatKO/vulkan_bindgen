@@ -4,7 +4,11 @@ use crate::vulkan::depth_buffer::*;
 use std::ptr::null_mut as nullptr;
 
 pub unsafe fn create_pipeline(
-	vk_handle: &mut VkHandle,
+	// vk_handle: &mut VkHandle,
+	physical_device: VkPhysicalDevice,
+	logical_device: VkDevice,
+	swapchain_extent: VkExtent2D,
+	surface_format: VkSurfaceFormatKHR,
 	vertex_shader_module: VkShaderModule,
 	fragment_shader_module: VkShaderModule,
 	binding_descriptions: Vec<VkVertexInputBindingDescription>,
@@ -41,8 +45,8 @@ pub unsafe fn create_pipeline(
 		VkViewport{
 			x: 0.0f32,
 			y: 0.0f32,
-			width: vk_handle.swapchain_extent.width as f32,
-			height: vk_handle.swapchain_extent.height as f32,
+			width: swapchain_extent.width as f32,
+			height: swapchain_extent.height as f32,
 			minDepth: 0.0f32,
 			maxDepth: 1.0f32,
 		};
@@ -50,7 +54,7 @@ pub unsafe fn create_pipeline(
 	let scissor = 
 		VkRect2D{
 			offset: VkOffset2D { x: 0, y: 0 },
-			extent: vk_handle.swapchain_extent
+			extent: swapchain_extent
 		};
 	// Viewport state
 	let viewport_state_create_info = 
@@ -157,7 +161,7 @@ pub unsafe fn create_pipeline(
 	//// Render pass creation
 	let mut color_attachment_descriptor = 
 		VkAttachmentDescription{
-			format: vk_handle.surface_format.format,
+			format: surface_format.format,
 			samples: VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT,
 			loadOp: VkAttachmentLoadOp::VK_ATTACHMENT_LOAD_OP_CLEAR, // diff
 			storeOp: VkAttachmentStoreOp::VK_ATTACHMENT_STORE_OP_STORE,
@@ -171,7 +175,7 @@ pub unsafe fn create_pipeline(
 	{
 		color_attachment_descriptor = 
 			VkAttachmentDescription{
-				format: vk_handle.surface_format.format,
+				format: surface_format.format,
 				samples: VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT,
 				loadOp: VkAttachmentLoadOp::VK_ATTACHMENT_LOAD_OP_LOAD, // diff
 				storeOp: VkAttachmentStoreOp::VK_ATTACHMENT_STORE_OP_STORE,
@@ -183,9 +187,9 @@ pub unsafe fn create_pipeline(
 			}
 	}
 
-	let depth_attachment_descriptor = 
+	let mut depth_attachment_descriptor = 
 		VkAttachmentDescription{
-			format: find_depth_format(vk_handle),
+			format: find_depth_format(&physical_device),
 			samples: VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT,
 			loadOp: VkAttachmentLoadOp::VK_ATTACHMENT_LOAD_OP_CLEAR,
 			storeOp: VkAttachmentStoreOp::VK_ATTACHMENT_STORE_OP_STORE,
@@ -195,6 +199,21 @@ pub unsafe fn create_pipeline(
 			finalLayout: VkImageLayout::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
 			flags: 0
 		};
+	// if !is_first_pass
+	// {
+	// 	depth_attachment_descriptor = 
+	// 		VkAttachmentDescription{
+	// 			format: find_depth_format(vk_handle),
+	// 			samples: VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT,
+	// 			loadOp: VkAttachmentLoadOp::VK_ATTACHMENT_LOAD_OP_LOAD,
+	// 			storeOp: VkAttachmentStoreOp::VK_ATTACHMENT_STORE_OP_STORE,
+	// 			stencilLoadOp: VkAttachmentLoadOp::VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+	// 			stencilStoreOp: VkAttachmentStoreOp::VK_ATTACHMENT_STORE_OP_DONT_CARE,
+	// 			initialLayout: VkImageLayout::VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+	// 			finalLayout: VkImageLayout::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+	// 			flags: 0
+	// 		};
+	// }
 
 	// Attachment references
 	let color_attachment_reference = 
@@ -249,7 +268,7 @@ pub unsafe fn create_pipeline(
 
 	let attachment_descriptors = 
 		vec![
-			color_attachment_descriptor, 
+			color_attachment_descriptor,
 			depth_attachment_descriptor
 		];
 
@@ -309,13 +328,13 @@ pub unsafe fn create_pipeline(
 	let mut render_pass: VkRenderPass = nullptr();
 	let mut pipeline: VkPipeline = nullptr();
 
-	match vkCreatePipelineLayout(vk_handle.logical_device, &pipeline_layout_create_info, nullptr(), &mut pipeline_layout)
+	match vkCreatePipelineLayout(logical_device, &pipeline_layout_create_info, nullptr(), &mut pipeline_layout)
 	{
 		VkResult::VK_SUCCESS => { println!("✔️ vkCreatePipelineLayout()"); }
 		err => { panic!("✗ vkCreatePipelineLayout() failed with code {:?}.", err); }
 	}	
 
-	match vkCreateRenderPass(vk_handle.logical_device, &render_pass_create_info, nullptr(), &mut render_pass)
+	match vkCreateRenderPass(logical_device, &render_pass_create_info, nullptr(), &mut render_pass)
 	{
 		VkResult::VK_SUCCESS => { println!("✔️ vkCreateRenderPass()"); }
 		err => { panic!("✗ vkCreateRenderPass() failed with code {:?}.", err); }
@@ -345,7 +364,7 @@ pub unsafe fn create_pipeline(
 			pNext: nullptr(),
 		};
 
-	match vkCreateGraphicsPipelines(vk_handle.logical_device, nullptr(), 1, &pipeline_create_info, nullptr(), &mut pipeline)
+	match vkCreateGraphicsPipelines(logical_device, nullptr(), 1, &pipeline_create_info, nullptr(), &mut pipeline)
 	{
 		VkResult::VK_SUCCESS => { println!("✔️ vkCreateGraphicsPipelines()"); }
 		err => { panic!("✗ vkCreateGraphicsPipelines() failed with code {:?}.", err); }

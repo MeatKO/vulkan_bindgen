@@ -63,7 +63,8 @@ pub unsafe fn create_texture_image(
 
 	let (vk_image, vk_image_memory) = 
 		create_image(
-			vk_handle,
+			&vk_handle.logical_device,
+			&vk_handle.physical_device,
 			image.get_dimensions().width,
 			image.get_dimensions().height,
 			// VkFormat::VK_FORMAT_R8G8B8A8_SRGB,
@@ -75,19 +76,28 @@ pub unsafe fn create_texture_image(
 		)?;
 
 	transition_image_layout(
-		vk_handle, 
-		// VkFormat::VK_FORMAT_R8G8B8A8_SRGB, 
+		&vk_handle.logical_device, 
+		&vk_handle.command_pool.as_ref().unwrap().get_command_pool_ptr(),
+		&vk_handle.graphics_queue,
 		vk_format,
-		// model.texture_image, 
 		vk_image, 
 		VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED, 
 		VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
 	);
 
-	copy_buffer_to_image(vk_handle, staging_buffer, vk_image, image.get_dimensions().width as u32, image.get_dimensions().height as u32);
+	copy_buffer_to_image(
+		&vk_handle.logical_device, 
+		&vk_handle.graphics_queue, 
+		&vk_handle.command_pool.as_ref().unwrap().get_command_pool_ptr(), 
+		staging_buffer, 
+		vk_image, 
+		image.get_dimensions().width as u32, 
+		image.get_dimensions().height as u32
+	);
 	transition_image_layout(
-		vk_handle, 
-		// VkFormat::VK_FORMAT_R8G8B8A8_SRGB,
+		&vk_handle.logical_device, 
+		&vk_handle.command_pool.as_ref().unwrap().get_command_pool_ptr(),
+		&vk_handle.graphics_queue,
 		vk_format,
 		vk_image, 
 		VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 
@@ -101,7 +111,8 @@ pub unsafe fn create_texture_image(
 }
 
 pub unsafe fn create_image(
-	vk_handle: &VkHandle,
+	device: &VkDevice,
+	physical_device: &VkPhysicalDevice,
 	width: u32,
 	height: u32,
 	format: VkFormat,
@@ -136,25 +147,21 @@ pub unsafe fn create_image(
 	let mut image: VkImage = nullptr();
 	let mut image_memory: VkDeviceMemory = nullptr();
 
-	match vkCreateImage(vk_handle.logical_device, &image_create_info, nullptr(), &mut image)
+	match vkCreateImage(*device, &image_create_info, nullptr(), &mut image)
 	{
-		VkResult::VK_SUCCESS => 
-		{ 
-			// println!("✔️ vkCreateImage()");
-		 }
-		// err => { panic!("✗ vkCreateImage() failed with code {:?}.", err); }
+		VkResult::VK_SUCCESS => {}
 		err => { return Err(format!("✗ vkCreateImage() failed with code {:?}.", err)) }
-	}	
+	}
 
 	let mut memory_requirements: VkMemoryRequirements = std::mem::zeroed();
-	vkGetImageMemoryRequirements(vk_handle.logical_device, image, &mut memory_requirements);
+	vkGetImageMemoryRequirements(*device, image, &mut memory_requirements);
 
 	let memory_allocate_info = 
 		VkMemoryAllocateInfo{
 			sType: VkStructureType::VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
 			allocationSize: memory_requirements.size,
 			memoryTypeIndex: find_memory_type(
-				vk_handle.physical_device, 
+				*physical_device, 
 				memory_requirements.memoryTypeBits, 
 				properties
 			).unwrap(),
@@ -162,30 +169,31 @@ pub unsafe fn create_image(
 		};
 
 	// replace with dt_memory func
-	match vkAllocateMemory(vk_handle.logical_device, &memory_allocate_info, nullptr(), &mut image_memory)
+	match vkAllocateMemory(*device, &memory_allocate_info, nullptr(), &mut image_memory)
 	{
-		VkResult::VK_SUCCESS => 
-		{ 
-			// println!("✔️ vkAllocateMemory() for texture"); 
-		}
-		// err => { panic!("vkAllocateMemory() failed with code {:?}", err) }
+		VkResult::VK_SUCCESS => {}
 		err => { return Err(format!("vkAllocateMemory() failed with code {:?}", err)) }
 	}
 
-	vkBindImageMemory(vk_handle.logical_device, image, image_memory, 0);
+	vkBindImageMemory(*device, image, image_memory, 0);
 
 	Ok((image, image_memory))
 }
 
 pub unsafe fn transition_image_layout(
-	vk_handle: &VkHandle,
+	// vk_handle: &VkHandle,
+	device: &VkDevice,
+	command_pool: &VkCommandPool,
+	queue: &VkQueue,
 	format: VkFormat,
 	image: VkImage,
 	old_layout: VkImageLayout,
 	new_layout: VkImageLayout
 )
 {
-	let command_buffer = begin_single_time_commands(vk_handle).unwrap();
+	// let command_buffer = begin_single_time_commands(vk_handle).unwrap();
+	// let command_buffer = begin_single_time_commands(device, vk_handle.command_pool.as_ref().unwrap().get_command_pool_ptr()).unwrap();
+	let command_buffer = begin_single_time_commands(device, command_pool).unwrap();
 
 	let mut barrier = 
 		VkImageMemoryBarrier{
@@ -279,18 +287,23 @@ pub unsafe fn transition_image_layout(
 		&barrier
 	);
 
-	end_single_time_commands(vk_handle, command_buffer);
+	// end_single_time_commands(vk_handle, command_buffer);
+	// end_single_time_commands(&vk_handle.logical_device, &vk_handle.graphics_queue, command_buffer, &vk_handle.command_pool.as_ref().unwrap().get_command_pool_ptr());
+	end_single_time_commands(device, queue, &command_buffer, command_pool);
 }
 
 pub unsafe fn copy_buffer_to_image(
-	vk_handle: &VkHandle,
+	device: &VkDevice,
+	queue: &VkQueue,
+	command_pool: &VkCommandPool,
 	buffer: VkBuffer,
 	image: VkImage,
 	width: u32,
 	height: u32,
 )
 {
-	let command_buffer = begin_single_time_commands(vk_handle).unwrap();
+	// let command_buffer = begin_single_time_commands(&vk_handle.logical_device, vk_handle.command_pool.as_ref().unwrap().get_command_pool_ptr()).unwrap();
+	let command_buffer = begin_single_time_commands(device, command_pool).unwrap();
 
 	let region = VkBufferImageCopy{
 		bufferOffset: 0,
@@ -315,8 +328,7 @@ pub unsafe fn copy_buffer_to_image(
 	};
 
 	vkCmdCopyBufferToImage(command_buffer, buffer, image, VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
-
-	end_single_time_commands(vk_handle, command_buffer);
+	end_single_time_commands(device, queue, &command_buffer, command_pool);
 }
 
 // pub unsafe fn create_image_barrier(
@@ -327,17 +339,19 @@ pub unsafe fn copy_buffer_to_image(
 // }
 
 pub unsafe fn end_single_time_commands(
-	vk_handle: &VkHandle,
-	command_buffer: VkCommandBuffer
+	device: &VkDevice,
+	queue: &VkQueue,
+	command_buffer: &VkCommandBuffer,
+	command_pool: &VkCommandPool,
 )
 {
-	vkEndCommandBuffer(command_buffer);
+	vkEndCommandBuffer(*command_buffer);
 
 	let submit_info = 
 		VkSubmitInfo{
 			sType: VkStructureType::VK_STRUCTURE_TYPE_SUBMIT_INFO,
 			commandBufferCount: 1,
-			pCommandBuffers: &command_buffer,
+			pCommandBuffers: command_buffer,
 			waitSemaphoreCount: 0,
 			pWaitSemaphores: nullptr(),
 			signalSemaphoreCount: 0,
@@ -346,28 +360,31 @@ pub unsafe fn end_single_time_commands(
 			pNext: nullptr(),
 		};
 
-	vkQueueSubmit(vk_handle.graphics_queue, 1, &submit_info, nullptr());
-	vkQueueWaitIdle(vk_handle.graphics_queue);
+	vkQueueSubmit(*queue, 1, &submit_info, nullptr());
+	vkQueueWaitIdle(*queue);
 
-	vkFreeCommandBuffers(vk_handle.logical_device, vk_handle.command_pool.as_ref().unwrap().get_command_pool_ptr(), 1, &command_buffer);	
+	vkFreeCommandBuffers(*device, *command_pool, 1, command_buffer);	
 }
 
 pub unsafe fn begin_single_time_commands(
-	vk_handle: &VkHandle,
+	device: &VkDevice,
+	command_pool: &VkCommandPool,
 ) -> Result<VkCommandBuffer, String>
 {
 	let command_buffer_allocate_info = 
 		VkCommandBufferAllocateInfo{
 			sType: VkStructureType::VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
 			level: VkCommandBufferLevel::VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-			commandPool: vk_handle.command_pool.as_ref().unwrap().get_command_pool_ptr(),
+			// commandPool: vk_handle.command_pool.as_ref().unwrap().get_command_pool_ptr(),
+			commandPool: *command_pool,
 			commandBufferCount: 1,
 			pNext: nullptr(),
 		};
 
 	// let mut command_buffer = std::mem::zeroed();
 	let mut command_buffer = nullptr();
-	match vkAllocateCommandBuffers(vk_handle.logical_device, &command_buffer_allocate_info, &mut command_buffer)
+	// match vkAllocateCommandBuffers(vk_handle.logical_device, &command_buffer_allocate_info, &mut command_buffer)
+	match vkAllocateCommandBuffers(*device, &command_buffer_allocate_info, &mut command_buffer)
 	{
 		VkResult::VK_SUCCESS => {}
 		err => { return Err(format!("vkAllocateCommandBuffers failed with code {:?}", err))}
