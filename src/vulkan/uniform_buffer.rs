@@ -51,7 +51,8 @@ pub unsafe fn create_uniform_buffers<T>(
 	{
 		let (buffer, buffer_memory) = 
 			create_buffer(
-				vk_handle, 
+				&vk_handle.logical_device,
+				&vk_handle.physical_device, 
 				buffer_size,
 				VkBufferUsageFlagBits::VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT as u32, 
 				VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT as u32 | 
@@ -82,7 +83,7 @@ pub unsafe fn create_uniform_buffers<T>(
 
 	let out_descriptor_sets = 
 		create_descriptor_sets(
-			&vk_handle, 
+			&vk_handle.logical_device,
 			&vk_handle.global_descriptor_pool_ubo, 
 			&vk_handle.global_descriptor_set_layout_ubo, 
 			out_uniform_buffers.len()

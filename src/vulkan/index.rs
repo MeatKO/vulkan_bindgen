@@ -22,7 +22,8 @@ pub unsafe fn create_index_buffer<IndexSize>(
 	
 	let (staging_buffer, staging_buffer_memory) = 
 		match create_buffer(
-				vk_handle, 
+				&vk_handle.logical_device,
+				&vk_handle.physical_device, 
 				buffer_size as u64,
 				VkBufferUsageFlagBits::VK_BUFFER_USAGE_TRANSFER_SRC_BIT as u32,
 				VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT as u32 |
@@ -41,7 +42,8 @@ pub unsafe fn create_index_buffer<IndexSize>(
 
 	let (buffer, buffer_memory) = 
 		match create_buffer(
-			vk_handle, 
+			&vk_handle.logical_device,
+			&vk_handle.physical_device, 
 			buffer_size as u64,
 			VkBufferUsageFlagBits::VK_BUFFER_USAGE_TRANSFER_DST_BIT as u32 |
 			VkBufferUsageFlagBits::VK_BUFFER_USAGE_INDEX_BUFFER_BIT as u32,

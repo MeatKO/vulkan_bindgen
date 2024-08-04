@@ -8,12 +8,13 @@ use crate::pixcell::error::*;
 use crate::pixcell::image::GenericImage;
 use crate::pixcell::tga::TGAImage;
 use crate::vulkan::handle::VkHandle;
+use crate::vulkan::physical_device;
 use crate::vulkan::texture::create_texture_image;
 use crate::vulkan::texture_view::{create_texture_image_view, create_texture_sampler};
 use crate::vulkan::vk_bindgen::{
-	VkImage,
-	VkDeviceMemory, VkImageView, VkSampler, VkFormat,
+	VkDevice, VkDeviceMemory, VkFormat, VkImage, VkImageView, VkPhysicalDevice, VkQueue, VkSampler
 };
+use crate::vulkan::wrappers::vk_command_pool::CommandPool;
 
 #[derive(Debug)]
 pub struct Texture<T>(T);
@@ -100,13 +101,38 @@ impl Texture<LoadedTexture>
 	// Change this to later incorporate additional RGB & RGBA checks, not all input images are equal...
 	// None of this is error-handled btw ?
 	// pub fn process_vk(self, vk_handle: &VkHandle, in_vk_format: VkFormat) -> Result<Texture<VulkanTexture>, String>
-	pub fn process_vk(self, vk_handle: &VkHandle, vk_format: VkFormat) -> Result<Texture<VulkanTexture>, String>
+	pub fn process_vk(
+		self, 
+		// vk_handle: &VkHandle, 
+		device: &VkDevice,
+		physical_device: &VkPhysicalDevice,
+		transfer_queue: &VkQueue,
+		command_pool: &CommandPool,
+		vk_format: VkFormat
+	) -> Result<Texture<VulkanTexture>, String>
 	{
 		unsafe
 		{
-			let (texture_image, texture_image_memory) = create_texture_image(&vk_handle, &self.image, vk_format)?;
-			let texture_image_view = create_texture_image_view(&vk_handle, &texture_image, vk_format);
-			let texture_sampler = create_texture_sampler(&vk_handle).unwrap();
+			let (texture_image, texture_image_memory) = 
+				create_texture_image(
+					device,
+					physical_device,
+					transfer_queue,
+					&command_pool.get_command_pool_ptr(),
+					&self.image, 
+					vk_format
+				)?;
+			let texture_image_view = 
+				create_texture_image_view(
+					device, 
+					&texture_image, 
+					vk_format
+				)?;
+			let texture_sampler = 
+				create_texture_sampler(
+					device, 
+					physical_device
+				)?;
 
 			Ok(
 				Texture (

@@ -38,14 +38,18 @@ impl ImageLayoutTransition
 }
 
 pub unsafe fn create_texture_image(
-	vk_handle: &VkHandle,
+	device: &VkDevice,
+	physical_device: &VkPhysicalDevice,
+	transfer_queue: &VkQueue,
+	command_pool: &VkCommandPool,
 	image: &GenericImage,
 	vk_format: VkFormat,
 ) -> Result<(VkImage, VkDeviceMemory), String>
 {
 	let (staging_buffer, staging_buffer_memory) = 
 		match create_buffer(
-				vk_handle, 
+				device,
+				physical_device,
 				image.get_byte_size() as u64,
 				VkBufferUsageFlagBits::VK_BUFFER_USAGE_TRANSFER_SRC_BIT as u32,
 				VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT as u32 |
@@ -57,14 +61,14 @@ pub unsafe fn create_texture_image(
 		};
 
 	let mut data = nullptr();
-	vkMapMemory(vk_handle.logical_device, staging_buffer_memory, 0, image.get_byte_size() as u64, 0, &mut data);
+	vkMapMemory(*device, staging_buffer_memory, 0, image.get_byte_size() as u64, 0, &mut data);
 	std::ptr::copy_nonoverlapping(image.get_data_u8_ptr(), data as _, image.get_byte_size());
-	vkUnmapMemory(vk_handle.logical_device, staging_buffer_memory);
+	vkUnmapMemory(*device, staging_buffer_memory);
 
 	let (vk_image, vk_image_memory) = 
 		create_image(
-			&vk_handle.logical_device,
-			&vk_handle.physical_device,
+			device,
+			physical_device,
 			image.get_dimensions().width,
 			image.get_dimensions().height,
 			// VkFormat::VK_FORMAT_R8G8B8A8_SRGB,
@@ -76,9 +80,10 @@ pub unsafe fn create_texture_image(
 		)?;
 
 	transition_image_layout(
-		&vk_handle.logical_device, 
-		&vk_handle.command_pool.as_ref().unwrap().get_command_pool_ptr(),
-		&vk_handle.graphics_queue,
+		device, 
+		// &vk_handle.graphics_queue,
+		transfer_queue,
+		command_pool,
 		vk_format,
 		vk_image, 
 		VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED, 
@@ -86,26 +91,26 @@ pub unsafe fn create_texture_image(
 	);
 
 	copy_buffer_to_image(
-		&vk_handle.logical_device, 
-		&vk_handle.graphics_queue, 
-		&vk_handle.command_pool.as_ref().unwrap().get_command_pool_ptr(), 
+		device, 
+		transfer_queue,
+		command_pool,
 		staging_buffer, 
 		vk_image, 
 		image.get_dimensions().width as u32, 
 		image.get_dimensions().height as u32
 	);
 	transition_image_layout(
-		&vk_handle.logical_device, 
-		&vk_handle.command_pool.as_ref().unwrap().get_command_pool_ptr(),
-		&vk_handle.graphics_queue,
+		device, 
+		transfer_queue,
+		command_pool,
 		vk_format,
 		vk_image, 
 		VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 
 		VkImageLayout::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
 	);
 
-	vkDestroyBuffer(vk_handle.logical_device, staging_buffer, nullptr());
-	vkFreeMemory(vk_handle.logical_device, staging_buffer_memory, nullptr());
+	vkDestroyBuffer(*device, staging_buffer, nullptr());
+	vkFreeMemory(*device, staging_buffer_memory, nullptr());
 
 	Ok((vk_image, vk_image_memory))
 }
@@ -181,18 +186,15 @@ pub unsafe fn create_image(
 }
 
 pub unsafe fn transition_image_layout(
-	// vk_handle: &VkHandle,
 	device: &VkDevice,
-	command_pool: &VkCommandPool,
 	queue: &VkQueue,
+	command_pool: &VkCommandPool,
 	format: VkFormat,
 	image: VkImage,
 	old_layout: VkImageLayout,
 	new_layout: VkImageLayout
 )
 {
-	// let command_buffer = begin_single_time_commands(vk_handle).unwrap();
-	// let command_buffer = begin_single_time_commands(device, vk_handle.command_pool.as_ref().unwrap().get_command_pool_ptr()).unwrap();
 	let command_buffer = begin_single_time_commands(device, command_pool).unwrap();
 
 	let mut barrier = 

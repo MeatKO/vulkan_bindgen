@@ -34,7 +34,16 @@ pub unsafe fn recreate_swapchain(vk_handle: &mut VkHandle)
 	vk_handle.depth_image = image;
 	vk_handle.depth_image_memory = image_memory;
 	vk_handle.depth_image_view = depth_image_view;
-	create_framebuffers(vk_handle);
+
+	let swapchain_framebuffers = 
+			create_framebuffers(
+				&vk_handle.logical_device,
+				&vk_handle.swapchain_image_views_vec,
+				&vk_handle.depth_image_view,
+				&vk_handle.render_pass,
+				&vk_handle.swapchain_extent,
+			);
+		vk_handle.swapchain_framebuffers = swapchain_framebuffers;
 }
 
 pub unsafe fn cleanup_swapchain(vk_handle: &VkHandle)
@@ -157,7 +166,7 @@ pub unsafe fn create_swapchain_image_views(vk_handle: &mut VkHandle)
 				&swapchain_images_vec[i],
 				vk_handle.surface_format.format, 
 				VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT as u32,
-			);
+			).unwrap();
 	}
 }
 

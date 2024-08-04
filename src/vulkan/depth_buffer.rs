@@ -27,17 +27,17 @@ pub unsafe fn create_depth_buffer(
 
 	let depth_image_view = 
 		create_image_view(
-			device, 
-			// &vk_handle.depth_image,
+			device,
 			&image,
 			depth_format, 
 			VkImageAspectFlagBits::VK_IMAGE_ASPECT_DEPTH_BIT as u32
-		);
+		)
+		.unwrap();
 
 	transition_image_layout(
 		device,
-		command_pool,
 		queue,
+		command_pool,
 		depth_format,
 		image, 
 		VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED, 

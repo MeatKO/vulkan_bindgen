@@ -1,6 +1,6 @@
 use std::{cmp::min, ptr::null_mut as nullptr, thread::sleep, time::Duration};
 
-use crate::{detail_core::window::create_vulkan_surface, ffi::strings::{from_c_string, from_c_string_ptr, to_c_string}, main, vulkan::{c_macros::{vk_make_api_version, vk_make_version}, command_pool, physical_device, pipeline::create_pipeline, swapchain::{choose_swap_extent, choose_swap_present_mode, choose_swap_surface_format, query_swapchain_support}, texture_view::create_image_view, vertex::Vertex, vk_bindgen::{vkCreateDevice, vkCreateSwapchainKHR, vkEnumeratePhysicalDevices, vkGetDeviceQueue, vkGetPhysicalDeviceMemoryProperties, vkGetPhysicalDeviceProperties, vkGetPhysicalDeviceQueueFamilyProperties, vkGetSwapchainImagesKHR, PFN_vkCmdSetLogicOpEnableEXT, VkApplicationInfo, VkCommandPoolCreateFlagBits, VkCompositeAlphaFlagBitsKHR, VkDescriptorType, VkDeviceCreateInfo, VkDeviceQueueCreateInfo, VkImage, VkImageAspectFlagBits, VkImageUsageFlagBits, VkImageView, VkInstance, VkInstanceCreateFlagBits, VkInstanceCreateInfo, VkPhysicalDevice, VkPhysicalDeviceFeatures, VkPhysicalDeviceProperties, VkPhysicalDeviceType, VkPolygonMode, VkQueueFlagBits, VkSharingMode, VkStructureType, VkSwapchainCreateInfoKHR, VK_TRUE}, wrappers::{vk_command_pool::CommandPoolBuilder, vk_descriptor_layout::VkDescriptorLayoutBuilder, vk_descriptor_pool::VkDescriptorPoolBuilder}}};
+use crate::{detail_core::{texture::texture::{Texture, VulkanTexture}, window::create_vulkan_surface}, ffi::strings::{from_c_string, from_c_string_ptr, to_c_string}, main, vulkan::{c_macros::{vk_make_api_version, vk_make_version}, command_pool, depth_buffer::create_depth_buffer, descriptor_set::create_descriptor_sets, framebuffer::create_framebuffers, physical_device, pipeline::create_pipeline, swapchain::{choose_swap_extent, choose_swap_present_mode, choose_swap_surface_format, query_swapchain_support}, synchronization::create_synchronization_structures, texture_view::create_image_view, vertex::Vertex, vk_bindgen::{vkCreateDevice, vkCreateSwapchainKHR, vkEnumeratePhysicalDevices, vkGetDeviceQueue, vkGetPhysicalDeviceMemoryProperties, vkGetPhysicalDeviceProperties, vkGetPhysicalDeviceQueueFamilyProperties, vkGetSwapchainImagesKHR, vkUpdateDescriptorSets, PFN_vkCmdSetLogicOpEnableEXT, VkApplicationInfo, VkCommandPoolCreateFlagBits, VkCompositeAlphaFlagBitsKHR, VkDescriptorImageInfo, VkDescriptorType, VkDeviceCreateInfo, VkDeviceQueueCreateInfo, VkFormat, VkImage, VkImageAspectFlagBits, VkImageLayout, VkImageUsageFlagBits, VkImageView, VkInstance, VkInstanceCreateFlagBits, VkInstanceCreateInfo, VkPhysicalDevice, VkPhysicalDeviceFeatures, VkPhysicalDeviceProperties, VkPhysicalDeviceType, VkPolygonMode, VkQueueFlagBits, VkSharingMode, VkStructureType, VkSwapchainCreateInfoKHR, VkWriteDescriptorSet, VK_TRUE}, wrappers::{vk_command_buffer::CommandBufferBuilder, vk_command_pool::CommandPoolBuilder, vk_descriptor_layout::VkDescriptorLayoutBuilder, vk_descriptor_pool::VkDescriptorPoolBuilder}}};
 
 use crate::vulkan::shader::create_shader_module;
 use crate::vulkan::vk_bindgen::vkCreateInstance;
@@ -209,6 +209,7 @@ pub unsafe fn init_everything()
 			|current_swapchain_image|
 			{
 				create_image_view(&device, current_swapchain_image, surface_format.format, VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT as u32)
+				.unwrap()
 			}
 		)
 		.collect::<Vec<VkImageView>>();
@@ -227,16 +228,26 @@ pub unsafe fn init_everything()
 		.add_binding(VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
 		.build(device)
 		.unwrap();
-
+	
 	let descriptor_pool_ubo =
 		VkDescriptorPoolBuilder::new()
 		.add_pool_type(VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 10000)
 		.build(device, 10000)
 		.unwrap();
-
-	let descriptor_set_layout = 
+	let descriptor_pool_sampler =
+		VkDescriptorPoolBuilder::new()
+		.add_pool_type(VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 10000)
+		.build(device, 10000)
+		.unwrap();
+	
+	let descriptor_set_layout_ubo = 
 		VkDescriptorLayoutBuilder::new()
 		.add_binding(VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
+		.build(device)
+		.unwrap();
+	let descriptor_set_layout_sampler = 
+		VkDescriptorLayoutBuilder::new()
+		.add_binding(VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
 		.build(device)
 		.unwrap();
 
@@ -262,11 +273,89 @@ pub unsafe fn init_everything()
 			VkPolygonMode::VK_POLYGON_MODE_FILL, 
 			true,
 			vec![
-				descriptor_set_layout
+				descriptor_set_layout_sampler
 			]
 		);
 
+	let (image, image_memory, depth_image_view) = 
+		create_depth_buffer(
+			&device,	
+			&picked_device,
+			&command_pool_graphics.get_command_pool_ptr(),
+			&graphics_queue,
+			&swapchain_extent,
+		);
+
+	let swapchain_framebuffers = 
+		create_framebuffers(
+			&device,
+			&swapchain_image_views,
+			&depth_image_view,
+			&render_pass,
+			&swapchain_extent,
+		);
+
+	let frames_in_flight = 3usize;
+
+	let (image_available_semaphore_vec, rendering_finished_semaphore_vec, in_flight_fence_vec) = 
+		create_synchronization_structures(&device, frames_in_flight)
+		.unwrap();
+
+	let command_buffer_graphics =
+		CommandBufferBuilder::new()
+		.with_command_pool(&command_pool_graphics)
+		.with_count(frames_in_flight)
+		.build(&device)
+		.unwrap();
+
+	let default_albedo_map: Texture<VulkanTexture> = 
+		Texture::new("./detail/textures/test.tga".into())
+		.load()
+		.unwrap()
+		.process_vk(
+			&device,
+			&picked_device,
+			&graphics_queue,
+			&command_pool_graphics,
+			VkFormat::VK_FORMAT_R8G8B8A8_SRGB
+		)
+		.unwrap();
+
+	let albedo_image_info = 
+		VkDescriptorImageInfo {
+			imageLayout: VkImageLayout::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			imageView: default_albedo_map.texture_image_view,
+			sampler: default_albedo_map.texture_sampler
+		};
 	
+	let single_albedo_map_descriptor_set = 
+		unsafe 
+		{
+			create_descriptor_sets(
+				&device, 
+				&descriptor_pool_ubo, 
+				&descriptor_set_layout_sampler, 
+				1
+			).unwrap()
+		};
+
+	let descriptor_writes = 
+		vec![
+			VkWriteDescriptorSet {
+				sType: VkStructureType::VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+				dstSet: single_albedo_map_descriptor_set[0],
+				dstBinding: 0,
+				dstArrayElement: 0,
+				descriptorType: VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+				descriptorCount: 1,
+				pBufferInfo: nullptr(),
+				pImageInfo: &albedo_image_info,
+				pTexelBufferView: nullptr(),
+				pNext: nullptr()
+			},
+		];
+
+	vkUpdateDescriptorSets(device, descriptor_writes.len() as _, descriptor_writes.as_ptr(), 0, nullptr());
 }
 
 pub unsafe fn pick_best_device(instance: VkInstance) -> Option<VkPhysicalDevice>

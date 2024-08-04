@@ -43,9 +43,9 @@ impl<'a> CommandBufferBuilder<'a>
 		self
 	}
 
-	pub fn with_count(mut self, in_command_buffer_count: u32) -> CommandBufferBuilder<'a>
+	pub fn with_count(mut self, in_command_buffer_count: usize) -> CommandBufferBuilder<'a>
 	{
-		self.allocate_info.commandBufferCount = in_command_buffer_count;
+		self.allocate_info.commandBufferCount = in_command_buffer_count as u32;
 		self
 	}
 

@@ -19,7 +19,7 @@ impl VulkanBuffer
 	{
 		unsafe
 		{
-			let (buffer, memory) = create_buffer(vk_handle, byte_size, buffer_usage_flags, properties)?;
+			let (buffer, memory) = create_buffer(&vk_handle.logical_device, &vk_handle.physical_device, byte_size, buffer_usage_flags, properties)?;
 			Ok(VulkanBuffer{buffer, memory})
 		}
 	}

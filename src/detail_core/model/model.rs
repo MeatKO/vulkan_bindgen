@@ -109,12 +109,16 @@ impl Model<ModelDescriptor>
 				{
 					Ok(loaded_texture) => 
 					{
-						loaded_texture.process_vk(vk_handle, VkFormat::VK_FORMAT_R8G8B8A8_SRGB).unwrap()
-						// loaded_texture.process_vk(vk_handle, VkFormat::VK_FORMAT_B8G8R8A8_SRGB).unwrap()
+						loaded_texture.process_vk(
+							&vk_handle.logical_device,
+							&vk_handle.physical_device,
+							&vk_handle.graphics_queue,
+							&vk_handle.command_pool.as_ref().unwrap(),
+							VkFormat::VK_FORMAT_R8G8B8A8_SRGB
+						).unwrap()
 					}
 					Err(err) => 
-					{ 
-						// return Err(ModelLoadError::TextureLoadingError(material.albedo_path.clone(), err.to_string())); 
+					{
 						material_defaults.albedo_map.clone()
 					}
 				};
@@ -124,7 +128,13 @@ impl Model<ModelDescriptor>
 				{
 					Ok(loaded_texture) => 
 					{
-						loaded_texture.process_vk(vk_handle, VkFormat::VK_FORMAT_R8G8B8A8_UNORM).unwrap()
+						loaded_texture.process_vk(
+							&vk_handle.logical_device,
+							&vk_handle.physical_device,
+							&vk_handle.graphics_queue,
+							&vk_handle.command_pool.as_ref().unwrap(),
+							VkFormat::VK_FORMAT_R8G8B8A8_UNORM
+						).unwrap()
 					}
 					,
 					Err(err) => 
@@ -135,7 +145,17 @@ impl Model<ModelDescriptor>
 				};
 
 			let descriptor_set_layout = vk_handle.global_descriptor_set_layout_material;
-			let descriptor_set_vec = unsafe { create_descriptor_sets(vk_handle, &vk_handle.global_descriptor_pool_material, &descriptor_set_layout, 1).unwrap() };
+			let descriptor_set_vec = 
+				unsafe 
+				{ 
+					create_descriptor_sets(
+						&vk_handle.logical_device, 
+						&vk_handle.global_descriptor_pool_material, 
+						&descriptor_set_layout, 
+						1
+					)
+					.unwrap() 
+				};
 
 			unsafe { update_descriptor_sets(vk_handle, &descriptor_set_vec, &albedo_texture, &normal_texture).unwrap(); }
 
@@ -270,7 +290,10 @@ impl VulkanModel
 						{
 							loaded_texture
 							.process_vk(
-								vk_handle, 
+								&vk_handle.logical_device,
+								&vk_handle.physical_device,
+								&vk_handle.graphics_queue,
+								&vk_handle.command_pool.as_ref().unwrap(),
 								VkFormat::VK_FORMAT_R8G8B8A8_SRGB
 							)
 							?
@@ -288,7 +311,10 @@ impl VulkanModel
 						{
 							loaded_texture
 							.process_vk(
-								vk_handle, 
+								&vk_handle.logical_device,
+								&vk_handle.physical_device,
+								&vk_handle.graphics_queue,
+								&vk_handle.command_pool.as_ref().unwrap(),
 								VkFormat::VK_FORMAT_R8G8B8A8_UNORM
 							)
 							?
@@ -309,7 +335,7 @@ impl VulkanModel
 
 				let descriptor_sets = 
 					create_descriptor_sets(
-						&vk_handle, 
+						&vk_handle.logical_device, 
 						&vk_handle.global_descriptor_pool_material, 
 						&vk_handle.global_descriptor_set_layout_material, 
 						1

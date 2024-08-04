@@ -10,7 +10,7 @@ use std::ptr::null_mut as nullptr;
 use super::wrappers::vk_descriptor_layout::VkDescriptorLayoutBuilder;
 
 pub unsafe fn create_descriptor_sets(
-	vk_handle: &VkHandle,
+	device: &VkDevice,
 	descriptor_pool: &VkDescriptorPool,
 	descriptor_set_layout: &VkDescriptorSetLayout,
 	count: usize
@@ -35,7 +35,6 @@ pub unsafe fn create_descriptor_sets(
 		VkDescriptorSetAllocateInfo {
 			sType: VkStructureType::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
 			descriptorPool: *descriptor_pool,
-			// descriptorSetCount: vk_handle.frames_in_flight as u32,
 			descriptorSetCount: layouts.len() as u32,
 			pSetLayouts: layouts.as_ptr(),
 			pNext: nullptr()
@@ -43,15 +42,14 @@ pub unsafe fn create_descriptor_sets(
 
 	let mut out_descriptor_sets = 
 		vec![
-			nullptr(); 
-			// vk_handle.frames_in_flight // size
+			nullptr();
 			layouts.len()
 		];
 
-	match vkAllocateDescriptorSets(vk_handle.logical_device, &descriptor_set_allocate_info, out_descriptor_sets.as_mut_ptr())
+	match vkAllocateDescriptorSets(*device, &descriptor_set_allocate_info, out_descriptor_sets.as_mut_ptr())
 	{
-		VkResult::VK_SUCCESS => { println!("✔️ vkAllocateDescriptorSets()"); }
-		err => { panic!("✗ vkAllocateDescriptorSets() failed with code {:?}.", err); }
+		VkResult::VK_SUCCESS => { }
+		err => { return Err(format!("✗ vkAllocateDescriptorSets() failed with code {:?}.", err)); }
 	}
 
 	Ok(out_descriptor_sets)

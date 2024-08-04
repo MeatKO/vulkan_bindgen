@@ -37,8 +37,12 @@ use crate::vulkan::handle::VkHandle;
 
 use std::ptr::null_mut as nullptr;
 
+use super::vk_bindgen::{VkDevice, VkPhysicalDevice};
+
 pub unsafe fn create_buffer(
-	vk_handle: &VkHandle,
+	// vk_handle: &VkHandle,
+	device: &VkDevice,
+	physical_device: &VkPhysicalDevice,
 	byte_size: VkDeviceSize, 
 	buffer_usage_flags: VkBufferUsageFlags, 
 	properties: VkMemoryPropertyFlags,
@@ -55,27 +59,27 @@ pub unsafe fn create_buffer(
 		pNext: nullptr(),
 	};
 
-	let buffer = vk_create_buffer(vk_handle.logical_device, &buffer_create_info)?;
+	let buffer = vk_create_buffer(*device, &buffer_create_info)?;
 
 	// move this shit out of here, create a physical device wrapper containing these
 	let mut memory_requirements: VkMemoryRequirements = std::mem::zeroed();
-	vkGetBufferMemoryRequirements(vk_handle.logical_device, buffer, &mut memory_requirements);
+	vkGetBufferMemoryRequirements(*device, buffer, &mut memory_requirements);
 
 	let memory_allocate_info = 
 		VkMemoryAllocateInfo{
 			sType: VkStructureType::VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
 			allocationSize: memory_requirements.size,
 			memoryTypeIndex: find_memory_type(
-				vk_handle.physical_device, 
+				*physical_device, 
 				memory_requirements.memoryTypeBits, 
 				properties
 			).unwrap(), // handle this later !
 			pNext: nullptr(),
 		};
 
-	let buffer_memory = vk_allocate_memory(vk_handle.logical_device, &memory_allocate_info)?;
+	let buffer_memory = vk_allocate_memory(*device, &memory_allocate_info)?;
 
-	vkBindBufferMemory(vk_handle.logical_device, buffer, buffer_memory, 0);
+	vkBindBufferMemory(*device, buffer, buffer_memory, 0);
 
 	return Ok((buffer, buffer_memory))
 }

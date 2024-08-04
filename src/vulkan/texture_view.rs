@@ -1,17 +1,15 @@
 use crate::vulkan::vk_bindgen::*;
-use crate::vulkan::handle::*;
 use std::ptr::null_mut as nullptr;
 
 pub unsafe fn create_texture_image_view(
-	vk_handle: &VkHandle,
+	device: &VkDevice,
 	texture_image: &VkImage,
 	vk_format: VkFormat,
-) -> VkImageView
+) -> Result<VkImageView, String>
 {
 	create_image_view(
-		&vk_handle.logical_device, 
+		device, 
 		texture_image,
-		// VkFormat::VK_FORMAT_R8G8B8A8_SRGB, 
 		vk_format,
 		VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT as u32
 	)
@@ -22,7 +20,8 @@ pub unsafe fn create_image_view(
 	image: &VkImage,
 	format: VkFormat,
 	aspect_flags: VkImageAspectFlags,
-) -> VkImageView
+// ) -> VkImageView
+) -> Result<VkImageView, String>
 {
 	let image_view_create_info = 
 		VkImageViewCreateInfo {
@@ -50,20 +49,21 @@ pub unsafe fn create_image_view(
 	let mut image_view: VkImageView = nullptr();
 	match vkCreateImageView(*device, &image_view_create_info, nullptr(), &mut image_view)
 	{
-		VkResult::VK_SUCCESS => { println!("✔️ vkCreateImageView()"); }
-		err => { panic!("✗ vkCreateImageView() failed with code {:?}.", err); }
+		// VkResult::VK_SUCCESS => { println!("✔️ vkCreateImageView()"); }
+		VkResult::VK_SUCCESS => {}
+		err => { return Err(format!("✗ vkCreateImageView() failed with code {:?}.", err).to_owned()); }
 	}	
 
-	return image_view
+	return Ok(image_view)
 }
 
 pub unsafe fn create_texture_sampler(
-	vk_handle: &VkHandle,
-	// model: &mut Model
+	device: &VkDevice,
+	physical_device: &VkPhysicalDevice,
 ) -> Result<VkSampler, String>
 {
 	let mut physical_device_properties: VkPhysicalDeviceProperties = std::mem::zeroed();
-	vkGetPhysicalDeviceProperties(vk_handle.physical_device, &mut physical_device_properties);
+	vkGetPhysicalDeviceProperties(*physical_device, &mut physical_device_properties);
 
 	let sampler_create_info = 
 		VkSamplerCreateInfo {
@@ -91,7 +91,7 @@ pub unsafe fn create_texture_sampler(
 		};
 
 	let mut texture_sampler = nullptr();
-	match vkCreateSampler(vk_handle.logical_device, &sampler_create_info, nullptr(), &mut texture_sampler)
+	match vkCreateSampler(*device, &sampler_create_info, nullptr(), &mut texture_sampler)
 	{
 		VkResult::VK_SUCCESS => 
 		{
@@ -101,7 +101,7 @@ pub unsafe fn create_texture_sampler(
 		{ 
 			Err(
 				format!("vkCreateSampler Failed With Code '{:?}'. logical_device_pointer:{:p} sampler_create_info_pointer:{:p}", 
-				error_code, vk_handle.logical_device, &sampler_create_info).to_owned()
+				error_code, *device, &sampler_create_info).to_owned()
 			)
 		}
 	}	

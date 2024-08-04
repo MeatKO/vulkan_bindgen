@@ -47,7 +47,10 @@ pub fn init_rendering_assets()
 		.load()
 		.unwrap()
 		.process_vk(
-			&vk_handle, 
+			&vk_handle.logical_device,
+			&vk_handle.physical_device,
+			&vk_handle.graphics_queue,
+			&vk_handle.command_pool.as_ref().unwrap(),
 			VkFormat::VK_FORMAT_R8G8B8A8_UNORM
 		)
 		.unwrap();
@@ -57,7 +60,10 @@ pub fn init_rendering_assets()
 		.load()
 		.unwrap()
 		.process_vk(
-			&vk_handle, 
+			&vk_handle.logical_device,
+			&vk_handle.physical_device,
+			&vk_handle.graphics_queue,
+			&vk_handle.command_pool.as_ref().unwrap(),
 			VkFormat::VK_FORMAT_R8G8B8A8_SRGB
 		)
 		.unwrap();
@@ -66,7 +72,7 @@ pub fn init_rendering_assets()
 		unsafe 
 		{
 			create_descriptor_sets(
-				&vk_handle, 
+				&vk_handle.logical_device, 
 				&vk_handle.global_descriptor_pool_material, 
 				&vk_handle.global_descriptor_set_layout_material, 
 				1
@@ -346,11 +352,27 @@ pub fn init_buffer_objects()
 		vk_handle.depth_image = image;
 		vk_handle.depth_image_memory = image_memory;
 		vk_handle.depth_image_view = depth_image_view;
-		create_framebuffers(vk_handle);
+		
+		let swapchain_framebuffers = 
+			create_framebuffers(
+				&vk_handle.logical_device,
+				&vk_handle.swapchain_image_views_vec,
+				&vk_handle.depth_image_view,
+				&vk_handle.render_pass,
+				&vk_handle.swapchain_extent,
+			);
+		vk_handle.swapchain_framebuffers = swapchain_framebuffers;
 
-		create_synchronization_structures(vk_handle);
+		// create_synchronization_structures(vk_handle);
+		let (image_available_semaphore_vec, rendering_finished_semaphore_vec, in_flight_fence_vec) = 
+			create_synchronization_structures(&vk_handle.logical_device, vk_handle.frames_in_flight)
+			.unwrap();
 
-		let command_buffer_count = vk_handle.frames_in_flight as u32;
+		vk_handle.image_available_semaphore_vec = image_available_semaphore_vec;
+		vk_handle.rendering_finished_semaphore_vec = rendering_finished_semaphore_vec;
+		vk_handle.in_flight_fence_vec = in_flight_fence_vec;
+
+		let command_buffer_count = vk_handle.frames_in_flight;
 
 		{
 			let command_buffer_graphics =
