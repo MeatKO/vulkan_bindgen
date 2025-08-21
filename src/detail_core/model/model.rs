@@ -243,11 +243,23 @@ unsafe fn create_geometry_buffers(vk_handle: &VkHandle, model_descriptor: &Model
 	}
 
 	let (vertex_buffer, vertex_buffer_memory) =
-		create_vertex_buffer(&vk_handle, &mut vertex_vec)
+		create_vertex_buffer(
+			&vk_handle.logical_device, 
+			&vk_handle.physical_device, 
+			&vk_handle.command_pool.as_ref().unwrap().get_command_pool_ptr(), 
+			&vk_handle.graphics_queue, 
+			&mut vertex_vec
+		)
 		.unwrap();
 
 	let (index_buffer, index_buffer_memory) =
-		create_index_buffer(&vk_handle, &mut index_vec)
+		create_index_buffer(
+			&vk_handle.logical_device, 
+			&vk_handle.physical_device, 
+			&vk_handle.command_pool.as_ref().unwrap().get_command_pool_ptr(), 
+			&vk_handle.graphics_queue,
+			&mut index_vec
+		)
 		.unwrap();
 
 	return Ok(
@@ -441,11 +453,23 @@ impl VulkanModel
 				}
 
 				let (vertex_buffer, vertex_buffer_memory) =
-					create_vertex_buffer(&vk_handle, &mut vertex_vec)
+					create_vertex_buffer(
+						&vk_handle.logical_device, 
+						&vk_handle.physical_device, 
+						&vk_handle.command_pool.as_ref().unwrap().get_command_pool_ptr(), 
+						&vk_handle.graphics_queue, 
+						&mut vertex_vec
+					)
 					.unwrap();
 		
 				let (index_buffer, index_buffer_memory) =
-					create_index_buffer(&vk_handle, &mut index_vec)
+					create_index_buffer(
+						&vk_handle.logical_device, 
+						&vk_handle.physical_device, 
+						&vk_handle.command_pool.as_ref().unwrap().get_command_pool_ptr(), 
+						&vk_handle.graphics_queue,
+						&mut index_vec
+					)
 					.unwrap();
 
 				let mut mesh_data =

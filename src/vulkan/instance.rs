@@ -133,16 +133,17 @@ pub unsafe fn create_instance(vk_handle: &mut VkHandle)
 	};
 
 	// Instance
-	let mut instance_create_info = VkInstanceCreateInfo{
-		sType: VkStructureType::VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
-		pApplicationInfo: &application_info,
-		enabledExtensionCount: extension_names.len() as u32,
-		ppEnabledExtensionNames: extension_names.as_ptr(),
-		enabledLayerCount: 0,
-		ppEnabledLayerNames: nullptr(),
-		flags: 0,
-		pNext: nullptr()
-	};
+	let mut instance_create_info = 
+		VkInstanceCreateInfo{
+			sType: VkStructureType::VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
+			pApplicationInfo: &application_info,
+			enabledExtensionCount: extension_names.len() as u32,
+			ppEnabledExtensionNames: extension_names.as_ptr(),
+			enabledLayerCount: 0,
+			ppEnabledLayerNames: nullptr(),
+			flags: 0,
+			pNext: nullptr()
+		};
 	if vk_handle.enable_validation_layers
 	{
 		instance_create_info.enabledLayerCount = layer_names.len() as u32;

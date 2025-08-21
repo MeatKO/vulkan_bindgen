@@ -37,7 +37,7 @@ use crate::vulkan::handle::VkHandle;
 
 use std::ptr::null_mut as nullptr;
 
-use super::vk_bindgen::{VkDevice, VkPhysicalDevice};
+use super::vk_bindgen::{VkCommandPool, VkDevice, VkPhysicalDevice, VkQueue};
 
 pub unsafe fn create_buffer(
 	// vk_handle: &VkHandle,
@@ -85,22 +85,27 @@ pub unsafe fn create_buffer(
 }
 
 pub unsafe fn copy_buffer(
-	vk_handle: &VkHandle,
+	// vk_handle: &VkHandle,
+	device: &VkDevice,
+	command_pool: &VkCommandPool,
+	transfer_queue: &VkQueue,
 	source_buffer: VkBuffer,
 	destination_buffer: VkBuffer,
 	size: VkDeviceSize,
 ) -> Result<(), String>
 {
-	let command_buffer_allocate_info = VkCommandBufferAllocateInfo{
-		sType: VkStructureType::VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-		level: VkCommandBufferLevel::VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-		commandPool: vk_handle.command_pool.as_ref().unwrap().get_command_pool_ptr(),
-		commandBufferCount: 1,
-		pNext: nullptr(),
-	};
+	let command_buffer_allocate_info = 
+		VkCommandBufferAllocateInfo{
+			sType: VkStructureType::VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+			level: VkCommandBufferLevel::VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+			// commandPool: vk_handle.command_pool.as_ref().unwrap().get_command_pool_ptr(),
+			commandPool: command_pool.clone(),
+			commandBufferCount: 1,
+			pNext: nullptr(),
+		};
 
 	let mut command_buffer = std::mem::zeroed();
-	match vkAllocateCommandBuffers(vk_handle.logical_device, &command_buffer_allocate_info, &mut command_buffer)
+	match vkAllocateCommandBuffers(*device, &command_buffer_allocate_info, &mut command_buffer)
 	{
 		VkResult::VK_SUCCESS => {}
 		err => { return Err(format!("vkAllocateCommandBuffers failed with code {:?}", err))}
@@ -142,10 +147,10 @@ pub unsafe fn copy_buffer(
 			pNext: nullptr(),
 		};
 
-	vkQueueSubmit(vk_handle.graphics_queue, 1, &submit_info, nullptr());
-	vkQueueWaitIdle(vk_handle.graphics_queue);
+	vkQueueSubmit(*transfer_queue, 1, &submit_info, nullptr());
+	vkQueueWaitIdle(*transfer_queue);
 
-	vkFreeCommandBuffers(vk_handle.logical_device, vk_handle.command_pool.as_ref().unwrap().get_command_pool_ptr(), 1, &command_buffer);
+	vkFreeCommandBuffers(*device, *command_pool, 1, &command_buffer);
 
 	Ok(())
 }

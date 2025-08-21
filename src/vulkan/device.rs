@@ -192,6 +192,16 @@ pub unsafe fn pick_best_device(vk_handle: &VkHandle, physical_devices: Vec<*mut 
 		.sort_by(
 			|a, b|
 			{
+				// fokeng LLVM pipe with all the jiggabytes in the world was screwing up the memory heap comparison down
+				if a.1 == VkPhysicalDeviceType::VK_PHYSICAL_DEVICE_TYPE_CPU
+				{
+					return std::cmp::Ordering::Less;
+				}
+				if b.1 == VkPhysicalDeviceType::VK_PHYSICAL_DEVICE_TYPE_CPU
+				{
+					return std::cmp::Ordering::Greater;
+				}
+
 				if a.1 == VkPhysicalDeviceType::VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU 
 				&& b.1 == VkPhysicalDeviceType::VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU
 				{
@@ -201,9 +211,29 @@ pub unsafe fn pick_best_device(vk_handle: &VkHandle, physical_devices: Vec<*mut 
 				{
 					return std::cmp::Ordering::Greater;
 				}
+
 				return std::cmp::Ordering::Less;
 			}
 		);
+
+	println!("Device vec is : ");
+
+	for device in suitable_devices_vec.iter()
+	{
+		let mut device_properties = std::mem::zeroed();
+		vkGetPhysicalDeviceProperties(device.0, &mut device_properties);
+
+		// Hack to select the iGPU always
+		// nvidia drivers on ubuntu are complete ass shit fuck fufkc ufkc
+		if from_c_string(&device_properties.deviceName).unwrap().to_lowercase().contains("amd")
+		{
+			return Some(device.0);
+		}
+
+		println!("Name : {}", from_c_string(&device_properties.deviceName).unwrap());
+		println!("Type : {:?}", device.1);
+		println!("Max heap size : {}", device.2);
+	}
 	
 	return Some(suitable_devices_vec.last().expect("couldn't pick a device, the suitable_devices_vec was empty.").0);
 }

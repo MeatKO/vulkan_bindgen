@@ -56,11 +56,23 @@ impl VulkanMeshData
 		let (vertex_vec, index_vec) = AABB::new_empty().get_geometry();
 
 		let (vertex_buffer, vertex_buffer_memory) =
-			create_vertex_buffer(&vk_handle, &vertex_vec)
+			create_vertex_buffer(
+				&vk_handle.logical_device, 
+				&vk_handle.physical_device, 
+				&vk_handle.command_pool.as_ref().unwrap().get_command_pool_ptr(),
+				&vk_handle.graphics_queue,
+				&vertex_vec
+			)
 			.unwrap();
 
 		let (index_buffer, index_buffer_memory) =
-			create_index_buffer(&vk_handle, &index_vec)
+			create_index_buffer(
+				&vk_handle.logical_device, 
+				&vk_handle.physical_device, 
+				&vk_handle.command_pool.as_ref().unwrap().get_command_pool_ptr(), 
+				&vk_handle.graphics_queue,
+				&index_vec
+			)
 			.unwrap();
 
 		self.index_buffer = index_buffer;

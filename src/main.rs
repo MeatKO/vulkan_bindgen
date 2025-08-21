@@ -82,7 +82,7 @@ fn main()
 		.unwrap();
 
 	let window_entity = decs.create_entity();
-	decs.add_component(window_entity, StringComponent{ string : String::from("window") }).unwrap();
+	decs.add_component(window_entity, StringComponent{ string: String::from("window") }).unwrap();
 	decs.add_component(window_entity, WindowComponent{ window: window }).unwrap();
 
 	decs.modify_components_global::<VkHandle>(
@@ -96,7 +96,7 @@ fn main()
 	decs.init();
 
 	let global_vars = decs.create_entity();
-	decs.add_component(global_vars, StringComponent{ string : String::from("global_vars") }).unwrap();
+	decs.add_component(global_vars, StringComponent{ string: String::from("global_vars") }).unwrap();
 	decs.add_component(global_vars, GlobalVariables::new()).unwrap();
 	decs.add_component(global_vars, CameraRaycastObject{ state: CameraRaycastObjectState::None }).unwrap();
 

@@ -267,7 +267,6 @@ pub fn rendering_system4()
 				pNext: nullptr()
 			};
 
-
 		match vkDeviceWaitIdle(vk_handle.logical_device)
 		{
 			VkResult::VK_SUCCESS => {} 

@@ -1,10 +1,11 @@
 use std::{cmp::min, ptr::null_mut as nullptr, thread::sleep, time::Duration};
 
-use crate::{detail_core::{texture::texture::{Texture, VulkanTexture}, window::create_vulkan_surface}, ffi::strings::{from_c_string, from_c_string_ptr, to_c_string}, main, vulkan::{c_macros::{vk_make_api_version, vk_make_version}, command_pool, depth_buffer::create_depth_buffer, descriptor_set::create_descriptor_sets, framebuffer::create_framebuffers, physical_device, pipeline::create_pipeline, swapchain::{choose_swap_extent, choose_swap_present_mode, choose_swap_surface_format, query_swapchain_support}, synchronization::create_synchronization_structures, texture_view::create_image_view, vertex::Vertex, vk_bindgen::{vkCreateDevice, vkCreateSwapchainKHR, vkEnumeratePhysicalDevices, vkGetDeviceQueue, vkGetPhysicalDeviceMemoryProperties, vkGetPhysicalDeviceProperties, vkGetPhysicalDeviceQueueFamilyProperties, vkGetSwapchainImagesKHR, vkUpdateDescriptorSets, PFN_vkCmdSetLogicOpEnableEXT, VkApplicationInfo, VkCommandPoolCreateFlagBits, VkCompositeAlphaFlagBitsKHR, VkDescriptorImageInfo, VkDescriptorType, VkDeviceCreateInfo, VkDeviceQueueCreateInfo, VkFormat, VkImage, VkImageAspectFlagBits, VkImageLayout, VkImageUsageFlagBits, VkImageView, VkInstance, VkInstanceCreateFlagBits, VkInstanceCreateInfo, VkPhysicalDevice, VkPhysicalDeviceFeatures, VkPhysicalDeviceProperties, VkPhysicalDeviceType, VkPolygonMode, VkQueueFlagBits, VkSharingMode, VkStructureType, VkSwapchainCreateInfoKHR, VkWriteDescriptorSet, VK_TRUE}, wrappers::{vk_command_buffer::CommandBufferBuilder, vk_command_pool::CommandPoolBuilder, vk_descriptor_layout::VkDescriptorLayoutBuilder, vk_descriptor_pool::VkDescriptorPoolBuilder}}};
+use crate::{detail_core::{phys::aabb::AABB, texture::texture::{Texture, VulkanTexture}, window::create_vulkan_surface}, ffi::strings::{from_c_string, from_c_string_ptr, to_c_string}, main, vulkan::{c_macros::{vk_make_api_version, vk_make_version}, command_pool, depth_buffer::create_depth_buffer, descriptor_set::create_descriptor_sets, framebuffer::create_framebuffers, index::create_index_buffer, physical_device, pipeline::create_pipeline, swapchain::{choose_swap_extent, choose_swap_present_mode, choose_swap_surface_format, query_swapchain_support}, synchronization::create_synchronization_structures, texture_view::create_image_view, vertex::{create_vertex_buffer, Vertex}, vk_bindgen::{vkAcquireNextImageKHR, vkBeginCommandBuffer, vkCmdBeginRenderPass, vkCmdBindDescriptorSets, vkCmdBindIndexBuffer, vkCmdBindPipeline, vkCmdBindVertexBuffers, vkCmdDrawIndexed, vkCmdDrawIndirect, vkCmdEndRenderPass, vkCmdSetScissor, vkCmdSetViewport, vkCreateDevice, vkCreateSwapchainKHR, vkDeviceWaitIdle, vkEndCommandBuffer, vkEnumeratePhysicalDevices, vkGetDeviceQueue, vkGetPhysicalDeviceMemoryProperties, vkGetPhysicalDeviceProperties, vkGetPhysicalDeviceQueueFamilyProperties, vkGetSwapchainImagesKHR, vkQueuePresentKHR, vkQueueSubmit, vkResetFences, vkUpdateDescriptorSets, vkWaitForFences, PFN_vkCmdSetLogicOpEnableEXT, VkApplicationInfo, VkBuffer, VkClearDepthStencilValue, VkClearValue, VkCommandBufferBeginInfo, VkCommandPoolCreateFlagBits, VkCompositeAlphaFlagBitsKHR, VkDescriptorImageInfo, VkDescriptorType, VkDeviceCreateInfo, VkDeviceQueueCreateInfo, VkExtent2D, VkFormat, VkImage, VkImageAspectFlagBits, VkImageLayout, VkImageUsageFlagBits, VkImageView, VkIndexType, VkInstance, VkInstanceCreateFlagBits, VkInstanceCreateInfo, VkOffset2D, VkPhysicalDevice, VkPhysicalDeviceFeatures, VkPhysicalDeviceProperties, VkPhysicalDeviceType, VkPipelineBindPoint, VkPipelineStageFlagBits, VkPipelineStageFlags, VkPolygonMode, VkPresentInfoKHR, VkQueueFlagBits, VkRect2D, VkRenderPassBeginInfo, VkSharingMode, VkStructureType, VkSubmitInfo, VkSubpassContents, VkSwapchainCreateInfoKHR, VkViewport, VkWriteDescriptorSet, VK_TRUE}, wrappers::{vk_command_buffer::CommandBufferBuilder, vk_command_pool::CommandPoolBuilder, vk_descriptor_layout::VkDescriptorLayoutBuilder, vk_descriptor_pool::VkDescriptorPoolBuilder}}};
 
 use crate::vulkan::shader::create_shader_module;
 use crate::vulkan::vk_bindgen::vkCreateInstance;
 use crate::vulkan::vk_bindgen::VkResult;
+use crate::vulkan::vk_bindgen::VkClearColorValue;
 
 pub struct QueueFamilies
 {
@@ -328,7 +329,7 @@ pub unsafe fn init_everything()
 			sampler: default_albedo_map.texture_sampler
 		};
 	
-	let single_albedo_map_descriptor_set = 
+	let single_albedo_map_descriptor_set_vec = 
 		unsafe 
 		{
 			create_descriptor_sets(
@@ -343,7 +344,7 @@ pub unsafe fn init_everything()
 		vec![
 			VkWriteDescriptorSet {
 				sType: VkStructureType::VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-				dstSet: single_albedo_map_descriptor_set[0],
+				dstSet: single_albedo_map_descriptor_set_vec[0],
 				dstBinding: 0,
 				dstArrayElement: 0,
 				descriptorType: VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
@@ -356,6 +357,253 @@ pub unsafe fn init_everything()
 		];
 
 	vkUpdateDescriptorSets(device, descriptor_writes.len() as _, descriptor_writes.as_ptr(), 0, nullptr());
+
+	// draw call shit
+	// gotta submit the pipeline binds, pick a frame, bind descriptors, submit draw cmd, execute the cmd buffer
+
+	let mut current_frame = 0;
+
+	let (vertex_vec, index_vec) = AABB::new_empty().get_geometry();
+
+	let (vertex_buffer, vertex_buffer_memory) =
+		create_vertex_buffer(
+			&device, 
+			&picked_device, 
+			&command_pool_graphics.get_command_pool_ptr(),
+			&graphics_queue,
+			&vertex_vec,
+		)
+		.unwrap();
+
+	let (index_buffer, index_buffer_memory) =
+		create_index_buffer(
+			&device, 
+			&picked_device, 
+			&command_pool_graphics.get_command_pool_ptr(), 
+			&graphics_queue,
+			&index_vec,
+		)
+		.unwrap();
+
+
+	'draw_loop: loop
+	{
+		current_frame = (current_frame + 1) % 3;
+		let current_command_buffer_ptr = command_buffer_graphics[current_frame].get_command_buffer_ptr();
+
+		vkWaitForFences(device, 1, &in_flight_fence_vec[current_frame], VK_TRUE, u64::MAX);
+		vkResetFences(device, 1, &in_flight_fence_vec[current_frame]);
+
+		let mut image_index = 0u32;
+		match vkAcquireNextImageKHR(device, swapchain, u64::MAX, image_available_semaphore_vec[current_frame], nullptr(), &mut image_index)
+		{
+			VkResult::VK_SUCCESS => {}
+			// VkResult::VK_ERROR_OUT_OF_DATE_KHR => 
+			// {
+			// 	recreate_swapchain(vk_handle); 
+			// }
+			e => { panic!("vkAcquireNextImageKHR() resulted in {:?}", e) }
+		}
+
+		println!("current frame is : {}", current_frame);
+
+		let command_buffer_begin_info = 
+			VkCommandBufferBeginInfo {
+				sType: VkStructureType::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+				pNext: nullptr(),
+				flags: 0,
+				pInheritanceInfo: nullptr(),
+			};
+
+		vkBeginCommandBuffer(
+			current_command_buffer_ptr, 
+			&command_buffer_begin_info
+		)
+		.unwrap("vkBeginCommandBuffer");
+
+		let clear_values = 
+			vec![
+				VkClearValue{
+					color: VkClearColorValue { 
+						float32: [0.414f32, 0.0507f32, 0.6757f32, 1.0f32], // cool purple
+					}
+				},
+				VkClearValue{
+					depthStencil: VkClearDepthStencilValue { 
+						depth: 1.0f32,
+						stencil: 0,
+					}
+				},
+			];
+
+		let render_pass_begin_info =
+			VkRenderPassBeginInfo {
+				sType: VkStructureType::VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+				pNext: nullptr(),
+				renderPass: render_pass,
+				framebuffer: swapchain_framebuffers[current_frame],
+				renderArea: VkRect2D{
+					offset: VkOffset2D{ x: 0, y: 0 },
+					extent: swapchain_extent,
+				},
+				clearValueCount: clear_values.len() as u32,
+				pClearValues: clear_values.as_ptr(),
+			};
+		
+		vkCmdBeginRenderPass(
+			current_command_buffer_ptr, 
+			&render_pass_begin_info, 
+			VkSubpassContents::VK_SUBPASS_CONTENTS_INLINE
+		);
+
+		{
+			vkCmdBindPipeline(
+				current_command_buffer_ptr, 
+				VkPipelineBindPoint::VK_PIPELINE_BIND_POINT_GRAPHICS, 
+				pipeline
+			);
+	
+			let viewport = 
+				VkViewport{
+					x: 0.0f32,
+					y: 0.0f32,
+					width: swapchain_extent.width as _,
+					height: swapchain_extent.height as _,
+					minDepth: 0.0f32,
+					maxDepth: 1.0f32,
+				};
+	
+			vkCmdSetViewport(
+				current_command_buffer_ptr, 
+				0, 
+				1, 
+				&viewport,
+			);
+	
+			let scissor = 
+				VkRect2D{
+					offset: VkOffset2D{
+						x: 0,
+						y: 0,
+					},
+					extent:	swapchain_extent,
+				};
+	
+			vkCmdSetScissor(
+				current_command_buffer_ptr, 
+				0, 
+				1, 
+				&scissor,
+			);
+	
+
+			// vkCmdBindVertexBuffers(commandBuffer, firstBinding, bindingCount, pBuffers, pOffsets)
+			// vkCmdBindIndexBuffer(commandBuffer, buffer, offset, indexType)
+			// vkCmdBindDescriptorSets(commandBuffer, pipelineBindPoint, layout, firstSet, descriptorSetCount, pDescriptorSets, dynamicOffsetCount, pDynamicOffsets)
+			// vkCmdDrawIndexed(commandBuffer, indexCount, instanceCount, firstIndex, vertexOffset, firstInstance)
+
+			let vertex_buffers: Vec<VkBuffer> = 
+				vec![
+					vertex_buffer
+				];
+
+			let offsets = vec![0];
+
+			vkCmdBindVertexBuffers(
+				current_command_buffer_ptr, 
+				0, 
+				1, 
+				vertex_buffers.as_ptr(), 
+				offsets.as_ptr(),
+			);
+
+			vkCmdBindIndexBuffer(
+				current_command_buffer_ptr, 
+				index_buffer, 
+				0, 
+				VkIndexType::VK_INDEX_TYPE_UINT32,
+			);
+
+			let descriptor_sets_vec =
+				vec![
+					single_albedo_map_descriptor_set_vec[0],
+				];
+
+			vkCmdBindDescriptorSets(
+				current_command_buffer_ptr, 
+				VkPipelineBindPoint::VK_PIPELINE_BIND_POINT_GRAPHICS, 
+				pipeline_layout, 
+				0, 
+				descriptor_sets_vec.len() as _, 
+				descriptor_sets_vec.as_ptr(), 
+				0, 
+				nullptr(),
+			);
+
+			vkCmdDrawIndexed(
+				current_command_buffer_ptr, 
+				index_vec.len() as _, 
+				1, 
+				0, 
+				0, 
+				0,
+			);
+		}
+	
+		vkCmdEndRenderPass(current_command_buffer_ptr);
+		vkEndCommandBuffer(current_command_buffer_ptr).unwrap("vkEndCommandBuffer");
+
+		let command_buffers = vec![current_command_buffer_ptr];
+
+		let wait_semaphore_vec = vec![image_available_semaphore_vec[current_frame]];
+		let wait_stages_vec : Vec<VkPipelineStageFlags> = vec![VkPipelineStageFlagBits::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT as u32];
+		let signal_semaphores_vec = vec![rendering_finished_semaphore_vec[current_frame]];
+
+		let queue_submit_info = 
+			VkSubmitInfo{
+				sType: VkStructureType::VK_STRUCTURE_TYPE_SUBMIT_INFO,
+				pNext: nullptr(),
+				waitSemaphoreCount: wait_semaphore_vec.len() as _,
+				pWaitSemaphores: wait_semaphore_vec.as_ptr(),
+				pWaitDstStageMask: wait_stages_vec.as_ptr(),
+				commandBufferCount: command_buffers.len() as _,
+				pCommandBuffers: command_buffers.as_ptr(),
+				signalSemaphoreCount: signal_semaphores_vec.len() as _,
+				pSignalSemaphores: signal_semaphores_vec.as_ptr(),
+			};
+		
+		let queue_submit_info_vec = vec![queue_submit_info];
+
+		vkQueueSubmit(
+			graphics_queue, 
+			queue_submit_info_vec.len() as _, 
+			queue_submit_info_vec.as_ptr(), 
+			in_flight_fence_vec[current_frame]
+		)
+		.unwrap("vkQueueSubmit");
+
+		let swapchain_vec = vec![swapchain];
+		let image_indices = vec![image_index];
+
+		let present_info = 
+			VkPresentInfoKHR{
+				sType: VkStructureType::VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+				pNext: nullptr(),
+				waitSemaphoreCount: signal_semaphores_vec.len() as _,
+				pWaitSemaphores: signal_semaphores_vec.as_ptr(),
+				swapchainCount: swapchain_vec.len() as _,
+				pSwapchains: swapchain_vec.as_ptr(),
+				pImageIndices: image_indices.as_ptr(),
+				pResults: nullptr(),
+			};
+
+		vkDeviceWaitIdle(device)
+		.unwrap("vkDeviceWaitIdle");
+
+		vkQueuePresentKHR(presentation_queue, &present_info)
+		.unwrap("vkQueuePresentKHR");
+	}
+
 }
 
 pub unsafe fn pick_best_device(instance: VkInstance) -> Option<VkPhysicalDevice>

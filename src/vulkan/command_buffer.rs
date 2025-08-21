@@ -4,8 +4,6 @@ use crate::detail_core::components::rendering::UniformBufferComponent;
 use crate::detail_core::model::asset::MaterialAsset;
 use crate::detail_core::model::asset::ModelAsset;
 use crate::detail_core::model::component::VulkanModelComponent;
-use crate::detail_core::model::material::Material;
-// use crate::detail_core::model::model::Model;
 use crate::detail_core::phys::aabb::AABB;
 use crate::vulkan::vk_bindgen::*;
 use crate::vulkan::handle::*;
@@ -13,14 +11,12 @@ use std::collections::HashMap;
 use std::ptr::null_mut as nullptr;
 use std::rc::Rc;
 
-
 pub unsafe fn record_command_buffer(
 	vk_handle: &VkHandle, 
-	image_index: u32, 
+	swapchain_framebuffer_index: u32, 
 	model_vec: &Vec<(&QueryResultMut<VulkanModelComponent>, &UniformBufferComponent, &AABB)>,
 	model_assets_map: &HashMap::<String, Rc<ModelAsset>>,
 	material_assets_map: &HashMap::<String, Rc<MaterialAsset>>,
-	// default_material: Rc<Material>,
 	default_material: Rc<MaterialAsset>,
 )
 {
@@ -61,7 +57,7 @@ pub unsafe fn record_command_buffer(
 		VkRenderPassBeginInfo{
 			sType: VkStructureType::VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
 			renderPass: vk_handle.render_pass,
-			framebuffer: vk_handle.swapchain_framebuffers[image_index as usize],
+			framebuffer: vk_handle.swapchain_framebuffers[swapchain_framebuffer_index as usize],
 			renderArea: VkRect2D { 
 					offset: VkOffset2D { x: 0, y: 0 }, 
 					extent: vk_handle.swapchain_extent
