@@ -225,10 +225,11 @@ pub unsafe fn pick_best_device(vk_handle: &VkHandle, physical_devices: Vec<*mut 
 
 		// Hack to select the iGPU always
 		// nvidia drivers on ubuntu are complete ass shit fuck fufkc ufkc
-		if from_c_string(&device_properties.deviceName).unwrap().to_lowercase().contains("amd")
-		{
-			return Some(device.0);
-		}
+		// EDIT : fixed by disabling the "VK_LAYER_NV_present" layer in instance.rs disabled_layers vec
+		// if from_c_string(&device_properties.deviceName).unwrap().to_lowercase().contains("amd")
+		// {
+		// 	return Some(device.0);
+		// }
 
 		println!("Name : {}", from_c_string(&device_properties.deviceName).unwrap());
 		println!("Type : {:?}", device.1);

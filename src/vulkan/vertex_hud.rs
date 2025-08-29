@@ -33,13 +33,14 @@ impl VertexHud
 					binding: 0,
 					location: 0,
 					format: VkFormat::VK_FORMAT_R32G32B32_SFLOAT,
-					offset: offset_of!(VertexHud, pos) as u32
+					// offset: offset_of!(VertexHud, pos) as u32
+					offset: std::mem::offset_of!(VertexHud, pos) as u32
 				},
 				VkVertexInputAttributeDescription{
 					binding: 0,
 					location: 1,
 					format: VkFormat::VK_FORMAT_R32G32B32_SFLOAT,
-					offset: offset_of!(VertexHud, color) as u32
+					offset: std::mem::offset_of!(VertexHud, color) as u32
 				},
 			]	
 		}

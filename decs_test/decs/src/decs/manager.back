@@ -1,0 +1,560 @@
+#![allow(non_camel_case_types)]
+
+use std::{vec, any::{TypeId, self, Any}, collections::{HashMap, hash_map::{OccupiedEntry, VacantEntry}}, rc::{Rc, Weak}};
+use std::collections::hash_map::Entry;
+
+
+use super::component::Component;
+
+type System = dyn Fn(&mut dECS) -> () + Send + Sync + 'static;
+
+#[derive(Debug)]
+pub enum ComponentQueryError
+{
+	SparseIdExceedsMax(i64), // contains the sparse ID
+	DenseIdExceedsMax(i64, i64), // contains the (sparse, dense) ID pairs
+	EntityDoesntHaveComponent(i64), // contains the sparse ID
+}
+
+pub struct dECS
+{
+	entity_id_counter: usize,
+	init_systems: Option<Vec<Box<System>>>,
+	systems: Option<Vec<Box<System>>>,
+	assets: HashMap<TypeId, Vec<(String, Rc<dyn Any>)>>,
+}
+
+struct ComponentStorage<C: Component>
+{
+	components: Vec<C>,
+	dense_set: Vec<i64>, // stores entity IDs that potentially go to the dense set
+	sparse_set: Vec<i64> // stores entity IDs that potentially go to the dense set
+}
+
+impl<C: Component> ComponentStorage<C>
+{
+	fn _reserve_component(&mut self)
+	{
+		self.components.reserve(1);
+		self.dense_set.reserve(1);
+	}
+
+	pub fn reserve_entity(&mut self)
+	{
+		self.sparse_set.reserve(1);
+	}
+
+	// we will have no method add_entity
+	// because it will be part of the upper dECS class
+	// and it will just resize our sparse set once it increments its entity counter
+	pub fn add_component(&mut self, component: C, sparse_entity_id: i64) 
+	-> Result<(), ()>
+	{
+		self._reserve_component();
+		let dense_tail_id = self.dense_set.len() - 1;
+
+		self.sparse_set[sparse_entity_id as usize] = dense_tail_id as i64;
+		self.dense_set[dense_tail_id] = sparse_entity_id;
+
+		self.components[dense_tail_id] = component;
+
+		return Ok(());
+	}
+
+	pub fn get_component(&self, sparse_entity_id: i64) 
+	-> Result<&C, ComponentQueryError>
+	{
+		if sparse_entity_id as usize >= self.sparse_set.len()
+		{
+			return Err(ComponentQueryError::SparseIdExceedsMax(sparse_entity_id))
+		}
+
+		let dense_entity_id = self.sparse_set[sparse_entity_id as usize];
+		if dense_entity_id as usize >= self.dense_set.len()
+		{
+			return Err(ComponentQueryError::DenseIdExceedsMax(sparse_entity_id, dense_entity_id))
+		}
+		if dense_entity_id <= -1
+		{
+			return Err(ComponentQueryError::EntityDoesntHaveComponent(sparse_entity_id))
+		}
+
+		return Ok(&self.components[dense_entity_id as usize])
+	}
+}
+
+
+// ----------------------------------
+
+pub struct QueryResult<T: 'static>
+{
+	pub entity_id: usize,
+	pub component: &'static mut T
+}
+
+impl dECS
+{
+	pub fn new() -> Self
+	{
+		dECS { 
+			entity_id_counter: 0,
+			entities: vec![],
+			init_systems: None,
+			systems: None,
+			assets: HashMap::new(),
+		}
+	}
+
+	// pub fn add_asset<T: Any>(&mut self, asset_name: String, asset: T) -> Result<(), String>
+	pub fn add_asset<T: Any, TS: ToString>(&mut self, asset_name: TS, asset: T) -> Result<(), String>
+	{
+		let asset_type_id = TypeId::of::<T>();
+		let asset_type_name = std::any::type_name::<T>();
+		let asset_name = asset_name.to_string();
+	
+		match self.assets
+			.entry(asset_type_id)
+		{
+			Entry::Occupied(mut occupied) => 
+			{
+				for (current_asset_name, _) in occupied.get()
+				{
+					if *current_asset_name == asset_name
+					{
+						return Err(format!("asset called '{}' of type '{}' already exists.", asset_name, asset_type_name).to_owned())
+					}
+				}
+
+				occupied.get_mut().push((asset_name, Rc::new(asset)));
+			},
+			Entry::Vacant(vacant) => 
+			{
+				vacant.insert(Vec::new()).push((asset_name, Rc::new(asset)));
+			},
+		}
+
+		Ok(())
+	}
+
+	// pub fn get_asset<T: Any>(&mut self, asset_name: String) -> Result<Weak<T>, String>
+	pub fn get_asset<T, TS>(&mut self, asset_name: TS) -> Result<Weak<T>, String>
+		where T: Any, TS: ToString
+	{
+		let asset_type_id = TypeId::of::<T>();
+		let asset_type_name = std::any::type_name::<T>();
+
+		let asset_name = asset_name.to_string();
+	
+		match self.assets
+			.entry(asset_type_id)
+		{
+			Entry::Occupied(occupied) => 
+			{
+				for (current_asset_name, asset) in occupied.get()
+				{
+					if *current_asset_name == asset_name
+					{
+						let cast: Rc<T> = asset.clone().downcast().unwrap();
+						let weak: Weak<T> = Rc::downgrade(&cast);
+						return Ok(weak)
+					}
+				}
+			},
+			_ => {}
+		}
+
+		Err(format!("asset called '{}' of type '{}' doesn't exist.", asset_name, asset_type_name).to_owned())
+	}
+
+	pub fn add_system<S: Fn(&mut dECS) + Send + Sync + 'static>(&mut self, system: S)
+	{
+		match self.systems.as_mut()
+		{
+			Some(systems) =>
+			{
+				systems.push(Box::new(system));
+			}
+			None =>
+			{
+				self.systems = Some(vec![]);
+				self.systems.as_mut().unwrap().push(Box::new(system));
+			}
+		}
+	}
+
+	pub fn add_init_system<S: Fn(&mut dECS) + Send + Sync + 'static>(&mut self, system: S)
+	{
+		match self.init_systems.as_mut()
+		{
+			Some(init_systems) =>
+			{
+				init_systems.push(Box::new(system));
+			}
+			None =>
+			{
+				self.init_systems = Some(vec![]);
+				self.init_systems.as_mut().unwrap().push(Box::new(system));
+			}
+		}
+	}
+
+	pub fn init(&mut self)
+	{
+		let systems_vec = self.init_systems.take();
+
+		match systems_vec
+		{
+			Some(systems) =>
+			{
+				for system in systems.iter()
+				{
+					system(self);
+				}
+		
+				self.init_systems = Some(systems);
+			}
+			None => { return }
+		}
+	}
+
+	pub fn update(&mut self)
+	{
+		let systems_vec = self.systems.take();
+
+		match systems_vec
+		{
+			Some(systems) =>
+			{
+				for system in systems.iter()
+				{
+					system(self);
+				}
+		
+				self.systems = Some(systems);
+			}
+			None => { return }
+		}
+	}
+
+	pub fn create_entity(&mut self) -> usize
+	{
+		self.entity_id_counter += 1;
+
+		let new_entity = Entity::new(self.entity_id_counter);
+		self.entities.push(new_entity);
+
+		self.entity_id_counter
+	}
+
+	pub fn get_entity_index(&self, entity_id: usize) -> Result<usize, String>
+	{
+		for (index, entity) in self.entities.iter().enumerate()
+		{
+			if entity.id == entity_id
+			{
+				return Ok(index)
+			}
+		}
+
+		return Err(format!("entity [{}] not found.", entity_id))
+	}
+
+	pub fn add_component<C: Component>(&mut self, entity_id: usize, component: C) -> Result<(), String>
+	{
+		let entity_index = self.get_entity_index(entity_id)?;
+
+		let component_type_id = TypeId::of::<C>();
+
+		self.entities[entity_index]
+			.components
+			.entry(component_type_id)
+			.or_insert_with(Vec::new)
+			.push(Box::new(component));
+		
+		Ok(())
+	}
+
+	// pub fn get_components<C: Component>(&mut self, entity_id: usize) -> Result<&Vec<Box<dyn Component>>, String>
+	pub fn get_components<C: Component>(&self, entity_id: usize) -> Result<Vec<&C>, String>
+	{
+		let entity_index = self.get_entity_index(entity_id)?;
+
+		let component_type_id = TypeId::of::<C>();
+
+		let components = 
+			match self.entities[entity_index].components.get(&component_type_id)
+			{
+				Some(components) => { components }
+				None => { return Err(format!("entity [{}] doesn't contain components of type \"{}\"", entity_id, any::type_name::<C>())) }
+			};
+
+		let out_components = components.iter().map(|component| component.as_any().downcast_ref::<C>().unwrap()).collect::<Vec<&C>>();
+		
+		Ok(out_components)
+	}
+
+	pub fn get_components_global<C: Component>(&self) -> Result<Vec<&C>, String>
+	{
+		let component_type_id = TypeId::of::<C>();
+
+		let mut out_components = vec![];
+
+		for entity in self.entities.iter()
+		{
+			let components = 
+				match entity.components.get(&component_type_id)
+				{
+					Some(components) => { components }
+					None => { continue; }
+				};
+
+			out_components.append(&mut components.iter().map(|component| component.as_any().downcast_ref::<C>().unwrap()).collect::<Vec<&C>>());
+		}
+		
+		Ok(out_components)
+	}
+
+	// pub unsafe fn get_components_global_mut_unchecked<C: Component>(&self) -> Result<Vec<(usize, &mut C)>, String>
+	// {
+	// 	let component_type_id = TypeId::of::<C>();
+
+	// 	let mut out_components = vec![];
+
+	// 	for entity in self.entities.iter()
+	// 	{
+	// 		let components = 
+	// 			match entity.components.get(&component_type_id)
+	// 			{
+	// 				Some(components) => { components }
+	// 				None => { continue; }
+	// 			};
+
+	// 		out_components.append(
+	// 			&mut components.iter()
+	// 			.map(
+	// 				|component| 
+	// 				{
+	// 					let reference = component.as_any().downcast_ref::<C>().unwrap();
+	// 					(entity.id, ((reference as *const C) as *mut C).as_mut().unwrap())
+	// 				}
+					
+	// 			)
+	// 			.collect::<Vec<(usize, &mut C)>>()
+	// 		);
+	// 	}
+		
+	// 	Ok(out_components)
+	// }
+
+	pub fn get_components_global_mut<C: Component>(&mut self) -> Result<Vec<&mut C>, String>
+	{
+		let component_type_id = TypeId::of::<C>();
+
+		let mut out_components = vec![];
+
+		for entity in self.entities.iter_mut()
+		{
+			let components = 
+				match entity.components.get_mut(&component_type_id)
+				{
+					Some(components) => { components }
+					None => { continue; }
+				};
+
+			out_components.append(&mut components.iter_mut().map(|component| component.as_any_mut().downcast_mut::<C>().unwrap()).collect::<Vec<&mut C>>());
+		}
+		
+		Ok(out_components)
+	}
+
+	pub unsafe fn get_components_global_mut_unchecked<C: Component>(&self) -> Result<Vec<QueryResult<C>>, String>
+	{
+		let component_type_id = TypeId::of::<C>();
+
+		let mut out_components = vec![];
+
+		for entity in self.entities.iter()
+		{
+			let components = 
+				match entity.components.get(&component_type_id)
+				{
+					Some(components) => { components }
+					None => { continue; }
+				};
+
+			out_components.append(
+				&mut components.iter()
+				.map(
+					|component| 
+					{
+						let reference = component.as_any().downcast_ref::<C>().unwrap();
+						QueryResult{ entity_id:  entity.id, component: ((reference as *const C) as *mut C).as_mut().unwrap() } 
+					}
+					
+				)
+				.collect::<Vec<QueryResult<C>>>()
+			);
+		}
+		
+		Ok(out_components)
+	}
+
+
+	pub fn modify_components<C: Component>(
+		&mut self, 
+		entity_id: usize, 
+		mut modifier_fn: impl FnMut(&mut C) -> Result<(), String>,
+	) -> Result<(), String>
+	{
+		let entity_index = self.get_entity_index(entity_id)?;
+
+		let component_type_id = TypeId::of::<C>();
+
+		let components = 
+			match self.entities[entity_index].components.get_mut(&component_type_id)
+			{
+				Some(components) => { components }
+				None => { return Err(format!("entity [{}] doesn't contain components of type \"{}\"", entity_id, any::type_name::<C>())) }
+			};
+
+		for component in components.iter_mut()
+		{
+			modifier_fn(component.as_mut().as_any_mut().downcast_mut().unwrap())?;
+		}
+
+		Ok(())
+	}
+
+	pub fn modify_components_global<C: Component>(
+		&mut self, 
+		mut modifier_fn: impl FnMut(&mut C) -> Result<(), String>,
+	) -> Result<(), String>
+	{
+		let component_type_id = TypeId::of::<C>();
+
+		for entity in self.entities.iter_mut()
+		{
+			let components = 
+				match entity.components.get_mut(&component_type_id)
+				{
+					Some(components) => { components }
+					None => { continue; }
+				};
+
+			for component in components.iter_mut()
+			{
+				modifier_fn(component.as_mut().as_any_mut().downcast_mut().unwrap())?;
+			}
+		}
+
+		Ok(())
+	}
+
+	pub fn modify_components_filter<C: Component>(
+		&mut self, 
+		entity_id: usize, 
+		mut modifier_fn: impl FnMut(&mut C) -> Result<(), String>,
+		filter_fn: impl Fn(&C) -> bool,
+	) -> Result<(), String>
+	{
+		let entity_index = self.get_entity_index(entity_id)?;
+
+		let component_type_id = TypeId::of::<C>();
+
+		let components = 
+			match self.entities[entity_index].components.get_mut(&component_type_id)
+			{
+				Some(components) => { components }
+				None => { return Err(format!("entity [{}] doesn't contain components of type \"{}\"", entity_id, any::type_name::<C>())) }
+			};
+
+		for component in components.iter_mut()
+		{
+			let component_ref = component.as_mut().as_any_mut().downcast_mut().unwrap();
+			if filter_fn(component_ref)
+			{
+				modifier_fn(component_ref)?;
+			}
+		}
+
+		Ok(())
+	}
+	
+	pub fn get_entities_with<C: Component>(
+		&self,
+	) -> Vec<usize>
+	{
+		let mut out_entity_vec = vec![];
+
+		for entity in self.entities.iter()
+		{
+			match self.get_components::<C>(entity.id)
+			{
+				Ok(comp_vec) => { if comp_vec.len() > 0 { out_entity_vec.push(entity.id) } } 
+				Err(_) => {}
+			};
+		}
+
+		out_entity_vec.sort();
+		out_entity_vec.dedup();
+
+		out_entity_vec
+	}
+
+	pub fn get_entities_with_components_filter<C: Component>(
+		&self,
+		filter_fn: impl Fn(&C) -> bool,
+	) -> Vec<usize>
+	{
+		let mut out_entity_vec = vec![];
+
+		for entity in self.entities.iter()
+		{
+			match self.get_components::<C>(entity.id)
+			{
+				Ok(comp_vec) => 
+				{
+					for component in comp_vec
+					{
+						if filter_fn(component)
+						{
+							out_entity_vec.push(entity.id)
+						}
+					}
+				} 
+				Err(_) => {}
+			};
+		}
+
+		out_entity_vec.sort();
+		out_entity_vec.dedup();
+
+		out_entity_vec
+	}
+
+	pub fn get_entity_with_components_filter<C: Component>(
+		&self,
+		filter_fn: impl Fn(&C) -> bool,
+	) -> Option<usize>
+	{
+		for entity in self.entities.iter()
+		{
+			match self.get_components::<C>(entity.id)
+			{
+				Ok(comp_vec) => 
+				{
+					for component in comp_vec
+					{
+						if filter_fn(component)
+						{
+							return Some(entity.id)
+						}
+					}
+				} 
+				Err(_) => {}
+			};
+		}
+
+		None
+	}
+}

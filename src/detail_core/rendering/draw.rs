@@ -57,7 +57,8 @@ pub fn rendering_system4()
 			{
 				recreate_swapchain(vk_handle); 
 			}
-			e => { panic!("vkAcquireNextImageKHR() resulted in {:?}", e) }
+			// e => { panic!("vkAcquireNextImageKHR() resulted in {:?}", e) }
+			e => { recreate_swapchain(vk_handle);  }
 		}
 
 		vk_handle.command_buffer_vec[vk_handle.current_frame].reset(None);
@@ -278,7 +279,8 @@ pub fn rendering_system4()
 		{
 			VkResult::VK_SUCCESS => {}
 			VkResult::VK_ERROR_OUT_OF_DATE_KHR => { println!("vkQueuePresentKHR() out of date - recreating"); recreate_swapchain(vk_handle) }
-			e => { panic!("vkQueuePresentKHR() resulted in {:?}", e) }
+			// e => { panic!("vkQueuePresentKHR() resulted in {:?}", e) }
+			_ => { println!("vkQueuePresentKHR() unknown error - recreating"); recreate_swapchain(vk_handle) }
 		}
 
 		vk_handle.current_frame = (vk_handle.current_frame + 1) % vk_handle.frames_in_flight;

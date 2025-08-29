@@ -54,31 +54,32 @@ impl Vertex
 					binding: 0,
 					location: 0,
 					format: VkFormat::VK_FORMAT_R32G32B32_SFLOAT,
-					offset: offset_of!(Vertex, pos) as u32
+					// offset: offset_of!(Vertex, pos) as u32
+					offset: std::mem::offset_of!(Vertex, pos) as u32
 				},
 				VkVertexInputAttributeDescription{
 					binding: 0,
 					location: 1,
 					format: VkFormat::VK_FORMAT_R32G32_SFLOAT,
-					offset: offset_of!(Vertex, uv) as u32
+					offset: std::mem::offset_of!(Vertex, uv) as u32
 				},
 				VkVertexInputAttributeDescription{
 					binding: 0,
 					location: 2,
 					format: VkFormat::VK_FORMAT_R32G32B32_SFLOAT,
-					offset: offset_of!(Vertex, normal) as u32
+					offset: std::mem::offset_of!(Vertex, normal) as u32
 				},
 				VkVertexInputAttributeDescription{
 					binding: 0,
 					location: 3,
 					format: VkFormat::VK_FORMAT_R32G32B32_SFLOAT,
-					offset: offset_of!(Vertex, tangent) as u32
+					offset: std::mem::offset_of!(Vertex, tangent) as u32
 				},
 				VkVertexInputAttributeDescription{
 					binding: 0,
 					location: 4,
 					format: VkFormat::VK_FORMAT_R32G32B32_SFLOAT,
-					offset: offset_of!(Vertex, bitangent) as u32
+					offset: std::mem::offset_of!(Vertex, bitangent) as u32
 				},
 			]	
 		}

@@ -1,0 +1,158 @@
+#![feature(get_many_mut)]
+
+use std::borrow::BorrowMut;
+use std::cell::RefCell;
+use std::any::Any;
+use std::rc::{Rc, Weak};
+
+use decs::component_derive::{system, component, component2};
+use decs::component::{Component, AsAny};
+use decs::manager::dECS;
+use proc_macro2::{TokenStream, TokenTree};
+
+#[component]
+pub struct PhysBox
+{
+	pub velocity: f32
+}
+
+#[component2]
+pub struct NameTag
+{
+	pub name: String
+}
+
+#[system]
+fn physics_system()
+{
+	let _ = 
+		decs.modify_components_global::<PhysBox>(
+			|component| 
+			{
+				component.velocity += 10.0f32; Ok(())
+			}
+		);
+}
+
+#[system]
+fn init_system()
+{
+	let batnayd = decs.create_entity();
+	let krisut = decs.create_entity();
+	let beeline = decs.create_entity();
+
+	decs.add_component(batnayd, PhysBox { velocity: 1.0f32 });
+	decs.add_component(krisut, PhysBox { velocity: 1.0f32 });
+	decs.add_component(beeline, PhysBox { velocity: 1.0f32 });
+
+	decs.add_component(batnayd, NameTag { name: "🦇 Knight".to_owned() });
+
+	println!("Batnayd id is : {}", batnayd);
+}	
+
+#[system]
+fn print_components()
+{
+	for component in decs.get_components_global::<PhysBox>().unwrap()
+	{
+		println!("Component val is {:?}", component);
+	}
+
+	for component in decs.get_components_global::<NameTag>().unwrap()
+	{
+		println!("Component val is {:?}", component);
+	}
+}
+
+pub fn things(a: &mut Box<dyn Any>, b: &mut Box<dyn Any>)
+{
+	println!("{} {}", a.downcast_mut::<usize>().unwrap(), b.downcast_mut::<String>().unwrap());
+}
+
+pub struct Holder
+{
+	pub arr: Vec<usize>
+}
+
+impl Holder
+{
+	pub fn get_mut(&mut self) -> &'static mut usize
+	{
+		unsafe
+		{
+			let raw_ptr = self.arr.as_mut_ptr();
+
+			raw_ptr.as_mut().unwrap()
+		}
+	}
+
+	pub fn get(&self) -> Vec<&mut usize>
+	{
+		let mut out_vec = vec![];
+		unsafe
+		{
+			// Vec::from_raw_parts(self.arr.as_ptr() as *mut _, self.arr.len(), self.arr.capacity())
+			// (self.arr.as_ptr() as *mut Vec<usize>).as_mut().unwrap();
+
+			for element in self.arr.iter()
+			{
+				out_vec.push(((element as *const usize) as *mut usize).as_mut().unwrap())
+			} 
+		}
+
+		out_vec
+	}
+}
+
+pub struct SomeAsset
+{
+	pub name: String
+}
+
+#[component]
+pub struct SomeAssetComponent
+{
+	pub asset: Weak<SomeAsset>
+}
+
+fn main() 
+{
+	let mut decs = dECS::new();
+
+	decs.add_init_system(init_system);
+	decs.add_system(physics_system);
+	decs.add_system(print_components);
+
+	decs.add_asset("some_asset", SomeAsset{name: "some_asset".to_owned()}).unwrap();
+
+	decs.init();
+	
+	let batnayd = decs.get_entities_with_components_filter::<NameTag>(|name| name.name == "🦇 Knight").remove(0);
+
+	println!("found batnayd id is [{}]", batnayd);
+
+	let some_asset = decs.get_asset::<SomeAsset, _>("some_asset").unwrap();
+
+	decs.add_component(batnayd, SomeAssetComponent{asset: some_asset}).unwrap();
+
+	let phys_boxes = unsafe { decs.get_components_global_mut_unchecked::<PhysBox>() }.unwrap();
+	let name_tags = unsafe { decs.get_components_global_mut_unchecked::<NameTag>() }.unwrap();
+
+	for phys in phys_boxes.iter()
+	{
+		for name in name_tags.iter()
+		{
+			if phys.entity_id == name.entity_id
+			{
+				println!("player {:?} has a physbox {:?}", name.component, phys.component);
+			}
+		}
+	}	
+
+	let batnayd_components: Vec<&SomeAssetComponent> = decs.get_components::<SomeAssetComponent>(batnayd).unwrap();
+
+	for some_asset in batnayd_components.iter()
+	{
+		println!("batnayd has a some_asset {:?} with actual value of '{}'", some_asset, some_asset.asset.upgrade().unwrap().name);
+	}
+}
