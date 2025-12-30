@@ -1,85 +1,48 @@
 use std::vec;
 
-use decs::component_derive::system;
-use decs::manager::{dECS, QueryResultMut};
+use decs2::component_derive::system;
+use decs2::manager::dECSManager;
 
 use crate::cotangens::vec3::Vec3;
 use crate::detail_core::components::misc::{CameraRaycastObject, CameraRaycastObjectState, DeltaTime, GlobalVariables};
+use crate::detail_core::phys::aabb;
 use crate::vulkan::handle::VkHandle;
 
 use super::aabb::AABB;
 
 #[system]
-pub fn physics_system_3()
+pub fn physics_system_3(physboxes: Query<(&mut AABB,)>)
 {
 	if 
-	! decs.get_components_global::<GlobalVariables>().expect("missing global variables component").remove(0)
+	! decs.get_global_storage_mut_unchecked::<GlobalVariables>().expect("missing global variables component")
 	.should_run_physics
 	{
 		return;
 	}
 
-	let mut aabb_vector: Vec<QueryResultMut<AABB>> = 
-		unsafe { decs.get_components_global_mut_unchecked::<AABB>() }.unwrap();
-
-	let raycast_object: &mut CameraRaycastObject =
-		unsafe { decs.get_components_global_mut_unchecked::<CameraRaycastObject>() }.unwrap().remove(0).component;
-
-	let vk_handle: &mut VkHandle =
-		unsafe { decs.get_components_global_mut_unchecked::<VkHandle>() }.unwrap().remove(0).component;
-
-	let delta_time: &mut DeltaTime =
-		unsafe { decs.get_components_global_mut_unchecked::<DeltaTime>() }.unwrap().remove(0).component;
-
-	match raycast_object.state.clone()
-	{
-		CameraRaycastObjectState::Thrown(raycast_info) =>
-		{
-			if !aabb_vector[raycast_info.index].component.is_static
-			{
-				let aabb_pos = aabb_vector[raycast_info.index].component.translation;
-
-				aabb_vector[raycast_info.index].component.velocity += 
-					((aabb_pos - vk_handle.camera.get_position()).normalize() * delta_time.last_delta_time_sec) / 100.0f32;
-			}
-		}
-		CameraRaycastObjectState::Picked(raycast_info) =>
-		{
-			if !aabb_vector[raycast_info.index].component.is_static
-			{
-				aabb_vector[raycast_info.index].component.translation = 
-					vk_handle.camera.get_position() + 
-					(vk_handle.camera.get_front() * raycast_info.length) + 
-					raycast_info.obj_relative_hit;
-				
-				aabb_vector[raycast_info.index].component.velocity = Vec3::new(0.0f32);
-			}
-		}
-		_ => {}
-	}
-
-	for aabb in aabb_vector.iter_mut()
-	{
-		aabb.component.color = Vec3{ x: 0.1f32, y: 0.1f32, z: 0.1f32} * aabb.component.mass.exp();
-	}
+	let globals = decs.get_global_storage_mut_unchecked::<GlobalVariables>().unwrap();
+	let delta_time = &globals.delta_time;
+	// let raycast_object = &mut globals.global_raycast_object;
 
 	let mut collision_pairs: Vec<(usize, usize, Vec3)> = vec![];
-
-	for i in 0..aabb_vector.len()
+	
+	for (index_a, aabb_a) in physboxes.iter().enumerate()
 	{
-		for j in 0..aabb_vector.len()
-		{
-			if i == j
+		aabb_a.color = Vec3{ x: 0.1f32, y: 0.1f32, z: 0.1f32} * aabb_a.mass.exp();
+
+		for (index_b, aabb_b) in physboxes.iter().enumerate()
+		{	
+			if index_a == index_b
 			{
 				continue;
 			}
 
-			if aabb_vector[i].component.is_static && aabb_vector[j].component.is_static
+			if aabb_a.is_static && aabb_b.is_static
 			{
 				continue;
 			}
 
-			let penetration = aabb_vector[i].component.compute_penetration(aabb_vector[j].component);
+			let penetration = aabb_a.compute_penetration(aabb_b);
 
 			if penetration.x < 0.0f32 ||
 				penetration.y < 0.0f32 ||
@@ -88,7 +51,7 @@ pub fn physics_system_3()
 				continue;
 			}
 
-			collision_pairs.push((i.min(j), j.max(i), penetration));
+			collision_pairs.push((index_a.min(index_b), index_b.max(index_a), penetration));
 		}
 	}
 
@@ -102,38 +65,40 @@ pub fn physics_system_3()
 		}
 	);
 	collision_pairs.dedup();
-	// println!("collision_pairs pairs : {:?}", penetration_pairs);
 
-	for (i, j, penetration) in collision_pairs.iter().cloned()
+	let mut aabb_vector: Vec<_> = physboxes.iter().collect();
+
+	// color the collided aabbs red
+	for (i, j, _) in collision_pairs.iter().cloned()
 	{
-		aabb_vector[i].component.color = Vec3{x: 1.0f32, y: 0.0f32, z: 0.0f32};
-		aabb_vector[j].component.color = Vec3{x: 1.0f32, y: 0.0f32, z: 0.0f32};
+		aabb_vector[i].color = Vec3{x: 1.0f32, y: 0.0f32, z: 0.0f32};
+		aabb_vector[j].color = Vec3{x: 1.0f32, y: 0.0f32, z: 0.0f32};
 	}
 
 	let mut velocity_delta_vec = vec![Vec3::new(0.0f32); aabb_vector.len()];
 	let mut translation_delta_vec = vec![Vec3::new(0.0f32); aabb_vector.len()];
 
 	let translation_delta_damp_factor = 0.777; // picking a very Godly number, Terry Davis approved, may he rest in peace.
-	// let translation_delta_damp_factor = 1.0;
 	let velocity_damp_factor = 0.9f32;
-	// let velocity_damp_factor = 1.0;
 
 	for (i, j, penetration) in collision_pairs.iter().cloned()
 	{
-		if aabb_vector[i].component.is_static && aabb_vector[j].component.is_static
+		if aabb_vector[i].is_static && aabb_vector[j].is_static
 		{
 			continue;
 		}
 
-		let center_vec = aabb_vector[i].component.translation - aabb_vector[j].component.translation;
+		let center_vec = aabb_vector[i].translation - aabb_vector[j].translation;
 
-		// Calculating the immediate translation first because its piss easy (also wrong lo), A:B mass ratio and we translate by penetration.x * ratio
+		// Calculating the immediate translation first because its piss easy (also wrong lo)
+		// 		A:B mass ratio and we translate by penetration.x * ratio
+		//
 		// putting .max(0.0f32) here to avoid NaNs if we divide by 0 somewhere
-		let mass_i = aabb_vector[i].component.mass.abs();
-		let mass_j = aabb_vector[j].component.mass.abs();
+		let mass_i = aabb_vector[i].mass.abs();
+		let mass_j = aabb_vector[j].mass.abs();
 
-		let velocity_i = aabb_vector[i].component.velocity;
-		let velocity_j = aabb_vector[j].component.velocity;
+		let velocity_i = aabb_vector[i].velocity;
+		let velocity_j = aabb_vector[j].velocity;
 
 		let combined_masses = mass_i + mass_j;
 
@@ -146,14 +111,14 @@ pub fn physics_system_3()
 		translation_ratio_factor_i = energy_ratio_factor_j;
 		translation_ratio_factor_j = energy_ratio_factor_i;
 		
-		if aabb_vector[i].component.is_static
+		if aabb_vector[i].is_static
 		{
 			energy_ratio_factor_j = 2.0f32;
 
 			translation_ratio_factor_i = 1.0f32;
 			translation_ratio_factor_j = 0.0f32;
 		}
-		if aabb_vector[j].component.is_static
+		if aabb_vector[j].is_static
 		{
 			energy_ratio_factor_i = 2.0f32;
 
@@ -186,56 +151,245 @@ pub fn physics_system_3()
 
 	}
 
-	for (index, aabb) in aabb_vector.iter_mut().enumerate()
-	{
-		if aabb.component.is_static
-		{
-			continue
-		}
-
-		aabb.component.velocity += velocity_delta_vec[index];
-		// aabb.component.velocity += velocity_delta_vec[index] * (delta_time.last_delta_time_sec / 1000.0);
-	}
-
-	for (index, aabb) in aabb_vector.iter_mut().enumerate()
-	{
-		if aabb.component.is_static
-		{
-			continue
-		}
-
-		aabb.component.translation += translation_delta_vec[index] ;
-		// aabb.component.translation += translation_delta_vec[index] * (delta_time.last_delta_time_sec / 1000.0)
-	}
-
-	for aabb in aabb_vector.iter_mut()
-	{
-		// aabb.velocity *= aabb.damping;
-		// aabb.component.velocity *= 0.95;
-	}
-
-	for (index, aabb) in aabb_vector.iter_mut().enumerate()
-	{
-		// println!("[{}] static:{} mass:{:?}\nvel:{:?} = {}", index, aabb.component.is_static, aabb.component.mass, aabb.component.velocity, aabb.component.velocity.len());
-	}
-
 	let gravity = Vec3 { x: 0.0, y: -9.81f32, z: 0.0 };
-	for aabb in aabb_vector.iter_mut()
+	for (index, aabb) in aabb_vector.iter_mut().enumerate()
 	{
-		if aabb.component.is_static
+		if aabb.is_static
 		{
-			continue;
+			continue
 		}
 
-		aabb.component.velocity += (gravity * (delta_time.last_delta_time_sec / 1000.0f32)) / 10.0f32;
-		// aabb.component.velocity += gravity * (delta_time.last_delta_time_sec / 50000.0f32);
-		// aabb.component.velocity += gravity / 1000.0f32;
-		// aabb.component.velocity += gravity * delta_time.last_delta_time_sec;
-	}
+		aabb.velocity += velocity_delta_vec[index];
+		aabb.velocity += (gravity * (delta_time.last_delta_time_sec / 1000.0f32)) / 10.0f32;
 
-	for aabb in aabb_vector.iter_mut()
-	{
-		aabb.component.translation += aabb.component.velocity;
-		// aabb.component.translation += aabb.component.velocity * (delta_time.last_delta_time_sec / 1000.0f32);
+		aabb.translation += translation_delta_vec[index];
+		aabb.translation += aabb.velocity;
 	}
 }
+
+// #[system]
+// pub fn physics_system_3(physboxes: Query<(&AABB,)>)
+// {
+// 	if 
+// 	! decs.get_global_storage_mut_unchecked::<GlobalVariables>().expect("missing global variables component")
+// 	.should_run_physics
+// 	{
+// 		return;
+// 	}
+
+// 	let mut aabb_vector = decs.get_global_storage_mut_unchecked::<AABB>().unwrap();
+
+// 	let raycast_object = decs.get_global_storage_mut_unchecked::<CameraRaycastObject>().unwrap();
+
+// 	let vk_handle = decs.get_global_storage_mut_unchecked::<VkHandle>().unwrap();
+
+// 	let delta_time = decs.get_global_storage_mut_unchecked::<DeltaTime>().unwrap();
+
+// 	match raycast_object.state.clone()
+// 	{
+// 		CameraRaycastObjectState::Thrown(raycast_info) =>
+// 		{
+// 			if !aabb_vector[raycast_info.index].component.is_static
+// 			{
+// 				let aabb_pos = aabb_vector[raycast_info.index].component.translation;
+
+// 				aabb_vector[raycast_info.index].component.velocity += 
+// 					((aabb_pos - vk_handle.camera.get_position()).normalize() * delta_time.last_delta_time_sec) / 100.0f32;
+// 			}
+// 		}
+// 		CameraRaycastObjectState::Picked(raycast_info) =>
+// 		{
+// 			if !aabb_vector[raycast_info.index].component.is_static
+// 			{
+// 				aabb_vector[raycast_info.index].component.translation = 
+// 					vk_handle.camera.get_position() + 
+// 					(vk_handle.camera.get_front() * raycast_info.length) + 
+// 					raycast_info.obj_relative_hit;
+				
+// 				aabb_vector[raycast_info.index].component.velocity = Vec3::new(0.0f32);
+// 			}
+// 		}
+// 		_ => {}
+// 	}
+
+// 	for aabb in aabb_vector.iter_mut()
+// 	{
+// 		aabb.component.color = Vec3{ x: 0.1f32, y: 0.1f32, z: 0.1f32} * aabb.component.mass.exp();
+// 	}
+
+// 	let mut collision_pairs: Vec<(usize, usize, Vec3)> = vec![];
+
+// 	for i in 0..aabb_vector.len()
+// 	{
+// 		for j in 0..aabb_vector.len()
+// 		{
+// 			if i == j
+// 			{
+// 				continue;
+// 			}
+
+// 			if aabb_vector[i].component.is_static && aabb_vector[j].component.is_static
+// 			{
+// 				continue;
+// 			}
+
+// 			let penetration = aabb_vector[i].component.compute_penetration(aabb_vector[j].component);
+
+// 			if penetration.x < 0.0f32 ||
+// 				penetration.y < 0.0f32 ||
+// 				penetration.z < 0.0f32
+// 			{
+// 				continue;
+// 			}
+
+// 			collision_pairs.push((i.min(j), j.max(i), penetration));
+// 		}
+// 	}
+
+// 	collision_pairs.sort_by(|a, b| 
+// 		{
+// 			match a.0.cmp(&b.0) 
+// 			{
+// 				std::cmp::Ordering::Equal => a.1.cmp(&b.1),
+// 				other => other,
+// 			}
+// 		}
+// 	);
+// 	collision_pairs.dedup();
+// 	// println!("collision_pairs pairs : {:?}", penetration_pairs);
+
+// 	for (i, j, penetration) in collision_pairs.iter().cloned()
+// 	{
+// 		aabb_vector[i].component.color = Vec3{x: 1.0f32, y: 0.0f32, z: 0.0f32};
+// 		aabb_vector[j].component.color = Vec3{x: 1.0f32, y: 0.0f32, z: 0.0f32};
+// 	}
+
+// 	let mut velocity_delta_vec = vec![Vec3::new(0.0f32); aabb_vector.len()];
+// 	let mut translation_delta_vec = vec![Vec3::new(0.0f32); aabb_vector.len()];
+
+// 	let translation_delta_damp_factor = 0.777; // picking a very Godly number, Terry Davis approved, may he rest in peace.
+// 	// let translation_delta_damp_factor = 1.0;
+// 	let velocity_damp_factor = 0.9f32;
+// 	// let velocity_damp_factor = 1.0;
+
+// 	for (i, j, penetration) in collision_pairs.iter().cloned()
+// 	{
+// 		if aabb_vector[i].component.is_static && aabb_vector[j].component.is_static
+// 		{
+// 			continue;
+// 		}
+
+// 		let center_vec = aabb_vector[i].component.translation - aabb_vector[j].component.translation;
+
+// 		// Calculating the immediate translation first because its piss easy (also wrong lo), A:B mass ratio and we translate by penetration.x * ratio
+// 		// putting .max(0.0f32) here to avoid NaNs if we divide by 0 somewhere
+// 		let mass_i = aabb_vector[i].component.mass.abs();
+// 		let mass_j = aabb_vector[j].component.mass.abs();
+
+// 		let velocity_i = aabb_vector[i].component.velocity;
+// 		let velocity_j = aabb_vector[j].component.velocity;
+
+// 		let combined_masses = mass_i + mass_j;
+
+// 		let mut translation_ratio_factor_i = 0.0f32;
+// 		let mut translation_ratio_factor_j = 0.0f32;
+
+// 		let mut energy_ratio_factor_i = ((mass_j / combined_masses)).max(0.0f32);
+// 		let mut energy_ratio_factor_j = ((mass_i / combined_masses)).max(0.0f32);
+
+// 		translation_ratio_factor_i = energy_ratio_factor_j;
+// 		translation_ratio_factor_j = energy_ratio_factor_i;
+		
+// 		if aabb_vector[i].component.is_static
+// 		{
+// 			energy_ratio_factor_j = 2.0f32;
+
+// 			translation_ratio_factor_i = 1.0f32;
+// 			translation_ratio_factor_j = 0.0f32;
+// 		}
+// 		if aabb_vector[j].component.is_static
+// 		{
+// 			energy_ratio_factor_i = 2.0f32;
+
+// 			translation_ratio_factor_i = 0.0f32;
+// 			translation_ratio_factor_j = 1.0f32;
+// 		}
+
+// 		let min_penetration = penetration.x.min(penetration.y).min(penetration.z);
+// 		let axis_of_least_penetration = 
+// 			if min_penetration == penetration.x  { 0 } 
+// 			else if min_penetration == penetration.y { 1 } 
+// 			else { 2 };
+// 		let aolp = axis_of_least_penetration;
+
+// 		{
+// 			// if "i" is on the bottom, we want to push it "down" so the center vec needs to be negated
+// 			// I wrote it this way in order to avoid confision, all such calculations are aabb[i] - aabb[j]
+// 			let i_sign = center_vec[aolp].signum();
+// 			let j_sign = -center_vec[aolp].signum();
+
+// 			let combined_momentum = (mass_i.abs() * velocity_i[aolp].abs()) + (mass_j.abs() * velocity_j[aolp].abs());
+
+// 			translation_delta_vec[i][aolp] += ((translation_ratio_factor_j * penetration[aolp]) * i_sign) * translation_delta_damp_factor;
+// 			translation_delta_vec[j][aolp] += ((translation_ratio_factor_i * penetration[aolp]) * j_sign) * translation_delta_damp_factor;
+
+// 			// Calculating the force which will influence the velocity
+// 			velocity_delta_vec[i][aolp] += ((energy_ratio_factor_i * combined_momentum) / mass_i) * i_sign * velocity_damp_factor;
+// 			velocity_delta_vec[j][aolp] += ((energy_ratio_factor_j * combined_momentum) / mass_j) * j_sign * velocity_damp_factor;
+// 		}
+
+// 	}
+
+// 	for (index, aabb) in aabb_vector.iter_mut().enumerate()
+// 	{
+// 		if aabb.component.is_static
+// 		{
+// 			continue
+// 		}
+
+// 		aabb.component.velocity += velocity_delta_vec[index];
+// 		// aabb.component.velocity += velocity_delta_vec[index] * (delta_time.last_delta_time_sec / 1000.0);
+// 	}
+
+// 	for (index, aabb) in aabb_vector.iter_mut().enumerate()
+// 	{
+// 		if aabb.component.is_static
+// 		{
+// 			continue
+// 		}
+
+// 		aabb.component.translation += translation_delta_vec[index] ;
+// 		// aabb.component.translation += translation_delta_vec[index] * (delta_time.last_delta_time_sec / 1000.0)
+// 	}
+
+// 	for aabb in aabb_vector.iter_mut()
+// 	{
+// 		// aabb.velocity *= aabb.damping;
+// 		// aabb.component.velocity *= 0.95;
+// 	}
+
+// 	for (index, aabb) in aabb_vector.iter_mut().enumerate()
+// 	{
+// 		// println!("[{}] static:{} mass:{:?}\nvel:{:?} = {}", index, aabb.component.is_static, aabb.component.mass, aabb.component.velocity, aabb.component.velocity.len());
+// 	}
+
+// 	let gravity = Vec3 { x: 0.0, y: -9.81f32, z: 0.0 };
+// 	for aabb in aabb_vector.iter_mut()
+// 	{
+// 		if aabb.component.is_static
+// 		{
+// 			continue;
+// 		}
+
+// 		aabb.component.velocity += (gravity * (delta_time.last_delta_time_sec / 1000.0f32)) / 10.0f32;
+// 		// aabb.component.velocity += gravity * (delta_time.last_delta_time_sec / 50000.0f32);
+// 		// aabb.component.velocity += gravity / 1000.0f32;
+// 		// aabb.component.velocity += gravity * delta_time.last_delta_time_sec;
+// 	}
+
+// 	for aabb in aabb_vector.iter_mut()
+// 	{
+// 		aabb.component.translation += aabb.component.velocity;
+// 		// aabb.component.translation += aabb.component.velocity * (delta_time.last_delta_time_sec / 1000.0f32);
+// 	}
+// }

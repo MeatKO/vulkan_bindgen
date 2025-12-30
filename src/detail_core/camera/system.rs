@@ -1,25 +1,23 @@
-use decs::component_derive::system;
-use decs::manager::dECS;
+use decs2::component_derive::system;
+use decs2::manager::dECSManager;
 
-use crate::detail_core::components::misc::DeltaTime;
+use crate::detail_core::components::misc::{DeltaTime, GlobalVariables};
 use crate::detail_core::input::input::InputState;
 use crate::vulkan::handle::VkHandle;
 
 #[system]
 pub fn update_camera_system()
 {
-	let delta_time: &mut DeltaTime =
-		unsafe { decs.get_components_global_mut_unchecked::<DeltaTime>() }.unwrap().remove(0).component;
+	let delta_time = &decs.get_global_storage_mut_unchecked::<GlobalVariables>().unwrap().delta_time;
+	let input_state = decs.get_global_storage_mut_unchecked::<InputState>().unwrap();
 
-	let input_state: &mut InputState =
-		unsafe { decs.get_components_global_mut_unchecked::<InputState>() }.unwrap().remove(0).component;
-
-	decs.modify_components_global::<VkHandle>(
+	decs.modify_global_storage::<VkHandle>(
 		|vk_handle|
 		{
 			vk_handle.camera.process_movement(delta_time.last_delta_time_sec, &input_state.current_keyboard_state);
 			vk_handle.camera.update_camera_vectors();
 			Ok(())
 		}
-	).unwrap();
+	)
+	.expect("could not modify the VK handle.")
 }

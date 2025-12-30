@@ -1,7 +1,7 @@
-use decs::component_derive::component;
-use decs::component::Component;
+use decs2::component_derive::Component;
+use decs2::typedef::Component;
 
-#[component]
+#[derive(Component)]
 pub struct VulkanModelComponent
 {
 	pub model_asset_name: String,

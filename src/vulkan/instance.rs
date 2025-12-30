@@ -78,6 +78,7 @@ pub unsafe fn create_instance(vk_handle: &mut VkHandle)
 		"VK_LAYER_INTEL_nullhw",
 		"VK_LAYER_MESA_overlay",
 		"VK_LAYER_NV_present", // very important because my GPU doesn't support the "VK_LAYER_NV_present" layer
+		"VK_LAYER_LUNARG_crash_diagnostic", // spammy ass extension
 	];
 
 	let mut layer_count = 0u32;

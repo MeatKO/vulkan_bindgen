@@ -1,5 +1,5 @@
-use decs::component_derive::component;
-use decs::component::Component;
+use decs2::component_derive::Component;
+use decs2::typedef::Component;
 
 use crate::vulkan::{vk_bindgen::{
 	VkBuffer, 
@@ -86,7 +86,7 @@ impl VulkanMeshData
 	}
 }
 
-#[component]
+#[derive(Component)]
 pub struct AABB 
 {
 	pub color: Vec3,

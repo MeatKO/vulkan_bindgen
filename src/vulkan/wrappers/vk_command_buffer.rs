@@ -8,15 +8,14 @@ use std::ptr::null_mut as nullptr;
 
 use super::vk_command_pool::CommandPool;
 
-pub struct CommandBufferBuilder<'a>
+pub struct CommandBufferBuilder
 {
 	allocate_info: VkCommandBufferAllocateInfo,
-	_lifetime_marker: PhantomData<&'a ()>
 }
 
-impl<'a> CommandBufferBuilder<'a>
+impl CommandBufferBuilder
 {
-	pub fn new() -> CommandBufferBuilder<'a>
+	pub fn new() -> CommandBufferBuilder
 	{
 		CommandBufferBuilder { 
 			allocate_info: 
@@ -27,29 +26,28 @@ impl<'a> CommandBufferBuilder<'a>
 					commandBufferCount: 1u32,
 					pNext: nullptr(),
 				},
-			_lifetime_marker: PhantomData
 		}
 	}
 
-	pub fn with_command_pool(mut self, in_command_pool: &CommandPool) -> CommandBufferBuilder<'a>
+	pub fn with_command_pool(mut self, in_command_pool: &CommandPool) -> CommandBufferBuilder
 	{
 		self.allocate_info.commandPool = in_command_pool.get_command_pool_ptr();
 		self
 	}
 
-	pub fn with_level(mut self, in_level: VkCommandBufferLevel) -> CommandBufferBuilder<'a>
+	pub fn with_level(mut self, in_level: VkCommandBufferLevel) -> CommandBufferBuilder
 	{
 		self.allocate_info.level = in_level;
 		self
 	}
 
-	pub fn with_count(mut self, in_command_buffer_count: usize) -> CommandBufferBuilder<'a>
+	pub fn with_count(mut self, in_command_buffer_count: usize) -> CommandBufferBuilder
 	{
 		self.allocate_info.commandBufferCount = in_command_buffer_count as u32;
 		self
 	}
 
-	pub fn build<'b>(self, logical_device: &VkDevice) -> Result<Vec<CommandBuffer<'b>>, String>
+	pub fn build(self, logical_device: &VkDevice) -> Result<Vec<CommandBuffer>, String>
 	{
 		unsafe
 		{
@@ -74,7 +72,6 @@ impl<'a> CommandBufferBuilder<'a>
 						out_command_buffer_vec.push(
 							CommandBuffer {
 								command_buffer_ptr: command_buffer_ptr,
-								_lifetime_marker: PhantomData,
 							}
 						)
 					}
@@ -90,13 +87,12 @@ impl<'a> CommandBufferBuilder<'a>
 }
 
 #[derive(Debug)]
-pub struct CommandBuffer<'a>
+pub struct CommandBuffer
 {
 	command_buffer_ptr: VkCommandBuffer,
-	_lifetime_marker: PhantomData<&'a ()>
 }
 
-impl<'a> CommandBuffer<'a>
+impl CommandBuffer
 {
 	pub fn get_command_buffer_ptr(&self) -> VkCommandBuffer
 	{

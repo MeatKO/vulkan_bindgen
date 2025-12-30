@@ -19,11 +19,11 @@ use std::vec;
 use super::wrappers::vk_command_buffer::CommandBuffer;
 use super::wrappers::vk_command_pool::CommandPool;
 
-use decs::component_derive::component;
-use decs::component::Component;
+use decs2::component_derive::Component;
+use decs2::typedef::Component;
 
-#[component]
-pub struct VkHandle<'a>
+#[derive(Component)]
+pub struct VkHandle
 {
 	pub camera: Camera,
 	// pub input_buffer: InputBuffer,
@@ -76,9 +76,9 @@ pub struct VkHandle<'a>
 
 	pub command_pool: Option<CommandPool>,
 	// pub command_pool: CommandPool<'a>,
-	pub command_buffer_vec: Vec<CommandBuffer<'a>>,
-	pub command_buffer_hud_vec: Vec<CommandBuffer<'a>>,
-	pub command_buffer_wireframe_vec: Vec<CommandBuffer<'a>>,
+	pub command_buffer_vec: Vec<CommandBuffer>,
+	pub command_buffer_hud_vec: Vec<CommandBuffer>,
+	pub command_buffer_wireframe_vec: Vec<CommandBuffer>,
 
 	pub image_available_semaphore_vec: Vec<VkSemaphore>,
 	pub rendering_finished_semaphore_vec: Vec<VkSemaphore>,
@@ -130,9 +130,9 @@ pub struct VkHandle<'a>
 	pub default_image_sampler: VkSampler,
 }
 
-impl<'a> VkHandle<'a>
+impl VkHandle
 {
-	pub fn new_empty() -> VkHandle<'a>
+	pub fn new_empty() -> VkHandle
 	{
 		return  VkHandle {
 			camera: Camera::new(

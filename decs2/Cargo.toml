@@ -1,0 +1,11 @@
+[package]
+name = "decs2"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+component_derive = { path = "./component_derive" }
+rand = "0.9.2"
+
+[profile.release]
+debug = true

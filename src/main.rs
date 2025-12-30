@@ -6,18 +6,24 @@ mod exedra;
 
 mod vulkan;
 
+use decs2::component_derive::Component;
+use decs2::typedef::Component;
+
 use detail_core::{
 	asset_manager::manager::AssetManager, camera::system::update_camera_system, components::misc::{
-		CameraRaycastObject, CameraRaycastObjectState, DeltaTime, GlobalVariables, MainLoopComponent, StringComponent, WindowComponent
+		CameraRaycastObject, CameraRaycastObjectState, DeltaTime, GlobalVariables, StringComponent, WindowComponent
 	}, diagnostics::system::print_delta_time_system, input::{init::init_input_system, input_processor::input_processor_system, system::input_polling_system}, logic::{
 		game_logic::game_logic_system, game_objects::{
 			init_domatena_shtaiga_assets_2, init_domatena_shtaiga_object, init_misc_assets, init_misc_objects
 		}
-	}, misc_systems::raycast_aabb_pickup::raycast_aabb_pickup_system, phys::{new_system::physics_system_3, system::physics_system_2}, rendering::{draw::rendering_system4, init::{
+	}, misc_systems::raycast_aabb_pickup::raycast_aabb_pickup_system, 
+	phys::{
+		new_system::physics_system_3, 
+		system::physics_system_2
+	}, rendering::{draw::rendering_system4, init::{
 		init_buffer_objects, init_pipelines, init_rendering_assets, init_rendering_objects, init_window_handle
 	}}
 };
-
 
 use vulkan::{
 	vk_bindgen::
@@ -31,21 +37,15 @@ mod detail_core;
 mod experimenting;
 use experimenting::*;
 
+#[derive(Component, Debug)]
+struct NameComponent(pub String);
+
 fn main() 
 {
-	// unsafe { init_everything(); }
+	let mut decs = decs2::manager::dECSManager::new();
 
-	// panic!("End of story");
-
-	let mut decs = decs::manager::dECS::new();
-
-	let vk_handle_entity = decs.create_entity();
-	decs.add_component(vk_handle_entity, StringComponent{ string : String::from("vk_handle") }).unwrap();
-	decs.add_component(vk_handle_entity, VkHandle::new_empty()).unwrap();
-
-	let asset_manager_entity = decs.create_entity();
-	decs.add_component(asset_manager_entity, StringComponent{ string : String::from("asset_manager") }).unwrap();
-	decs.add_component(asset_manager_entity, AssetManager::new()).unwrap();
+	decs.add_global_storage(VkHandle::new_empty());
+	decs.add_global_storage(AssetManager::new());
 
 	decs.add_init_system(init_input_system);
 	decs.add_init_system(init_window_handle);
@@ -69,11 +69,6 @@ fn main()
 	decs.add_system(raycast_aabb_pickup_system);
 	decs.add_system(print_delta_time_system);
 
-	let main_loop_entity = decs.create_entity();
-	decs.add_component(main_loop_entity, StringComponent{ string : String::from("main_loop") }).unwrap();
-	decs.add_component(main_loop_entity, DeltaTime{ last_delta_time_sec: 0.0f32, last_time_stamp: std::time::Instant::now() }).unwrap();
-	decs.add_component(main_loop_entity, MainLoopComponent{ should_quit: false }).unwrap();
-
 	let window = 
 		parmack::window::WindowBuilder::new()
 		.with_title("windole")
@@ -81,50 +76,47 @@ fn main()
 		.build()
 		.unwrap();
 
-	let window_entity = decs.create_entity();
-	decs.add_component(window_entity, StringComponent{ string: String::from("window") }).unwrap();
-	decs.add_component(window_entity, WindowComponent{ window: window }).unwrap();
+	decs.add_global_storage(WindowComponent{ window: window });
 
-	decs.modify_components_global::<VkHandle>(
+	decs.modify_global_storage::<VkHandle>(
 		|vk_handle| 
 		{
 			unsafe { create_instance(vk_handle); }
 			Ok(())
 		}
-	).expect("vk_handle not found");
+	)
+	.expect("Could not create VK instance");
 
-	decs.init();
+	decs.add_global_storage(GlobalVariables::new());
 
-	let global_vars = decs.create_entity();
-	decs.add_component(global_vars, StringComponent{ string: String::from("global_vars") }).unwrap();
-	decs.add_component(global_vars, GlobalVariables::new()).unwrap();
-	decs.add_component(global_vars, CameraRaycastObject{ state: CameraRaycastObjectState::None }).unwrap();
+	decs.init_systems();
 
 	'main_loop: 
 	loop
 	{
 		let update_start = std::time::Instant::now();
-		decs.update();
+		decs.update_systems();
 		let update_end = std::time::Instant::now();
 
-		decs.modify_components_global::<DeltaTime>(
-			|delta_time_obj| 
+		decs.modify_global_storage::<GlobalVariables>(
+			|globals| 
 			{
+				let delta_time_obj = &mut globals.delta_time;
 				delta_time_obj.last_time_stamp = update_end;
 				delta_time_obj.last_delta_time_sec = update_end.duration_since(update_start).as_secs_f32() * 1000.0f32;
+
 				Ok(())
 			}
-		).unwrap();
+		)
+		.expect("could not get delta time");
 
-		if 
-		decs.get_components_global::<MainLoopComponent>().expect("missing main loop component").remove(0)
-		.should_quit
+		if decs.get_global_storage_mut_unchecked::<GlobalVariables>().unwrap().should_quit
 		{
 			break 'main_loop;
 		}
 	}
 
-	decs.modify_components_global::<VkHandle>(
+	decs.modify_global_storage::<VkHandle>(
 		|vk_handle|
 		{
 			println!("Destroying vk objects...");
@@ -135,5 +127,6 @@ fn main()
 			}
 			Ok(())
 		}
-	).expect("vk_handle not found");
+	)
+	.expect("could not clean up VK objects");
 }

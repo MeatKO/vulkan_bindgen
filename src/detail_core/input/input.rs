@@ -1,10 +1,10 @@
-use decs::component_derive::component;
-use decs::component::Component;
+use decs2::component_derive::Component;
+use decs2::typedef::Component;
 use parmack::window::event::WindowEvent;
 
 use super::input_buffer::InputBuffer;
 
-#[component]
+#[derive(Component)]
 pub struct InputState
 {
 	pub current_keyboard_state: InputBuffer,

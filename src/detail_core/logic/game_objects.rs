@@ -1,5 +1,5 @@
-use decs::component_derive::system;
-use decs::manager::dECS;
+use decs2::component_derive::system;
+use decs2::manager::dECSManager;
 
 use crate::cotangens::vec3::Vec3;
 use crate::detail_core::asset_manager::manager::AssetManager;
@@ -14,12 +14,9 @@ use crate::vulkan::handle::VkHandle;
 #[system]
 pub fn init_domatena_shtaiga_assets_2()
 {
-	let vk_handle: &mut VkHandle =
-		unsafe { decs.get_components_global_mut_unchecked::<VkHandle>() }.unwrap().remove(0).component;
+	let vk_handle = decs.get_global_storage_mut_unchecked::<VkHandle>().unwrap();
+	let asset_manager = decs.get_global_storage_mut_unchecked::<AssetManager>().unwrap();
 
-	let asset_manager: &mut AssetManager =
-		unsafe { decs.get_components_global_mut_unchecked::<AssetManager>().unwrap().remove(0).component };
-	
 	let default_material =
 		asset_manager.get_asset_rc::<MaterialAsset>("material_defaults")
 		.unwrap();
@@ -37,8 +34,7 @@ pub fn init_domatena_shtaiga_assets_2()
 #[system]
 pub fn init_domatena_shtaiga_object()
 {
-	let vk_handle: &mut VkHandle =
-		unsafe { decs.get_components_global_mut_unchecked::<VkHandle>() }.unwrap().remove(0).component;
+	let vk_handle = decs.get_global_storage_mut_unchecked::<VkHandle>().unwrap();
 
 	let mut phys_boxes: Vec<AABB> =
 		vec![
@@ -68,14 +64,14 @@ pub fn init_domatena_shtaiga_object()
 
 	for (index, aabb) in phys_boxes.into_iter().enumerate()
 	{
-		let shtaiga = decs.create_entity();
+		let shtaiga = decs.add_entity();
 
 		let model_component = VulkanModelComponent::new("tomato_crate".into());
 
-		decs.add_component(shtaiga, StringComponent{ string : format!("shtaiga_{}", index).to_owned() }).unwrap();
-		decs.add_component(shtaiga, aabb).unwrap();
-		decs.add_component(shtaiga, model_component).unwrap();
-		decs.add_component(shtaiga, UniformBufferComponent::new(vk_handle).unwrap()).unwrap();
+		decs.add_component(&shtaiga, StringComponent{ string : format!("shtaiga_{}", index).to_owned() });
+		decs.add_component(&shtaiga, aabb);
+		decs.add_component(&shtaiga, model_component);
+		decs.add_component(&shtaiga, UniformBufferComponent::new(vk_handle).unwrap());
 	}
 }
 
@@ -83,11 +79,9 @@ pub fn init_domatena_shtaiga_object()
 #[system]
 pub fn init_misc_assets()
 {
-	let vk_handle: &mut VkHandle =
-		unsafe { decs.get_components_global_mut_unchecked::<VkHandle>() }.unwrap().remove(0).component;
+	let vk_handle = decs.get_global_storage_mut_unchecked::<VkHandle>().unwrap();
 
-	let asset_manager: &mut AssetManager =
-		unsafe { decs.get_components_global_mut_unchecked::<AssetManager>().unwrap().remove(0).component };
+	let asset_manager = decs.get_global_storage_mut_unchecked::<AssetManager>().unwrap();
 
 	let default_material =
 	asset_manager.get_asset_rc::<MaterialAsset>("material_defaults")
@@ -131,17 +125,16 @@ pub fn init_misc_assets()
 #[system]
 pub fn init_misc_objects()
 {
-	let vk_handle: &mut VkHandle =
-		unsafe { decs.get_components_global_mut_unchecked::<VkHandle>() }.unwrap().remove(0).component;
+	let vk_handle = decs.get_global_storage_mut_unchecked::<VkHandle>().unwrap();
 
 	let mut aabb = AABB::new_nonverbose(Vec3::new(3.0f32), Vec3::new(1.0f32), false);
 	unsafe { aabb.process_vulkan(vk_handle) };
 
-	let shtaiga = decs.create_entity();
-	decs.add_component(shtaiga, StringComponent{ string : "valkyrie".to_owned()}).unwrap();
-	decs.add_component(shtaiga, VulkanModelComponent::new("valkyrie".into())).unwrap();
-	decs.add_component(shtaiga, aabb).unwrap();
-	decs.add_component(shtaiga, UniformBufferComponent::new(vk_handle).unwrap()).unwrap();
+	let shtaiga = decs.add_entity();
+	decs.add_component(&shtaiga, StringComponent{ string : "valkyrie".to_owned()});
+	decs.add_component(&shtaiga, VulkanModelComponent::new("valkyrie".into()));
+	decs.add_component(&shtaiga, aabb);
+	decs.add_component(&shtaiga, UniformBufferComponent::new(vk_handle).unwrap());
 
 	let mut aabb = AABB::new_nonverbose(Vec3::new(3.0f32), Vec3::new(1.0f32), false);
 	unsafe { aabb.process_vulkan(vk_handle) };

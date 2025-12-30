@@ -1,7 +1,7 @@
 use std::{collections::{HashMap, hash_map::Entry}, any::{TypeId, Any}, rc::{Rc, Weak}, time::Instant};
 
-use decs::component_derive::component;
-use decs::component::Component;
+use decs2::component_derive::Component;
+use decs2::typedef::Component;
 
 struct Asset
 {
@@ -12,7 +12,7 @@ struct Asset
 	data: Rc<dyn Any>,
 }
 
-#[component]
+#[derive(Component)]
 pub struct AssetManager
 {
 	assets: HashMap<(TypeId, String), Rc<dyn Any>>,

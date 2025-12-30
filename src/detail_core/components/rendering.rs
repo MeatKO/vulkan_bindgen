@@ -1,5 +1,5 @@
-use decs::component_derive::component;
-use decs::component::Component;
+use decs2::component_derive::Component;
+use decs2::typedef::Component;
 
 use std::fmt::Debug;
 use std::rc::Weak;
@@ -13,7 +13,7 @@ use crate::vulkan::{uniform_buffer::{UniformBufferObject, create_uniform_buffers
 // 	pub model_asset: Weak<Model<VulkanModel>>
 // }
 
-#[component]
+#[derive(Component)]
 pub struct UniformBufferComponent
 {
 	// pub ubo: Vec<UniformBufferObject>

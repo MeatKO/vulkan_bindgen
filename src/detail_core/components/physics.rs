@@ -1,11 +1,9 @@
-use decs::component_derive::component;
-use decs::component::Component;
-
-use std::fmt::Debug;
+use decs2::component_derive::Component;
+use decs2::typedef::Component;
 
 use crate::cotangens::vec3::Vec3;
 
-#[component]
+#[derive(Component)]
 pub struct PhysicsImpulseComponent3D
 {
 	pub vector: Vec3

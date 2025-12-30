@@ -1,5 +1,5 @@
-use decs::component_derive::system;
-use decs::manager::dECS;
+use decs2::component_derive::system;
+use decs2::manager::dECSManager;
 
 use crate::detail_core::asset_manager::manager::AssetManager;
 use crate::detail_core::components::misc::WindowComponent;
@@ -36,11 +36,8 @@ use std::vec;
 #[system]
 pub fn init_rendering_assets()
 {
-	let vk_handle: &mut VkHandle =
-		unsafe { decs.get_components_global_mut_unchecked::<VkHandle>().unwrap().remove(0).component };
-
-	let asset_manager: &mut AssetManager =
-		unsafe { decs.get_components_global_mut_unchecked::<AssetManager>().unwrap().remove(0).component };
+	let vk_handle = decs.get_global_storage_mut_unchecked::<VkHandle>().unwrap();
+	let asset_manager = decs.get_global_storage_mut_unchecked::<AssetManager>().unwrap();
 	
 	let default_normal_map: Texture<VulkanTexture> = 
 		Texture::new("./detail/textures/smiley_normal.tga".into())
@@ -111,23 +108,30 @@ pub fn init_rendering_assets()
 #[system]
 pub fn init_window_handle()
 {
-	let window: &mut WindowComponent =
-		unsafe { decs.get_components_global_mut_unchecked::<WindowComponent>() }.unwrap().remove(0).component;
+	// let window: &mut WindowComponent =
+	// 	unsafe { decs.get_components_global_mut_unchecked::<WindowComponent>() }.unwrap().remove(0).component;
 
-	let vk_handle: &mut VkHandle =
-		unsafe { decs.get_components_global_mut_unchecked::<VkHandle>() }.unwrap().remove(0).component;
+	// let vk_handle: &mut VkHandle =
+	// 	unsafe { decs.get_components_global_mut_unchecked::<VkHandle>() }.unwrap().remove(0).component;
+
+	// let surface = create_vulkan_surface(&window.window, &vk_handle.instance);
+
+	// let vk_handle = 
+	// 	match decs.get_components_global_mut::<VkHandle>()
+	// 	{
+	// 		Ok(vk_handle_vec) => 
+	// 		{
+	// 			vk_handle_vec.into_iter().next().unwrap()
+	// 		}
+	// 		Err(err) => { panic!("vk_handle not found: {}", err) }
+	// 	};
+
+	// vk_handle.window_surface = surface.unwrap();
+
+	let vk_handle = decs.get_global_storage_mut_unchecked::<VkHandle>().unwrap();
+	let window = decs.get_global_storage_mut_unchecked::<WindowComponent>().unwrap();
 
 	let surface = create_vulkan_surface(&window.window, &vk_handle.instance);
-
-	let vk_handle = 
-		match decs.get_components_global_mut::<VkHandle>()
-		{
-			Ok(vk_handle_vec) => 
-			{
-				vk_handle_vec.into_iter().next().unwrap()
-			}
-			Err(err) => { panic!("vk_handle not found: {}", err) }
-		};
 
 	vk_handle.window_surface = surface.unwrap();
 }
@@ -135,8 +139,7 @@ pub fn init_window_handle()
 #[system]
 pub fn init_rendering_objects()
 {
-	let vk_handle: &mut VkHandle =
-		unsafe { decs.get_components_global_mut_unchecked::<VkHandle>() }.unwrap().remove(0).component;
+	let vk_handle = decs.get_global_storage_mut_unchecked::<VkHandle>().unwrap();
 
 	unsafe
 	{
@@ -189,8 +192,7 @@ pub fn init_pipelines()
 {
 	unsafe
 	{
-		let vk_handle: &mut VkHandle =
-			decs.get_components_global_mut_unchecked::<VkHandle>().unwrap().remove(0).component;
+		let vk_handle = decs.get_global_storage_mut_unchecked::<VkHandle>().unwrap();
 
 		// main forward shading
 		{
@@ -329,15 +331,7 @@ pub fn init_pipelines()
 #[system]
 pub fn init_buffer_objects()
 {
-	let vk_handle = 
-		match decs.get_components_global_mut::<VkHandle>()
-		{
-			Ok(vk_handle_vec) => 
-			{
-				vk_handle_vec.into_iter().next().unwrap()
-			}
-			Err(err) => { panic!("vk_handle not found: {}", err) }
-		};
+	let vk_handle = decs.get_global_storage_mut_unchecked::<VkHandle>().unwrap();
 
 	unsafe
 	{

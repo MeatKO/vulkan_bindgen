@@ -1,11 +1,11 @@
 use std::borrow::BorrowMut;
 
-use decs::component_derive::system;
-use decs::manager::dECS;
+use decs2::component_derive::system;
+use decs2::manager::dECSManager;
 use parmack::handle::Handle;
 use parmack::window::event::{WindowEvent, WindowActions, KeyCode, MouseCode};
 
-use crate::detail_core::components::misc::{CameraRaycastObject, CameraRaycastObjectState, DeltaTime, GlobalVariables, MainLoopComponent, WindowComponent};
+use crate::detail_core::components::misc::{CameraRaycastObject, CameraRaycastObjectState, DeltaTime, GlobalVariables, WindowComponent};
 use crate::vulkan::handle::VkHandle;
 
 use super::input::InputState;
@@ -13,20 +13,13 @@ use super::input::InputState;
 #[system]
 pub fn input_processor_system()
 {
-	let window: &mut WindowComponent =
-		unsafe { decs.get_components_global_mut_unchecked::<WindowComponent>() }.unwrap().remove(0).component;
+	// let delta_time = decs.get_global_storage_mut_unchecked::<DeltaTime>().unwrap();
+	let delta_time = &decs.get_global_storage_mut_unchecked::<GlobalVariables>().unwrap().delta_time;
 
-	let delta_time: &mut DeltaTime =
-		unsafe { decs.get_components_global_mut_unchecked::<DeltaTime>() }.unwrap().remove(0).component;
-
-	let vk_handle: &mut VkHandle =
-		unsafe { decs.get_components_global_mut_unchecked::<VkHandle>() }.unwrap().remove(0).component;
-
-	let raycast_object: &mut CameraRaycastObject =
-		unsafe { decs.get_components_global_mut_unchecked::<CameraRaycastObject>() }.unwrap().remove(0).component;
-
-	let input_state: &mut InputState =
-		unsafe { decs.get_components_global_mut_unchecked::<InputState>() }.unwrap().remove(0).component;
+	let input_state = decs.get_global_storage_mut_unchecked::<InputState>().unwrap();
+	let window = decs.get_global_storage_mut_unchecked::<WindowComponent>().unwrap();
+	let vk_handle = decs.get_global_storage_mut_unchecked::<VkHandle>().unwrap();
+	let raycast_object = &mut decs.get_global_storage_mut_unchecked::<GlobalVariables>().unwrap().global_raycast_object;
 
 	let process_start_time = std::time::Instant::now();
 	let absolute_current_time_stamp_ms = process_start_time.duration_since(vk_handle.start_time).as_secs_f32() * 1000.0f32;
@@ -84,7 +77,7 @@ pub fn input_processor_system()
 				{
 					KeyCode::Escape => 
 					{ 
-						decs.modify_components_global::<MainLoopComponent>(
+						decs.modify_global_storage::<GlobalVariables>(
 							|main_loop| 
 							{
 								main_loop.should_quit = true;
@@ -94,7 +87,7 @@ pub fn input_processor_system()
 					}
 					KeyCode::ShiftLeft => 
 					{ 
-						decs.modify_components_global::<GlobalVariables>(
+						decs.modify_global_storage::<GlobalVariables>(
 							|global_variables|
 							{
 								global_variables.focus_on_gui = !global_variables.focus_on_gui;
@@ -104,7 +97,7 @@ pub fn input_processor_system()
 					}
 					KeyCode::P => 
 					{ 
-						decs.modify_components_global::<GlobalVariables>(
+						decs.modify_global_storage::<GlobalVariables>(
 							|global_variables|
 							{
 								global_variables.should_run_physics = !global_variables.should_run_physics;
@@ -114,7 +107,7 @@ pub fn input_processor_system()
 					}
 					KeyCode::X => 
 					{
-						decs.modify_components_global::<GlobalVariables>(
+						decs.modify_global_storage::<GlobalVariables>(
 							|global_variables|
 							{
 								global_variables.render_wireframe = !global_variables.render_wireframe;
@@ -135,7 +128,7 @@ pub fn input_processor_system()
 				{
 					WindowActions::Close => 
 					{ 
-						decs.modify_components_global::<MainLoopComponent>(
+						decs.modify_global_storage::<GlobalVariables>(
 							|main_loop_component|
 							{
 								main_loop_component.should_quit = true;

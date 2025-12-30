@@ -1,5 +1,5 @@
-use decs::component_derive::system;
-use decs::manager::dECS;
+use decs2::component_derive::system;
+use decs2::manager::dECSManager;
 
 use crate::cotangens::vec3::Vec3;
 use crate::detail_core::components::misc::{GlobalVariables, StringComponent};
@@ -12,11 +12,8 @@ use crate::vulkan::handle::VkHandle;
 #[system]
 pub fn game_logic_system()
 {
-	let vk_handle: &mut VkHandle =
-		unsafe { decs.get_components_global_mut_unchecked::<VkHandle>() }.unwrap().remove(0).component;
-
-	let global_variables: &mut GlobalVariables =
-		unsafe { decs.get_components_global_mut_unchecked::<GlobalVariables>() }.unwrap().remove(0).component;
+	let vk_handle = decs.get_global_storage_mut_unchecked::<VkHandle>().unwrap();
+	let global_variables = decs.get_global_storage_mut_unchecked::<GlobalVariables>().unwrap();
 
 	let last_random_object_id = global_variables.global_env_map.get_mut("random_object_counter");
 
@@ -67,12 +64,12 @@ pub fn game_logic_system()
 				aabb.mass = 1.0f32;
 				unsafe { aabb.process_vulkan(vk_handle) };
 
-				let shtaiga = decs.create_entity();
-				decs.add_component(shtaiga, StringComponent{ string : format!("valkyrie_{}", last_index).to_owned()}).unwrap();
-				// decs.add_component(shtaiga, VulkanModelComponent::new("valkyrie".to_owned())).unwrap();
-				decs.add_component(shtaiga, VulkanModelComponent::new("tomato_crate".to_owned())).unwrap();
-				decs.add_component(shtaiga, aabb).unwrap();
-				decs.add_component(shtaiga, UniformBufferComponent::new(vk_handle).unwrap()).unwrap();
+				let shtaiga = decs.add_entity();
+				decs.add_component(&shtaiga, StringComponent{ string : format!("valkyrie_{}", last_index).to_owned()});
+				// decs.add_component(shtaiga, VulkanModelComponent::new("valkyrie".to_owned()));
+				decs.add_component(&shtaiga, VulkanModelComponent::new("tomato_crate".to_owned()));
+				decs.add_component(&shtaiga, aabb);
+				decs.add_component(&shtaiga, UniformBufferComponent::new(vk_handle).unwrap());
 
 				println!("added model {}", format!("valkyrie_{}", last_index).to_owned());
 

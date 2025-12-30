@@ -1,7 +1,7 @@
 use std::{ptr::null_mut as nullptr, ops::{Deref, DerefMut}, path::PathBuf, collections::HashMap, rc::Rc};
 
-use decs::component_derive::component;
-use decs::component::Component;
+use decs2::component_derive::Component;
+use decs2::typedef::Component;
 
 use crate::{cotangens::{vec3::*, vec2::Vec2}, exedra::{error::ModelLoadError, model_descriptor::ModelDescriptor, mesh_descriptor::MeshDescriptor, material_descriptor::MaterialDescriptor}, detail_core::texture::texture::{Texture, VulkanTexture}, vulkan::{handle::VkHandle, vertex::{create_vertex_buffer, Vertex}, index::create_index_buffer, descriptor_set::{create_descriptor_sets, update_descriptor_sets}, uniform_buffer::create_uniform_buffers, vk_bindgen::VkFormat, wrappers::vk_buffer::VulkanBuffer}};
 use super::{mesh::{Mesh, VulkanMeshData}, material::Material, asset::{ModelAsset, MeshAsset, MeshVulkanBuffers, MeshBuffers, MaterialAsset}};
@@ -9,7 +9,18 @@ use super::{mesh::{Mesh, VulkanMeshData}, material::Material, asset::{ModelAsset
 #[derive(Debug)]
 pub struct Model<T>(T);
 
-impl <T: Component> Component for Model<T> {}
+impl <T: Component> Component for Model<T> 
+{
+	fn as_any(&self) -> &dyn std::any::Any 
+	{
+		self
+	}
+
+	fn as_any_mut(&mut self) -> &mut dyn std::any::Any 
+	{
+		self
+	}
+}
 
 impl<T> Deref for Model<T> 
 {
@@ -277,7 +288,7 @@ unsafe fn create_geometry_buffers(vk_handle: &VkHandle, model_descriptor: &Model
 	);
 }
 
-#[component]
+#[derive(Component)]
 pub struct VulkanModel
 {
 	pub name: String,
